@@ -1,0 +1,28 @@
+{
+  "name": "milk-nest-dairy-form",
+  "version": "1.0.0",
+  "description": "An application which supports to monitor dairy-form daily activitivities",
+  "main": "server.js",
+  "keywords": [
+    "dairy-form",
+    "cattly",
+    "milk",
+    "monitoring",
+    "dairy-management"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "shyam",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "morgan": "^1.10.1"
+  }
+}
