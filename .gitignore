@@ -5,6 +5,8 @@ logs/
 coverage/
 dist/
 
+public/
+
 *.log
 
 .vscode/settings.json
