@@ -1,6 +1,7 @@
-const dbconfig = require('../db.config');
+const dbconfig = require('../config/db.config');
 const dberrors = require('./db-errors')
 const pool = dbconfig.pool.promise();
+dbconfig.logPoolEvents(pool);
 
 const getConnection = async () => {
     return await pool.getConnection();
@@ -19,7 +20,6 @@ const formatDbError = (error) => {
 const executeQuery = async (fname, query, params = []) => {
     console.log('in executeQuery and quries received from ' + fname);
 
-    dbconfig.logPoolEvents(pool);
     try {
         const [rows] = await pool.execute(query, params);
         return rows;

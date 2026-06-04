@@ -2,11 +2,12 @@ const mysql = require('mysql2');
 const fs = require('fs');
 
 const baseConfig = {
-    connectionLimit: 10,
+    connectionLimit: 7,
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     database: process.env.DB_NAME,
-    queueLimit: 30,
+    queueLimit: 20,
+    waitForConnections: true,
     ssl: {
         rejectUnauthorized: true,
         ca: fs.readFileSync('./certs/ca.pem')
@@ -18,19 +19,18 @@ const adminPool = mysql.createPool({
     ...baseConfig,
     user: process.env.ADMIN_USER,
     password: process.env.ADMIN_PASSWORD,
-    waitForConnections: true
 });
+
 const operatorPool = mysql.createPool({
     ...baseConfig,
     user: process.env.OPERATOR_USER,
     password: process.env.ADMIN_PASSWORD,
-    waitForConnections: true
 });
+
 const viewerPool = mysql.createPool({
     ...baseConfig,
     user: process.env.VIEWER_USER,
     password: process.env.VIEWER_PASSWORD,
-    waitForConnections: true
 });
 
 const logPoolEvents = function (pool) {
@@ -52,4 +52,4 @@ const logPoolEvents = function (pool) {
     });
 }
 
-module.exports = { pool: viewerPool, logPoolEvents, escape: mysql.escape }
+module.exports = { pool: viewerPool, logPoolEvents, escapeValue: mysql.escape }

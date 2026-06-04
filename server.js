@@ -2,12 +2,11 @@ require('dotenv').config();
 
 const server = require('./node');
 const dbutils = require('./utilities/db.utils');
-const dbconfig = require('./db.config');
+const dbconfig = require('./config/db.config');
 
 const port = process.env.PORT || 4901;
 
 async function execute() {
-
     try {
         const res = await dbutils.executeQuery('server', 'SELECT * FROM dymmy where id = ?', [17]);
         const res1 = await dbutils.executeMultipleQueries('server', [{ query: 'SELECT * FROM dymmy where id = ?', params: [17] }, { query: 'SELECT * FROM dymmy where id = ?', params: [18] }]);
