@@ -10,7 +10,7 @@ async function execute() {
     try {
         const res = await dbutils.executeQuery('server', 'SELECT * FROM dymmy where id = ?', [17]);
         const res1 = await dbutils.executeMultipleQueries('server', [{ query: 'SELECT * FROM dymmy where id = ?', params: [17] }, { query: 'SELECT * FROM dymmy where id = ?', params: [18] }]);
-        const res2 = await dbutils.executeTransactionQueries('server', [{ query: 'insert into dymmy (id, dumy_name) values (?,?)', params: [17,'Shyam'] }, { query: 'insert into dymmy (dumy_name) values (?)', params: ['Prasad'] }]);
+        const res2 = await dbutils.executeTransactionQueries('server', [{ query: 'insert into dymmy (id, dumy_name) values (?,?)', params: [17, 'Shyam'] }, { query: 'insert into dymmy (dumy_name) values (?)', params: ['Prasad'] }]);
 
 
         console.log('My first query:', res);

@@ -1,10 +1,12 @@
 const express = require('express');
-const app = express();
 const path = require('path');
 const logger = require('./middleware/logger');
 const cookieParser = require('cookie-parser');
 const response = require('./utilities/response.utils');
 const RESPONSE_STATUS = require('./utilities/standard.messages');
+
+// creting express app
+const app = express();
 
 // middlewares
 app.use(express.json({ limit: '20mb' }));
@@ -30,11 +32,7 @@ app.all('*splat', (req, res) => {
 
 // global error handling
 app.use((error, req, res, next) => {
-    console.log('In Global error handler')
-    res.status(error.status || 501).json({
-        success: 'false',
-        message: 'Internal server error',
-        data: []
-    })
+    console.log('In Global error handler');
+    response.sendErrorResponse(req, res, RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Gloal error' })
 });
 module.exports = { app };
