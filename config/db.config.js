@@ -6,7 +6,7 @@ const baseConfig = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     database: process.env.DB_NAME,
-    queueLimit: 20,
+    queueLimit: 15,
     waitForConnections: true,
     ssl: {
         rejectUnauthorized: true,
