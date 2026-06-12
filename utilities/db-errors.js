@@ -27,7 +27,7 @@ const DB_ERRORS = {
 
     ER_DUP_ENTRY: {
         code: 1062,
-        message: 'Duplicate record already exists'
+        message: 'Record already exists with the same details'
     },
 
     ER_LOCK_DEADLOCK: {
@@ -97,6 +97,16 @@ const DB_ERRORS = {
     ER_ACCESS_DENIED_ERROR: {
         code: 1045,
         message: 'Invalid database username or password'
+    },
+
+    ER_NO_DEFAULT_FOR_FIELD: {
+        code: 1045,
+        message: 'Requested field(s) does not support null values'
+    },
+
+    ER_WRONG_VALUE_COUNT_ON_ROW: {
+        code: 1045,
+        message: 'Column count does not match value count in query'
     },
 };
 

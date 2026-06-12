@@ -11,7 +11,7 @@
   --line: rgba(23, 33, 28, 0.12);
   --shadow: 0 18px 45px rgba(20, 55, 39, 0.14);
   --radius: 8px;
-  --container: 1380px;
+  --container: 1440px;
 }
 
 * {
@@ -655,7 +655,6 @@ p {
 }
 
 .site-footer p {
-  max-width: 390px;
   margin: 0;
 }
 

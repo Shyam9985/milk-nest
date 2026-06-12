@@ -55,4 +55,4 @@ const logPoolEvents = function (pool) {
     });
 }
 
-module.exports = { pool: viewerPool, logPoolEvents, escapeValue: mysql.escape }
+module.exports = { pool: adminPool, logPoolEvents, escapeValue: mysql.escape }

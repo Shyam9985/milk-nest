@@ -36,7 +36,7 @@ const RESPONSE_STATUS = {
 
     VALIDATION_ERROR: {
         code: 400,
-        message: 'Validation failed.'
+        message: 'Validation failed for requested data.'
     },
 
     UNAUTHORIZED: {
@@ -51,7 +51,7 @@ const RESPONSE_STATUS = {
 
     DUPLICATE_RECORD: {
         code: 409,
-        message: 'Record already exists.'
+        message: 'Record already exists with the given details.'
     },
 
     NOT_FOUND: {
@@ -64,6 +64,61 @@ const RESPONSE_STATUS = {
         message: 'Database operation failed.'
     },
 
+    INVALID_DATA_FORMAT: {
+        code: 405,
+        message: "Data send in wrong format"
+    },
+
+    UN_AUTH_ACCESS: {
+        code: 406,
+        message: "Unauthorized access/attempt. Please check and retry"
+    },
+
+    INVALID_OTP: {
+        code: 407,
+        message: "Invalid/ Expired OTP"
+    },
+
+    INVALID_CREDENTIALS: {
+        code: 408,
+        message: "Invalid credentials.Please retry"
+    },
+
+    SESSION_ERR: {
+        code: 408,
+        message: "Session Database Query/Connection Error"
+    },
+
+    TOOMANY_ATTEMPTS: {
+        code: 409,
+        message: "Too many wrong attempts. Please try after 24hrs/contact support."
+    },
+
+    TOKEN_EXPIRED: {
+        code: 403,
+        message: "Token expired."
+    },
+
+    SESSION_EXPIRED: {
+        code: 403,
+        message: "Session expired. Please login again."
+    },
+
+    INVALID_TOKEN: {
+        code: 403,
+        message: "Invalid token sent. Please login again."
+    },
+
+    TOKEN_INVALID: {
+        code: 403,
+        message: "Invalid token. Please provide a valid token."
+    },
+
+    UNAUTHORISED_URL: {
+        code: 401,
+        message: "Unauthorized URL. Access denied."
+    },
+
     INTERNAL_SERVER_ERROR: {
         code: 500,
         message: 'Internal server error.'
@@ -72,7 +127,28 @@ const RESPONSE_STATUS = {
     SERVICE_UNAVAILABLE: {
         code: 503,
         message: 'Service temporarily unavailable.'
-    }
+    },
+
+    DB_QUERY_ISSUE: {
+        code: 700,
+        message: "Database Query/Connection Error"
+    },
+
+    MODEL_ERR: {
+        code: 700,
+        message: "Something went wrong"
+    },
+
+    SYNTAX_ERROR: {
+        code: 701,
+        message: "Something went wrong. The error is reported to the administrator."
+    },
+
+    UNABLE_TO_PROCESS: {
+        code: 400,
+        message: "Unable to process request at the moment."
+    },
+
 };
 
 module.exports = RESPONSE_STATUS;

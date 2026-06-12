@@ -244,11 +244,11 @@ function App() {
           </div>
         </section>
 
-        <section className="section banner-section" aria-label="Milk Nest branded farm banner">
+        {/* <section className="section banner-section" aria-label="Milk Nest branded farm banner">
           <div className="wide-banner" data-reveal>
             <img src={bannerAltImage} alt="Milk Nest cattle management and smart operations banner" />
           </div>
-        </section>
+        </section> */}
 
         <section className="section why-section" id="why-us">
           <div className="why-panel" data-reveal>

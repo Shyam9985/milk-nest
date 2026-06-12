@@ -4,7 +4,7 @@ const logger = require('./middleware/logger');
 const cookieParser = require('cookie-parser');
 const response = require('./utilities/response.utils');
 const RESPONSE_STATUS = require('./utilities/standard.messages');
-
+const apiroutes = require('./routes/apiRoutes');
 // creting express app
 const app = express();
 
@@ -15,11 +15,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(logger);
 
-app.use('/shyam', (req, res) => {
-
-    response.sendSuccessResponse(req, res, [{ name: 'shyam', phone: 9985453023 }], RESPONSE_STATUS.DATA_FOUND, {})
-})
-
+// routes 
+app.use('/apiv1', apiroutes);
 // handling unknown roots
 app.all('*splat', (req, res) => {
     console.log('In Global Router handler function')
