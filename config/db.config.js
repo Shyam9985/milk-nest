@@ -1,6 +1,9 @@
 const mysql = require('mysql2');
 const fs = require('fs');
 
+// DB_HOST=mysql-1894a330-dairy-form.l.aivencloud.com
+// DB_PORT=19628
+// DB_NAME=dairy_form
 const baseConfig = {
     connectionLimit: 7,
     host: process.env.DB_HOST,
@@ -9,7 +12,7 @@ const baseConfig = {
     queueLimit: 15,
     waitForConnections: true,
     ssl: {
-        rejectUnauthorized: true,
+        rejectUnauthorized: false,
         ca: fs.readFileSync('./certs/ca.pem')
 
     }

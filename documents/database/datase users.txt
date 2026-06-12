@@ -1,23 +1,23 @@
-admin user : 
+-- admin user : 
 
 CREATE USER 'dairy_admin'@'%' IDENTIFIED BY 'Admin@123';
 GRANT ALL PRIVILEGES
-ON dairy_farm_management.*
+ON milk_nest.*
 TO 'dairy_admin'@'%';
 FLUSH PRIVILEGES;
 
-limited user : 
+-- limited user : 
 
 CREATE USER 'dairy_operator'@'%' IDENTIFIED BY 'Operator@123';
 GRANT SELECT, INSERT, UPDATE
-ON dairy_farm_management.*
+ON milk_nest.*
 TO 'dairy_operator'@'%';
 FLUSH PRIVILEGES;
 
 
-select user :
-CREATE USER 'dairy_viewer'@'%' IDENTIFIED BY 'Viewer@123!';
+-- select user :
+CREATE USER 'dairy_viewer'@'%' IDENTIFIED BY 'Viewer@123';
 GRANT SELECT
-ON dairy_farm_management.*
+ON milk_nest.*
 TO 'dairy_viewer'@'%';
 FLUSH PRIVILEGES;

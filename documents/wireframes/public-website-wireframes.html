@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Milk Nest Public Website Wireframes</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #6b7280;
+      --line: #cbd5e1;
+      --panel: #f8fafc;
+      --accent: #2f855a;
+      --accent-soft: #dff3e8;
+      --warm: #f6ead4;
+      --blue: #dbeafe;
+      --shadow: 0 10px 24px rgba(31, 41, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffffff;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .title {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .section-label {
+      margin: 40px 0 14px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .frame {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .browser-bar {
+      display: flex;
+      gap: 7px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .wire-nav {
+      display: grid;
+      grid-template-columns: 150px 1fr 132px;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo-block,
+    .nav-link,
+    .button-block,
+    .text-line,
+    .image-block,
+    .card,
+    .field,
+    .footer-block,
+    .metric,
+    .mobile-icon {
+      border: 1.5px dashed #94a3b8;
+      background: var(--panel);
+      border-radius: 7px;
+    }
+
+    .logo-block {
+      height: 42px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .nav-link {
+      width: 92px;
+      height: 28px;
+    }
+
+    .button-block {
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      border: 0;
+      background: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .wire-section {
+      padding: 42px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+      align-items: center;
+      gap: 34px;
+      min-height: 420px;
+    }
+
+    .eyebrow {
+      width: 170px;
+      height: 24px;
+      margin-bottom: 18px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+    }
+
+    .headline {
+      height: 62px;
+      max-width: 510px;
+      margin-bottom: 14px;
+      border-radius: 7px;
+      background: #e2e8f0;
+    }
+
+    .headline.short {
+      width: 80%;
+    }
+
+    .text-line {
+      height: 16px;
+      margin-bottom: 10px;
+    }
+
+    .text-line.wide {
+      width: 96%;
+    }
+
+    .text-line.medium {
+      width: 72%;
+    }
+
+    .text-line.small {
+      width: 52%;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .button-row .button-block {
+      width: 132px;
+    }
+
+    .button-block.secondary {
+      color: var(--ink);
+      border: 1.5px dashed var(--line);
+      background: #fff;
+    }
+
+    .image-block {
+      min-height: 330px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: linear-gradient(135deg, var(--warm), #ffffff 58%, var(--accent-soft));
+      text-align: center;
+      padding: 24px;
+    }
+
+    .annotation {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .section-heading {
+      width: 280px;
+      height: 34px;
+      margin: 0 auto 12px;
+      border-radius: 7px;
+      background: #e2e8f0;
+    }
+
+    .section-copy {
+      width: 520px;
+      max-width: 100%;
+      height: 16px;
+      margin: 0 auto 28px;
+      border-radius: 7px;
+      background: var(--panel);
+      border: 1.5px dashed #94a3b8;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      min-height: 144px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .icon {
+      width: 38px;
+      height: 38px;
+      margin-bottom: 16px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+    }
+
+    .card-title {
+      width: 80%;
+      height: 18px;
+      margin-bottom: 12px;
+      border-radius: 5px;
+      background: #dbe4ee;
+    }
+
+    .why-layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .metric-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .metric {
+      min-height: 84px;
+      padding: 18px;
+      background: var(--blue);
+    }
+
+    .reason-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .reason-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .reason-dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      border: 1.5px dashed #94a3b8;
+    }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 1fr 0.8fr;
+      gap: 22px;
+    }
+
+    .form {
+      display: grid;
+      gap: 12px;
+      padding: 20px;
+      border: 1.5px dashed #94a3b8;
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .field {
+      height: 44px;
+      background: #fff;
+    }
+
+    .field.message {
+      height: 112px;
+    }
+
+    .contact-info {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(3, 1fr);
+      gap: 18px;
+      padding: 28px;
+      background: #f1f5f9;
+    }
+
+    .footer-block {
+      min-height: 116px;
+      background: #fff;
+    }
+
+    .mobile-frame {
+      max-width: 390px;
+      margin: 0 auto;
+      border-radius: 28px;
+    }
+
+    .mobile-frame .browser-bar {
+      justify-content: center;
+    }
+
+    .mobile-frame .wire-nav {
+      grid-template-columns: 1fr 44px;
+      padding: 14px;
+    }
+
+    .mobile-frame .nav-links,
+    .mobile-frame .wire-nav .button-block {
+      display: none;
+    }
+
+    .mobile-icon {
+      width: 44px;
+      height: 38px;
+      background: #fff;
+    }
+
+    .mobile-frame .wire-section {
+      padding: 28px 16px;
+    }
+
+    .mobile-frame .hero-grid,
+    .mobile-frame .why-layout,
+    .mobile-frame .contact-layout,
+    .mobile-frame .footer {
+      grid-template-columns: 1fr;
+    }
+
+    .mobile-frame .hero-grid {
+      min-height: auto;
+      gap: 22px;
+    }
+
+    .mobile-frame .headline {
+      height: 92px;
+    }
+
+    .mobile-frame .button-row {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .mobile-frame .button-row .button-block {
+      width: 100%;
+    }
+
+    .mobile-frame .image-block {
+      min-height: 240px;
+      order: -1;
+    }
+
+    .mobile-frame .services-grid,
+    .mobile-frame .process {
+      grid-template-columns: 1fr;
+    }
+
+    .mobile-frame .card {
+      min-height: 112px;
+    }
+
+    .mobile-frame .footer {
+      padding: 20px 16px;
+    }
+
+    .animation-notes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .note {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 900px) {
+      .services-grid,
+      .animation-notes {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .hero-grid,
+      .why-layout,
+      .contact-layout,
+      .footer {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        padding: 14px;
+      }
+
+      .title {
+        font-size: 24px;
+      }
+
+      .services-grid,
+      .process,
+      .animation-notes {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="title">Milk Nest Public Website Wireframes</h1>
+    <p class="subtitle">
+      Planning wireframes for a mobile-first public website with clear section flow, responsive behavior,
+      and tasteful animation moments. These are intentionally low-fidelity so layout and user experience
+      can be approved before visual design begins.
+    </p>
+
+    <h2 class="section-label">Desktop Landing Page Wireframe</h2>
+    <section class="frame">
+      <div class="browser-bar">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+
+      <header class="wire-nav">
+        <div class="logo-block">Milk Nest</div>
+        <nav class="nav-links" aria-label="Desktop menu">
+          <div class="nav-link"></div>
+          <div class="nav-link"></div>
+          <div class="nav-link"></div>
+          <div class="nav-link"></div>
+          <div class="nav-link"></div>
+        </nav>
+        <div class="button-block">Contact Us</div>
+      </header>
+
+      <section class="wire-section hero-grid">
+        <div>
+          <div class="eyebrow"></div>
+          <div class="headline"></div>
+          <div class="headline short"></div>
+          <div class="text-line wide"></div>
+          <div class="text-line medium"></div>
+          <div class="button-row">
+            <div class="button-block">Contact Us</div>
+            <div class="button-block secondary">Services</div>
+          </div>
+          <p class="annotation">Hero animation: headline fades upward, buttons enter after text, image has gentle parallax.</p>
+        </div>
+        <div class="image-block">Farm / dairy operations hero visual</div>
+      </section>
+
+      <section class="wire-section">
+        <div class="section-heading"></div>
+        <div class="section-copy"></div>
+        <div class="services-grid">
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div><div class="text-line small"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div><div class="text-line small"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div><div class="text-line small"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div><div class="text-line small"></div></div>
+        </div>
+        <p class="annotation">Services animation: cards reveal in a staggered sequence as the user scrolls.</p>
+      </section>
+
+      <section class="wire-section why-layout">
+        <div class="metric-stack">
+          <div class="metric"><div class="card-title"></div><div class="text-line medium"></div></div>
+          <div class="metric"><div class="card-title"></div><div class="text-line medium"></div></div>
+          <div class="metric"><div class="card-title"></div><div class="text-line medium"></div></div>
+        </div>
+        <div class="reason-list">
+          <div class="section-heading" style="margin-left:0"></div>
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+        </div>
+      </section>
+
+      <section class="wire-section">
+        <div class="section-heading"></div>
+        <div class="section-copy"></div>
+        <div class="process">
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+        </div>
+      </section>
+
+      <section class="wire-section contact-layout">
+        <div class="form">
+          <div class="field"></div>
+          <div class="field"></div>
+          <div class="field"></div>
+          <div class="field message"></div>
+          <div class="button-block">Send Inquiry</div>
+        </div>
+        <div class="contact-info">
+          <div class="section-heading" style="margin-left:0"></div>
+          <div class="text-line wide"></div>
+          <div class="text-line medium"></div>
+          <div class="card"></div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-block"></div>
+        <div class="footer-block"></div>
+        <div class="footer-block"></div>
+        <div class="footer-block"></div>
+      </footer>
+    </section>
+
+    <h2 class="section-label">Mobile Landing Page Wireframe</h2>
+    <section class="frame mobile-frame">
+      <div class="browser-bar">
+        <span class="dot"></span>
+      </div>
+
+      <header class="wire-nav">
+        <div class="logo-block">Milk Nest</div>
+        <div class="mobile-icon"></div>
+      </header>
+
+      <section class="wire-section hero-grid">
+        <div>
+          <div class="eyebrow"></div>
+          <div class="headline"></div>
+          <div class="text-line wide"></div>
+          <div class="text-line medium"></div>
+          <div class="button-row">
+            <div class="button-block">Contact Us</div>
+            <div class="button-block secondary">Services</div>
+          </div>
+        </div>
+        <div class="image-block">Hero visual first on mobile</div>
+      </section>
+
+      <section class="wire-section">
+        <div class="section-heading"></div>
+        <div class="section-copy"></div>
+        <div class="services-grid">
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+        </div>
+      </section>
+
+      <section class="wire-section why-layout">
+        <div class="metric-stack">
+          <div class="metric"><div class="card-title"></div><div class="text-line medium"></div></div>
+          <div class="metric"><div class="card-title"></div><div class="text-line medium"></div></div>
+        </div>
+        <div class="reason-list">
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+          <div class="reason-row"><div class="reason-dot"></div><div class="text-line wide"></div></div>
+        </div>
+      </section>
+
+      <section class="wire-section">
+        <div class="section-heading"></div>
+        <div class="process">
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+          <div class="card"><div class="icon"></div><div class="card-title"></div><div class="text-line wide"></div></div>
+        </div>
+      </section>
+
+      <section class="wire-section contact-layout">
+        <div class="form">
+          <div class="field"></div>
+          <div class="field"></div>
+          <div class="field"></div>
+          <div class="field message"></div>
+          <div class="button-block">Send Inquiry</div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-block"></div>
+        <div class="footer-block"></div>
+      </footer>
+    </section>
+
+    <h2 class="section-label">Animation And Responsive Priorities</h2>
+    <div class="animation-notes">
+      <div class="note"><strong>Mobile first</strong>Single-column flow, large tap targets, image before hero text, sticky compact header.</div>
+      <div class="note"><strong>Scroll reveal</strong>Sections fade and slide subtly into place as they enter the viewport.</div>
+      <div class="note"><strong>Service cards</strong>Cards reveal with small stagger timing, keeping motion calm and readable.</div>
+      <div class="note"><strong>Performance</strong>Use CSS transforms and opacity for animation; avoid heavy motion on low-power phones.</div>
+    </div>
+  </main>
+</body>
+</html>

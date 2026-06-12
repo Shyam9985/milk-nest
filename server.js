@@ -1,5 +1,12 @@
 require('dotenv').config();
 
+// Global unhandled exception handling
+process.on('uncaughtException', (error) => {
+    console.log('Unhandled Exception : ', error);
+    console.log('Unhandled exception occured. shuttion down the server...');
+    process.exit(1);
+});
+
 const server = require('./node');
 const dbutils = require('./utilities/db.utils');
 const dbconfig = require('./config/db.config');
@@ -16,7 +23,6 @@ async function execute() {
         console.log('My first query:', res);
         console.log('My first multiple queries:', res1);
         console.log('My first transaction queries:', res2);
-
     } catch (error) {
         console.error(error);
     }
@@ -24,7 +30,16 @@ async function execute() {
 execute();
 
 
-server.app.listen(port, 'localhost', () => {
+const serverVar = server.app.listen(port, 'localhost', () => {
     console.log(`Server listening on ${port}`);
 }
 );
+
+// Global rejected promise handling
+process.on('unhandledRejection', (error) => {
+    console.log('Unhandled Rejection : ', error);
+    console.log('Unhandled rejection occured. shuttion down the server...');
+    serverVar.close(() => {
+        process.exit(1);
+    });
+});
