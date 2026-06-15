@@ -69,6 +69,11 @@ const RESPONSE_STATUS = {
         message: "Data send in wrong format"
     },
 
+    REQUIRED_FIELDS_MISSING: {
+        code: 405,
+        message: "Please fill the required fields/vlid input data and try again"
+    },
+
     UN_AUTH_ACCESS: {
         code: 406,
         message: "Unauthorized access/attempt. Please check and retry"
@@ -84,6 +89,11 @@ const RESPONSE_STATUS = {
         message: "Invalid credentials.Please retry"
     },
 
+    TEMPORARLY_LOCKED: {
+        code: 408,
+        message: "Account is temporarly locaked.please try after some time."
+    },
+
     SESSION_ERR: {
         code: 408,
         message: "Session Database Query/Connection Error"
@@ -94,11 +104,6 @@ const RESPONSE_STATUS = {
         message: "Too many wrong attempts. Please try after 24hrs/contact support."
     },
 
-    TOKEN_EXPIRED: {
-        code: 403,
-        message: "Token expired."
-    },
-
     SESSION_EXPIRED: {
         code: 403,
         message: "Session expired. Please login again."
@@ -106,13 +111,15 @@ const RESPONSE_STATUS = {
 
     INVALID_TOKEN: {
         code: 403,
-        message: "Invalid token sent. Please login again."
+        message: "Invalid token sent. Please provide a valid token."
     },
 
-    TOKEN_INVALID: {
+
+    TOKEN_EXPIRED: {
         code: 403,
-        message: "Invalid token. Please provide a valid token."
+        message: "Token expired. Please login again."
     },
+
 
     UNAUTHORISED_URL: {
         code: 401,

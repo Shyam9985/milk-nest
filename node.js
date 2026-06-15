@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const response = require('./utilities/response.utils');
 const RESPONSE_STATUS = require('./utilities/standard.messages');
 const apiroutes = require('./routes/apiRoutes');
+const dbconfig = require('./config/db.config');
 // creting express app
 const app = express();
 
@@ -14,6 +15,21 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(logger);
+
+// Wait for teh database to connect 
+async function makeSureDbConnected() {
+    try {
+        const connection = await dbconfig.pool.getConnection();        
+        console.log('Database connected successfully!');
+        connection.release();
+    } catch (error) {
+        console.error('Database connection failed:', error);
+        process.exit(1);
+    }
+}
+
+makeSureDbConnected();
+
 
 // routes 
 app.use('/apiv1', apiroutes);
@@ -30,6 +46,6 @@ app.all('*splat', (req, res) => {
 // global error handling
 app.use((error, req, res, next) => {
     console.log('In Global error handler');
-    response.sendErrorResponse(req, res, RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Gloal error' })
+    response.sendErrorResponse(req, res, 'Unable to procee request. please try after some time !', RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Gloal error' })
 });
 module.exports = { app };

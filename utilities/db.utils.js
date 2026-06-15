@@ -1,6 +1,6 @@
 const dbconfig = require('../config/db.config');
 const dberrors = require('./db-errors')
-const pool = dbconfig.pool.promise();
+const pool = dbconfig.pool;
 dbconfig.logPoolEvents(pool);
 
 const getConnection = async () => {

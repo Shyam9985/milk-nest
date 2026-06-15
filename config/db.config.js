@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const fs = require('fs');
 
 // DB_HOST=mysql-1894a330-dairy-form.l.aivencloud.com

@@ -4,7 +4,6 @@ const router = express.Router();
 const authRtr = require('./authRtr')
 
 
-router.use('/auth', authRtr)
-
+router.use('/auth', authRtr);
 
 module.exports = router;
