@@ -110,8 +110,8 @@ exports.logIn = async (req, res) => {
     }
 }
 
-exports.getAllusers = (req, res) => {
+exports.getAllusers = async (req, res) => {
     console.log('In getAllusers: ', req.user);
 
-    resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
+    return resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
 }

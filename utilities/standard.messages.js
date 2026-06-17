@@ -43,6 +43,26 @@ const RESPONSE_STATUS = {
         code: 401,
         message: 'Unauthorized access.'
     },
+    
+    NO_SELECT_PERMISSION: {
+        code: 403,
+        message: 'You do not have permission to view this resource.'
+    },
+
+    NO_INSERT_PERMISSION: {
+        code: 403,
+        message: 'You do not have permission to create this resource.'
+    },
+
+    NO_UPDATE_PERMISSION: {
+        code: 403,
+        message: 'You do not have permission to update this resource.'
+    },
+
+    NO_DELETE_PERMISSION: {
+        code: 403,
+        message: 'You do not have permission to delete this resource.'
+    },
 
     FORBIDDEN: {
         code: 403,
@@ -68,7 +88,7 @@ const RESPONSE_STATUS = {
         code: 405,
         message: "Data send in wrong format"
     },
-      INVALID_DATA: {
+    INVALID_DATA: {
         code: 405,
         message: "Invalid data has been sent. please check."
     },
