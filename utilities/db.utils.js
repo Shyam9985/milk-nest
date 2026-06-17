@@ -17,7 +17,7 @@ const formatDbError = (error) => {
 *description : executes multiple queries 
 * input : ('server', 'SELECT * FROM dymmy where id = ?', [2])
 ************************************************/
-const executeQuery = async (fname, query, params = []) => {
+const executeQuery = async (query, params = [], fname) => {
     console.log('in executeQuery and quries received from ' + fname);
 
     try {
@@ -35,7 +35,7 @@ const executeQuery = async (fname, query, params = []) => {
 *description : executes multiple queries 
 * input : ('server', [{ query: 'SELECT * FROM dymmy where id = ?', params: [2] }, { query: 'SELECT * FROM dymmy where id = ?', params: [1] }])
 ************************************************/
-const executeMultipleQueries = async (fname, queries = []) => {
+const executeMultipleQueries = async (queries = [], fname) => {
     console.log('in executeMultipleQueries and quries received from ' + fname);
 
     let connection = null;
@@ -58,7 +58,7 @@ const executeMultipleQueries = async (fname, queries = []) => {
 };
 
 /**********************************************
-*name : executeMultipleQueries
+*name : executeTransaction
 *description : executes multiple queries 
 * input : ('server', async (connection) => {await connection.execute(`INSERT INTO users_lst_t (user_name) VALUES(?)`,['Syam']); await connection.execute(`INSERT INTO audit_logs_t(activity) VALUES(?)`,['User Created']);});)
 ************************************************/
@@ -86,7 +86,7 @@ const executeTransaction = async (callback) => {
 *description : executes multiple queries in a transaction
 * input : ('server', [{ query: 'insert into dymmy (dumy_name) values (?)', params: ['Shyam'] }, { query: 'insert into dymmy (dumy_name) values (?)', params: ['Prasad'] }])
 ************************************************/
-const executeTransactionQueries = async (fname, queries = []) => {
+const executeTransactionQueries = async (queries = [], fname) => {
     console.log('in executeTransactionQueries and quries received from ' + fname);
 
     let connection = null;

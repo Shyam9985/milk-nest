@@ -32,8 +32,16 @@ exports.signUp = async (req, res, next) => {
         const response = await authMdl.signUp({ ...data, passwordHash: pwdhsh, saltKey: saltKay }, {});
         console.log(response);
 
-        if (data?.affectedRows) return resutils.sendSuccessResponse(req, res, { id: response?.insertId }, RESPONSE_STATUS.CREATED, { function: 'signup-controller' });
-        else return resutils.sendErrorResponse(req, res, response?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'signup-controller' });
+        if (response?.affectedRows) return resutils.sendSuccessResponse(req, res, { id: response?.insertId }, RESPONSE_STATUS.CREATED, { function: 'signup-controller' });
+        else {
+            let resmessage = response?.message;
+
+            if (response.code == 1062) {
+                resmessage = 'User already exists with the given email. please use different mail id'
+            }
+
+            return resutils.sendErrorResponse(req, res, resmessage, RESPONSE_STATUS.INVALID_DATA, { function: 'signup-controller' });
+        }
     } catch (error) {
         console.log('Error occured at sign-up controller', error);
         return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'signup-controller' });
@@ -47,8 +55,8 @@ exports.logIn = async (req, res) => {
     const body = req.body;
     console.log('body:', body);
 
-    if (!validutils.isRequired(body?.userName)) {
-        return resutils.sendErrorResponse(req, res, `User name is ${body?.userName ? 'Not valid' : 'required'}. please check and try again`, RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
+    if (!validutils.isValidEmail(body?.email)) {
+        return resutils.sendErrorResponse(req, res, `Email is ${body?.email ? 'Not valid' : 'required'}. please check and try again`, RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
     }
     if (!validutils.isRequired(body?.password)) {
         return resutils.sendErrorResponse(req, res, `Password is ${body?.password ? 'Not valid' : 'required'}. please check and try again`, RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
@@ -59,18 +67,17 @@ exports.logIn = async (req, res) => {
         console.log('user data: ', userData);
 
         // check if user existis 
-        if (userData?.code) throw Error('Unable to retrieve the data for ' + body.userName);
+        if (userData?.code) throw Error('Unable to retrieve the data for ' + body.email);
 
         // chek if temporarly locked
         if (userData[0]?.is_locked) {
-            resutils.sendErrorResponse(req, res, `Your accunt is temporarly locked due to multiple failed attemps. please try after ${userData[0]?.locked_until}`, RESPONSE_STATUS.TEMPORARLY_LOCKED, { function: 'login-controller' })
+            return resutils.sendErrorResponse(req, res, `Your accunt is temporarly locked due to multiple failed attemps. please try after ${userData[0]?.locked_until}`, RESPONSE_STATUS.TEMPORARLY_LOCKED, { function: 'login-controller' })
         }
 
         // compare passwords
         const isPasswordMatched = await bcrypt.compare(body.password, userData[0].password_hash);
 
         if (isPasswordMatched) {
-
             // generatae jwt token
             const tokenPayload = {
                 user_nm: userData[0]?.user_nm,
@@ -81,11 +88,19 @@ exports.logIn = async (req, res) => {
                 last_login: userData[0]?.last_login,
             }
 
+            // reset login attemts to 0
+            authMdl.unlockUser(userData[0]);
+
+            //generte jwt token
             const token = generateJWToken(tokenPayload);
 
             // Send response to the client 
             return resutils.sendSuccessResponse(req, res, { user: tokenPayload, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
         } else {
+            // increase the login attempts
+            authMdl.increaseLoginAttempts(userData[0]);
+
+            // send response to the client
             return resutils.sendErrorResponse(req, res, 'Invalid email or password', RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
         }
 
@@ -96,7 +111,7 @@ exports.logIn = async (req, res) => {
 }
 
 exports.getAllusers = (req, res) => {
-    console.log('In getAllusers: ',req.user);
+    console.log('In getAllusers: ', req.user);
 
     resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
 }

@@ -68,6 +68,10 @@ const RESPONSE_STATUS = {
         code: 405,
         message: "Data send in wrong format"
     },
+      INVALID_DATA: {
+        code: 405,
+        message: "Invalid data has been sent. please check."
+    },
 
     REQUIRED_FIELDS_MISSING: {
         code: 405,
@@ -75,7 +79,7 @@ const RESPONSE_STATUS = {
     },
 
     UN_AUTH_ACCESS: {
-        code: 406,
+        code: 401,
         message: "Unauthorized access/attempt. Please check and retry"
     },
 
@@ -85,12 +89,12 @@ const RESPONSE_STATUS = {
     },
 
     INVALID_CREDENTIALS: {
-        code: 408,
+        code: 401,
         message: "Invalid credentials.Please retry"
     },
 
     TEMPORARLY_LOCKED: {
-        code: 408,
+        code: 401,
         message: "Account is temporarly locaked.please try after some time."
     },
 
@@ -119,7 +123,6 @@ const RESPONSE_STATUS = {
         code: 403,
         message: "Token expired. Please login again."
     },
-
 
     UNAUTHORISED_URL: {
         code: 401,
