@@ -184,6 +184,61 @@ exports.forgotPassword = async (req, res) => {
 
 }
 
+exports.updatePassword = async (req, res) => {
+
+    const body = req.body;
+    try {
+        // validate req body
+        if (!validutils.isRequired(body?.email)) resutils.createError('noEmail', 'Please provide valid email to proceed.');
+        if (!validutils.isStrongPassword(body?.newPassword)) resutils.createError('noPassword', 'Please provide password to proceed.');
+        if (!validutils.isValidInteger(body?.otpKey)) resutils.createError('noOtpkey', 'Please provide valid email to proceed.');
+
+        // validate otp 
+        const forgotMailRes = await authMdl.getLatestMailByRequest(body, 'forgot-password');
+        const response = forgotMailRes?.[0];
+
+        if (!response || (response.email_audit_id != body.otpKey)) {
+            resutils.createError('invalidOtp', 'Invalid password reqest')
+        }
+
+        if (response?.is_expired) {
+            resutils.createError('otpExpired', 'OTP expired. please try again.');
+        }
+        if (!response?.is_used) {
+            resutils.createError('otpNotVerified', 'OTP not verifed. please verify and try again.');
+        }
+
+        //encrypt password and get hash
+        const saltKay = await bcrypt.genSalt(10);
+        const pwdhsh = await bcrypt.hash(body.newPassword, saltKay);
+
+        // update password
+        const updteres = await authMdl.updateUserPassword(body.email, pwdhsh, saltKay);
+
+        // expire otp 
+        authMdl.expireOtp(body.otpKey);
+
+        if (updteres.affectedRows) return resutils.sendSuccessResponse(req, res, [{ message: 'Password updated successfully.' }], RESPONSE_STATUS.PASSWORD_UPDATED);
+        resutils.sendErrorResponse(req, res, 'Unable to update password', RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'update respnse' })
+
+    } catch (error) {
+        console.log(error);
+
+        let status = null;
+        switch (error.name) {
+            case 'noEmail': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'noPassword': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'noOtpkey': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'invalidOtp': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'otpExpired': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'otpNotVerified': status = RESPONSE_STATUS.INVALID_OTP; break;
+            default: 'Unable to validate OTP please try after some time.'; status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+        }
+        return resutils.sendErrorResponse(req, res, error.message, status, { function: 'verify-email otp' });
+    }
+
+}
+
 exports.sendResetPasswordEmail = async (req, res) => {
     const user = req.user;
 
@@ -278,6 +333,9 @@ exports.verifyEmailOtp = async (req, res) => {
 
         // mark otp asused 
         await authMdl.markOTPVerified(body.message_key, req.user);
+
+        // expire otp   
+        await authMdl.expireOtp(body?.message_key);
 
         // send response to the client
         return resutils.sendSuccessResponse(req, res, [{ verified: true, message: 'OTP verified successfully.' }], RESPONSE_STATUS.VALID_OTP, { function: 'verify-email otp' })

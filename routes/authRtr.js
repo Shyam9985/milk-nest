@@ -11,6 +11,7 @@ router.get('/all-users', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('us
 router.get('/reset-password/send-email', authmdlwre.isAuthenticated, authCtrl.sendResetPasswordEmail);
 router.post('/email/verify-otp', authCtrl.verifyEmailOtp);
 router.post('/forgot-password', authCtrl.forgotPassword);
+router.post('/update-password', authCtrl.updatePassword);
 
 
 module.exports = router;

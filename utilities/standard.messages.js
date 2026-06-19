@@ -193,6 +193,11 @@ const RESPONSE_STATUS = {
         code: 200,
         message: "Email sent successfully."
     },
+
+    PASSWORD_UPDATED: {
+        code: 200,
+        message: 'Password updated successfully.'
+    }
 };
 
 module.exports = RESPONSE_STATUS;

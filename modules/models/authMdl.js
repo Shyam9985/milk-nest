@@ -63,7 +63,26 @@ exports.getOTPData = async (data, user) => {
 // Mark otp as used 
 exports.markOTPVerified = async (key, user) => {
     const qry = 'update email_audit_logs_t set is_used = 1 , used_by = ? where is_active = 1 and email_audit_id = ?';
-
     dbutils.executeQuery(qry, [user?.user_id || null, key])
 
+}
+
+// gets latest mail audit by mail and used for
+exports.getLatestMailByRequest = async (body, usedFor) => {
+    const qry = `select email_audit_id, recipient_email, verify_key, email_status, expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, is_used
+         from email_audit_logs_t where is_active = 1 and email_status = 'SUCCESS' and recipient_email = ? and used_for = ? order by email_audit_id desc limit 1;`
+    return dbutils.executeQuery(qry, [body.email, usedFor], 'get latest mail request');
+}
+
+// update password by email
+exports.updateUserPassword = async (email, pwdhash, salt) => {
+    const qry = 'update users_lst_t set password_hash = ? , password_salt = ? where is_active = 1 and user_nm = ?';
+    return dbutils.executeQuery(qry, [pwdhash, salt, email], 'update password');
+}
+
+//expires OTP
+
+exports.expireOtp = async (id) => {
+    const qry = 'update email_audit_logs_t set expires_at = current_timestamp() where email_audit_id = ?';
+    return dbutils.executeQuery(qry, [id], 'expire otp');
 }
