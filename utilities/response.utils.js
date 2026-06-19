@@ -23,4 +23,10 @@ const sendProgressResponse = (req, res, progress = 0, completed = false, data = 
     if (completed) res.end();
 };
 
-module.exports = { sendSuccessResponse, sendErrorResponse, sendProgressResponse };
+const createError = (name, message) => {
+    const err = new Error(message);
+    err.name = name;
+    throw err;
+};
+
+module.exports = { sendSuccessResponse, sendErrorResponse, sendProgressResponse, createError };

@@ -24,17 +24,10 @@ exports.isAuthenticated = async (req, res, next) => {
         const user = response[0];
         // console.log(user);
 
-        if (!user) {
-            const error = new Error('Logged in user is not found. Please contact admin.');
-            error.name = 'userNotFound';
-            throw error;
-        }
+        if (!user) resutils.createError('userNotFound', 'Logged in user is not found. Please contact admin.')
 
-        if (user?.is_locked) {
-            const error = new Error('Logged in user is temporarily locked. Please try after ' + user.locked_until);
-            error.name = 'TemporarilyLocked';
-            throw error;
-        }
+        if (user?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + user.locked_until);
+
 
         // bind user data to the request 
         req.user = user;
@@ -86,11 +79,7 @@ exports.isAuthorized = (permission_key, action) => {
             console.log('permissionsRes', permissionsRes);
             const permissionList = permissionsRes?.[0];
 
-            if (!permissionList) {
-                const error = new Error('You do not have permissions to perform this action.please contact your admin.');
-                error.name = 'noPermissions';
-                throw error;
-            }
+            if (!permissionList) resutils.createError('noPermissions', 'You do not have permissions to perform this action.please contact your admin.');
 
             let errorMessage, errorName = null;
             let hasPermission = false;
@@ -115,11 +104,7 @@ exports.isAuthorized = (permission_key, action) => {
                 default: errorMessage = 'You do not have permission perform this action'; errorName = 'noPermissions'; break;
             }
 
-            if (!hasPermission) {
-                const error = new Error(errorMessage);
-                error.name = errorName;
-                throw error;
-            }
+            if (!hasPermission) resutils.createError(errorName, errorMessage);
 
             // deligate to the next middleware
             next();

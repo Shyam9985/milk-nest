@@ -35,12 +35,8 @@ makeSureDbConnected();
 app.use('/apiv1', apiroutes);
 // handling unknown roots
 app.all('*splat', (req, res) => {
-    console.log('In Global Router handler function')
-    res.status(500).json({
-        success: 'false',
-        message: 'Requested route not available :' + req.originalUrl,
-        data: []
-    })
+    console.log('In Global Router handler function');
+    response.sendErrorResponse(req, res, 'Requested resource not available :' + req.originalUrl, RESPONSE_STATUS.NOT_FOUND, { function: 'global route handler' });
 });
 
 // global error handling

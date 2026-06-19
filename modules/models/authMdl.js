@@ -11,8 +11,8 @@ exports.signUp = async (data, user) => {
 // retrieves the user data
 exports.getUserDetails = async (data, user) => {
 
-    const qry = `select user_nm , first_nm , last_nm, mobile_no, email, last_login, is_locked, login_attempts, password_hash, password_salt, DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until
-     from users_lst_t where is_active = 1 and user_nm = ?`;
+    const qry = `select user_id, user_nm , first_nm , last_nm, mobile_no, email, last_login, is_locked, login_attempts, password_hash, password_salt, 
+    DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until from users_lst_t where is_active = 1 and user_nm = ?`;
 
     return dbutils.executeQuery(qry, [data.email], 'login');
 }
@@ -43,4 +43,27 @@ exports.getRolePermissions = async (role_hndlr, permission_key) => {
     join roles_lst_t as r on r.role_id = p.role_id and r.is_active = 1
     where p.is_active = 1 and r.role_hndlr = ? and p.permission_key = ?;`
     return dbutils.executeQuery(qry, [role_hndlr, permission_key], 'permissions middleare');
+}
+
+
+//logs email response 
+exports.logEMail = async (data, user) => {
+    const qry = `INSERT INTO email_audit_logs_t(recipient_email,email_subject,email_body,email_status, message_id,response_data, expires_at,verify_key, create_user) 
+    VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE), ?, ?)`;
+    return dbutils.executeQuery(qry, [data.to, data.subject, data.body, data.status, data.messageId, JSON.stringify(data.response), data.key, user.user_id], 'logEMail');
+}
+
+// get OTP details
+exports.getOTPData = async (data, user) => {
+    const qry = `select recipient_email , verify_key , email_status, expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, create_user
+    from email_audit_logs_t where is_active = 1 and is_used is null and email_status = 'SUCCESS' and email_audit_id = ?;`
+    return dbutils.executeQuery(qry, [data.message_key], 'getOTPData')
+}
+
+// Mark otp as used 
+exports.markOTPVerified = async (key, user) => {
+    const qry = 'update email_audit_logs_t set is_used = 1 , used_by = ? where is_active = 1 and email_audit_id = ?';
+
+    dbutils.executeQuery(qry, [user.user_id, key])
+
 }

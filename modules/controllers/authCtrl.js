@@ -4,6 +4,7 @@ const validutils = require('../../utilities/validate.utils');
 const RESPONSE_STATUS = require('../../utilities/standard.messages');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const emailutils = require('../../utilities/email.utils');
 
 // handelr function to generate jwt token
 function generateJWToken(user) {
@@ -114,4 +115,120 @@ exports.getAllusers = async (req, res) => {
     console.log('In getAllusers: ', req.user);
 
     return resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
+}
+
+exports.forgotPassword = async (req, res) => {
+
+}
+
+exports.sendResetPasswordEmail = async (req, res) => {
+    const user = req.user;
+
+    const otp = parseInt(Math.random(9) * 1000000);
+
+    let data = {
+        email: user.email,
+        key: otp,
+        subject: 'Password Reset OTP - MilkNest',
+        body: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #2c3e50;">Password Reset Request</h2>
+
+            <p>Hello ${user?.full_name || 'User'},</p>
+            <p>We received a request to reset your MilkNest account password.</p>
+            <p>Your One-Time Password (OTP) is:</p>
+            <div style="
+                display: inline-block;
+                padding: 12px 24px;
+                font-size: 24px;
+                font-weight: bold;
+                letter-spacing: 4px;
+                color: #ffffff;
+                background-color: #007bff;
+                border-radius: 6px;
+                margin: 10px 0;
+            ">
+                ${otp}
+            </div>
+
+            <p>This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone.</p>
+            <p>If you did not request a password reset, please ignore this email. No changes will be made to your account.</p>
+            <br>
+            <p>
+                Regards,<br>
+                <strong>Team MilkNest</strong>
+            </p>
+
+            <hr>
+
+            <small style="color: #777;">This is an automated email. Please do not reply to this message.</small>
+        </div>
+    `
+    };
+
+    try {
+        let errorMessage = null;
+        let errorName = null;
+
+        // verify if user has email
+        if (!validutils.isRequired(data?.email)) { errorMessage = 'Please provide email to proceed.'; errorName = 'noEmail'; }
+
+        //verify user has valid email
+        if (!validutils.isValidEmail(data.email)) { errorMessage = 'Please provide valid email to proceed.'; errorName = 'noValidEmail'; }
+
+
+        // send email 
+        const mailRes = await emailutils.sendEmail([data.email], data, user);
+
+        if (mailRes?.[0]?.success) resutils.sendSuccessResponse(req, res,
+            { email: mailRes?.[0]?.email, message_key: mailRes?.[0]?.messageKey, message_id: mailRes?.[0]?.messageId }, RESPONSE_STATUS.EMAIL_SENT, { function: 'sendEmail' });
+
+        resutils.sendErrorResponse(req, res, 'Unable to send email right now. please try again.', RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'sendEmail' });
+
+    } catch (error) {
+        if (error?.name == 'EmailError') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'sendEmail' });
+        resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'sendEmail' });
+    }
+}
+
+exports.verifyEmailOtp = async (req, res) => {
+
+    const body = req.body;
+    try {
+
+        //validate input data
+        if (!validutils.isRequired(body?.otp)) resutils.createError('noOTP', 'Please provide OTP to verify.');
+        if (!validutils.isRequired(body?.message_key)) resutils.createError('noMessagekey', 'Please provide message key to verify.');
+
+        const otpRes = await authMdl.getOTPData(body, req.user);
+
+        if (!otpRes || !otpRes?.length) resutils.createError('noOtpRes', 'OTP request not found.');
+
+        const otpData = otpRes[0];
+
+        // check if otp matches 
+        if (String(otpData.verify_key) !== String(body.otp)) resutils.createError('otpMismatch', 'Invalid OTP entered');
+
+        // check if otp expires
+        if (otpData.is_expired == 1) resutils.createError('otpExpired', 'OTP has expired. Please generate new otp.');
+
+        // mark otp asused 
+        await authMdl.markOTPVerified(body.message_key, req.user);
+
+        // send response to the client
+        return resutils.sendSuccessResponse(req, res, [{ verified: true, message: 'OTP verified successfully.' }], RESPONSE_STATUS.VALID_OTP, { function: 'verify-email otp' })
+
+    } catch (error) {
+        let errorMessage, status = null;
+
+        switch (error.name) {
+            case 'otpExpired': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'otpMismatch': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'noOtpRes': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'noMessagekey': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
+            case 'noOTP': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
+            default: errorMessage = 'Unable to validate OTP please try after some time.'; status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+        }
+        return resutils.sendErrorResponse(req, res, errorMessage, status, { function: 'verify-email otp' });
+    }
 }

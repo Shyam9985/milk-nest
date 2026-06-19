@@ -43,7 +43,7 @@ const RESPONSE_STATUS = {
         code: 401,
         message: 'Unauthorized access.'
     },
-    
+
     NO_SELECT_PERMISSION: {
         code: 403,
         message: 'You do not have permission to view this resource.'
@@ -106,6 +106,11 @@ const RESPONSE_STATUS = {
     INVALID_OTP: {
         code: 407,
         message: "Invalid/ Expired OTP"
+    },
+
+    VALID_OTP: {
+        code: 200,
+        message: "OTP Validated successfully."
     },
 
     INVALID_CREDENTIALS: {
@@ -179,6 +184,15 @@ const RESPONSE_STATUS = {
         message: "Unable to process request at the moment."
     },
 
+    UNABLE_TO_SEND_EMAIL: {
+        code: 400,
+        message: "Unable to send email. Please try again."
+    },
+
+    EMAIL_SENT: {
+        code: 200,
+        message: "Email sent successfully."
+    },
 };
 
 module.exports = RESPONSE_STATUS;
