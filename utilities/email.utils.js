@@ -1,6 +1,10 @@
 const nodemailer = require('nodemailer');
 const authMdl = require('../modules/models/authMdl');
 
+exports.get6DigitOtp = () => {
+    return parseInt(Math.random(9) * 1000000);
+}
+
 exports.sendEmail = async (mailIds = [], data, user) => {
 
     const results = [];
@@ -19,7 +23,7 @@ exports.sendEmail = async (mailIds = [], data, user) => {
                 const mailRes = await transporter.sendMail({ from: process.env.EMAIL_USER, to: email, subject: data.subject, html: data.body });
 
                 // insert audit record
-                const auditRes = await authMdl.logEMail({ to: email, subject: data.subject, body: data.body, status: 'SUCCESS', messageId: mailRes.messageId, response: mailRes, key: data.key }, user);
+                const auditRes = await authMdl.logEMail({ to: email, subject: data.subject, body: data.body, status: 'SUCCESS', messageId: mailRes.messageId, response: mailRes, key: data.key, reason: data.reason }, user);
 
                 // store response
                 results.push({ email, success: true, messageId: mailRes.messageId, response: mailRes.response, messageKey: auditRes?.insertId });
@@ -27,7 +31,7 @@ exports.sendEmail = async (mailIds = [], data, user) => {
             } catch (error) {
 
                 // insert audit record
-                const auditRes = await authMdl.logEMail({ to: email, subject: data.subject, body: data.body, status: 'FAILED', response: error, errorMessage: error.message, key: data.key }, user);
+                const auditRes = await authMdl.logEMail({ to: email, subject: data.subject, body: data.body, status: 'FAILED', response: error, errorMessage: error.message, key: data.key, reason: data.reason }, user);
                 // store response
                 results.push({ email, success: false, messageId: null, error: error.message, messageKey: auditRes?.insertId });
 
@@ -35,6 +39,8 @@ exports.sendEmail = async (mailIds = [], data, user) => {
         }
         return results;
     } catch (error) {
+        console.log(error);
+
         const err = new Error('Unable to send email. Please try again.');
         err.name = 'EmailError';
         throw err;

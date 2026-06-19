@@ -48,9 +48,9 @@ exports.getRolePermissions = async (role_hndlr, permission_key) => {
 
 //logs email response 
 exports.logEMail = async (data, user) => {
-    const qry = `INSERT INTO email_audit_logs_t(recipient_email,email_subject,email_body,email_status, message_id,response_data, expires_at,verify_key, create_user) 
-    VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE), ?, ?)`;
-    return dbutils.executeQuery(qry, [data.to, data.subject, data.body, data.status, data.messageId, JSON.stringify(data.response), data.key, user.user_id], 'logEMail');
+    const qry = `INSERT INTO email_audit_logs_t(recipient_email,email_subject,email_body,email_status, message_id,response_data, expires_at,verify_key, create_user, used_for) 
+    VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE), ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.to, data.subject, data.body, data.status, data.messageId, JSON.stringify(data.response), data.key, user?.user_id || null, data.reason], 'logEMail');
 }
 
 // get OTP details
@@ -64,6 +64,6 @@ exports.getOTPData = async (data, user) => {
 exports.markOTPVerified = async (key, user) => {
     const qry = 'update email_audit_logs_t set is_used = 1 , used_by = ? where is_active = 1 and email_audit_id = ?';
 
-    dbutils.executeQuery(qry, [user.user_id, key])
+    dbutils.executeQuery(qry, [user?.user_id || null, key])
 
 }

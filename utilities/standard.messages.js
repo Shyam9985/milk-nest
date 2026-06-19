@@ -104,7 +104,7 @@ const RESPONSE_STATUS = {
     },
 
     INVALID_OTP: {
-        code: 407,
+        code: 401,
         message: "Invalid/ Expired OTP"
     },
 

@@ -119,14 +119,78 @@ exports.getAllusers = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
 
+    const body = req.body;
+
+    try {
+        // verify req body 
+        if (!validutils.isValidEmail(body?.email)) resutils.createError('noEmail', 'Please provide email to proceed.');
+        const otp = emailutils.get6DigitOtp();
+        const data = {
+            reason: 'forgot-password',
+            email: body.email,
+            key: otp,
+            subject: 'Forgot Password OTP - MilkNest',
+            body: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #2c3e50;">Password update Request</h2>
+
+                    <p>Hello ${body?.full_name || 'User'},</p>
+                    <p>We received a request to update your MilkNest account password.</p>
+                    <p>Your One-Time Password (OTP) is:</p>
+                    <div style="
+                        display: inline-block;
+                        padding: 12px 24px;
+                        font-size: 24px;
+                        font-weight: bold;
+                        letter-spacing: 4px;
+                        color: #ffffff;
+                        background-color: #007bff;
+                        border-radius: 6px;
+                        margin: 10px 0;
+                    ">
+                        ${otp}
+                    </div>
+
+                    <p>This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone.</p>
+                    <p>If you did not request a password update, please ignore this email. No changes will be made to your account.</p>
+                    <br>
+                    <p>
+                        Regards,<br>
+                        <strong>Team MilkNest</strong>
+                    </p>
+
+                    <hr>
+
+                    <small style="color: #777;">This is an automated email. Please do not reply to this message.</small>
+                </div>`
+        };
+        // send email
+        const mailRes = await emailutils.sendEmail([body.email], data, req.user);
+
+        if (mailRes?.[0]?.success) return resutils.sendSuccessResponse(req, res,
+            { email: mailRes?.[0]?.email, message_key: mailRes?.[0]?.messageKey, message_id: mailRes?.[0]?.messageId }, RESPONSE_STATUS.EMAIL_SENT, { function: 'forgotEmail' });
+
+        resutils.sendErrorResponse(req, res, 'Unable to send email right now. please try again.', RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'forgotEmail' });
+    } catch (error) {
+        console.log(error);
+
+        let errorName = null;
+        switch (error.name) {
+            case 'noEmail': errorName = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
+            default: errorName = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+        }
+        resutils.sendErrorResponse(req, res, error?.message, errorName, { function: 'forgot password' });
+    }
+
 }
 
 exports.sendResetPasswordEmail = async (req, res) => {
     const user = req.user;
 
-    const otp = parseInt(Math.random(9) * 1000000);
+    const otp = emailutils.get6DigitOtp();
 
     let data = {
+        reason: 'reset-password',
         email: user.email,
         key: otp,
         subject: 'Password Reset OTP - MilkNest',
@@ -180,14 +244,14 @@ exports.sendResetPasswordEmail = async (req, res) => {
         // send email 
         const mailRes = await emailutils.sendEmail([data.email], data, user);
 
-        if (mailRes?.[0]?.success) resutils.sendSuccessResponse(req, res,
-            { email: mailRes?.[0]?.email, message_key: mailRes?.[0]?.messageKey, message_id: mailRes?.[0]?.messageId }, RESPONSE_STATUS.EMAIL_SENT, { function: 'sendEmail' });
+        if (mailRes?.[0]?.success) return resutils.sendSuccessResponse(req, res,
+            { email: mailRes?.[0]?.email, message_key: mailRes?.[0]?.messageKey, message_id: mailRes?.[0]?.messageId }, RESPONSE_STATUS.EMAIL_SENT, { function: 'reset password' });
 
-        resutils.sendErrorResponse(req, res, 'Unable to send email right now. please try again.', RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'sendEmail' });
+        resutils.sendErrorResponse(req, res, 'Unable to send email right now. please try again.', RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'reset password' });
 
     } catch (error) {
-        if (error?.name == 'EmailError') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'sendEmail' });
-        resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'sendEmail' });
+        if (error?.name == 'EmailError') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'reset password' });
+        resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'reset password' });
     }
 }
 
@@ -219,16 +283,17 @@ exports.verifyEmailOtp = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, [{ verified: true, message: 'OTP verified successfully.' }], RESPONSE_STATUS.VALID_OTP, { function: 'verify-email otp' })
 
     } catch (error) {
-        let errorMessage, status = null;
+        console.log(error);
 
+        let status = null;
         switch (error.name) {
-            case 'otpExpired': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_OTP; break;
-            case 'otpMismatch': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_OTP; break;
-            case 'noOtpRes': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_OTP; break;
-            case 'noMessagekey': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
-            case 'noOTP': errorMessage = error.message; status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
-            default: errorMessage = 'Unable to validate OTP please try after some time.'; status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+            case 'otpExpired': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'otpMismatch': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'noOtpRes': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'noMessagekey': status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
+            case 'noOTP': status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;
+            default: 'Unable to validate OTP please try after some time.'; status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
         }
-        return resutils.sendErrorResponse(req, res, errorMessage, status, { function: 'verify-email otp' });
+        return resutils.sendErrorResponse(req, res, error.message, status, { function: 'verify-email otp' });
     }
 }
