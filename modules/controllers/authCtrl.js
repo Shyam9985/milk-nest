@@ -16,16 +16,21 @@ function generateJWToken(user) {
 
 //Sing up controller 
 exports.signUp = async (req, res, next) => {
-    const data = req.body;
+    const body = req.body;
 
     console.log(data)
     try {
 
-        // check if user email, password, mobile, first name
-        if (!validutils.isValidEmail(data?.email)) return resutils.sendErrorResponse(req, res, 'Please provide valid emaill.', RESPONSE_STATUS.REQUIRED_FIELDS_MISSING, { function: 'signup-controller' });
-        if (!validutils.isStrongPassword(data?.password)) return resutils.sendErrorResponse(req, res, 'Please provide valid password.', RESPONSE_STATUS.REQUIRED_FIELDS_MISSING, { function: 'signup-controller' });
-        if (!validutils.isValidMobile(data?.mobile)) return resutils.sendErrorResponse(req, res, 'Please provide valid mobile no.', RESPONSE_STATUS.REQUIRED_FIELDS_MISSING, { function: 'signup-controller' });
-        if (!validutils.isValidPersonName(data?.fst_nm)) return resutils.sendErrorResponse(req, res, 'Please provide valid first name.', RESPONSE_STATUS.REQUIRED_FIELDS_MISSING, { function: 'signup-controller' });
+        // validate payload
+        const validation = await validutils.validatePayload(body,
+            {
+                email: { required: true, type: 'email', label: 'Email' },
+                password: { required: true, type: 'password', label: 'Password' },
+                mobile: { required: true, type: 'mobile-no', label: 'Mobile Number' },
+                fst_nm: { required: true, type: 'alpha', minLength: 2, maxLength: 100, label: 'First Name' }
+            });
+
+        if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
 
         //encrypt password and get hash
         const saltKay = await bcrypt.genSalt(10);
@@ -33,18 +38,16 @@ exports.signUp = async (req, res, next) => {
         const response = await authMdl.signUp({ ...data, passwordHash: pwdhsh, saltKey: saltKay }, {});
         console.log(response);
 
-        if (response?.affectedRows) return resutils.sendSuccessResponse(req, res, { id: response?.insertId }, RESPONSE_STATUS.CREATED, { function: 'signup-controller' });
-        else {
-            let resmessage = response?.message;
+        if (response.code == 1062) resutils.createError('validationFailed', 'User already exists with the given email. please use different mail id');
 
-            if (response.code == 1062) {
-                resmessage = 'User already exists with the given email. please use different mail id'
-            }
+        if (!response?.affectedRows) resutils.createError('noDatanserted', 'Unable to create user. please try again');
 
-            return resutils.sendErrorResponse(req, res, resmessage, RESPONSE_STATUS.INVALID_DATA, { function: 'signup-controller' });
-        }
+        return resutils.sendSuccessResponse(req, res, { id: response?.insertId }, RESPONSE_STATUS.CREATED, { function: 'signup-controller' });
+
     } catch (error) {
         console.log('Error occured at sign-up controller', error);
+        if (error.name === 'validationFailed') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA, { function: 'signup-controller' });
+        if (error.name === 'noDatanserted') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA, { function: 'signup-controller' });
         return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'signup-controller' });
     }
 }
@@ -56,27 +59,33 @@ exports.logIn = async (req, res) => {
     const body = req.body;
     console.log('body:', body);
 
-    if (!validutils.isValidEmail(body?.email)) {
-        return resutils.sendErrorResponse(req, res, `Email is ${body?.email ? 'Not valid' : 'required'}. please check and try again`, RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
-    }
-    if (!validutils.isRequired(body?.password)) {
-        return resutils.sendErrorResponse(req, res, `Password is ${body?.password ? 'Not valid' : 'required'}. please check and try again`, RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
-    }
 
     try {
+
+        // validate payload
+        const validation = await validutils.validatePayload(body,
+            {
+                email: { required: true, type: 'email', label: 'Email' },
+                password: { required: true, type: 'password', label: 'Password' }
+            });
+
+        if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
+
         const userData = await authMdl.getUserDetails(body);
         console.log('user data: ', userData);
 
         // check if user existis 
-        if (userData?.code) throw Error('Unable to retrieve the data for ' + body.email);
+        if (userData?.code) resutils.createError('noDataFound', 'Unable to retrieve the data for ' + body.email);
 
         // chek if temporarly locked
         if (userData[0]?.is_locked) {
-            return resutils.sendErrorResponse(req, res, `Your accunt is temporarly locked due to multiple failed attemps. please try after ${userData[0]?.locked_until}`, RESPONSE_STATUS.TEMPORARLY_LOCKED, { function: 'login-controller' })
+            resutils.createError('temporarlyLocked', `Your accunt is temporarly locked due to multiple failed attemps. please try after ${userData[0]?.locked_until}`);
         }
 
         // compare passwords
         const isPasswordMatched = await bcrypt.compare(body.password, userData[0].password_hash);
+        console.log('isPasswordMatched : ', isPasswordMatched);
+
 
         if (isPasswordMatched) {
             // generatae jwt token
@@ -107,6 +116,9 @@ exports.logIn = async (req, res) => {
 
     } catch (error) {
         console.log('Error occured at sign-up controller', error);
+        if (error.name === 'validationFailed') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA, { function: 'login-controller' });
+        if (error.name === 'noDataFound') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'login-controller' });
+        if (error.name === 'temporarlyLocked') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.TEMPORARLY_LOCKED, { function: 'login-controller' });
         return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'login-controller' });
     }
 }
@@ -189,9 +201,13 @@ exports.updatePassword = async (req, res) => {
     const body = req.body;
     try {
         // validate req body
-        if (!validutils.isRequired(body?.email)) resutils.createError('noEmail', 'Please provide valid email to proceed.');
-        if (!validutils.isStrongPassword(body?.newPassword)) resutils.createError('noPassword', 'Please provide password to proceed.');
-        if (!validutils.isValidInteger(body?.otpKey)) resutils.createError('noOtpkey', 'Please provide valid email to proceed.');
+        const validation = await validutils.validatePayload(body, {
+            email: { required: true, type: 'email', label: 'Email' },
+            newPassword: { required: true, type: 'password', label: 'Password' },
+            otpKey: { required: true, type: 'number', label: 'OTP validation key' }
+        })
+
+        if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
 
         // validate otp 
         const forgotMailRes = await authMdl.getLatestMailByRequest(body, 'forgot-password');
@@ -232,6 +248,7 @@ exports.updatePassword = async (req, res) => {
             case 'invalidOtp': status = RESPONSE_STATUS.INVALID_OTP; break;
             case 'otpExpired': status = RESPONSE_STATUS.INVALID_OTP; break;
             case 'otpNotVerified': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'validationFailed': status = RESPONSE_STATUS.VALIDATION_ERROR; break;
             default: 'Unable to validate OTP please try after some time.'; status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
         }
         return resutils.sendErrorResponse(req, res, error.message, status, { function: 'verify-email otp' });
@@ -315,9 +332,16 @@ exports.verifyEmailOtp = async (req, res) => {
     const body = req.body;
     try {
 
-        //validate input data
-        if (!validutils.isRequired(body?.otp)) resutils.createError('noOTP', 'Please provide OTP to verify.');
-        if (!validutils.isRequired(body?.message_key)) resutils.createError('noMessagekey', 'Please provide message key to verify.');
+        // validate req body
+        const validation = await validutils.validatePayload(body, {
+            email: { required: true, type: 'email', label: 'Email' },
+            otp: { required: true, type: 'number', label: 'OTP' },
+            message_key: { required: true, type: 'number', label: 'OTP validation key' }
+        });
+        console.log(validation);
+
+
+        if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
 
         const otpRes = await authMdl.getOTPData(body, req.user);
 
@@ -346,6 +370,7 @@ exports.verifyEmailOtp = async (req, res) => {
         let status = null;
         switch (error.name) {
             case 'otpExpired': status = RESPONSE_STATUS.INVALID_OTP; break;
+            case 'validationFailed': status = RESPONSE_STATUS.VALIDATION_ERROR; break;
             case 'otpMismatch': status = RESPONSE_STATUS.INVALID_OTP; break;
             case 'noOtpRes': status = RESPONSE_STATUS.INVALID_OTP; break;
             case 'noMessagekey': status = RESPONSE_STATUS.INVALID_DATA_FORMAT; break;

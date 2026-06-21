@@ -56,8 +56,8 @@ exports.logEMail = async (data, user) => {
 // get OTP details
 exports.getOTPData = async (data, user) => {
     const qry = `select recipient_email , verify_key , email_status, expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, create_user
-    from email_audit_logs_t where is_active = 1 and is_used is null and email_status = 'SUCCESS' and email_audit_id = ?;`
-    return dbutils.executeQuery(qry, [data.message_key], 'getOTPData')
+    from email_audit_logs_t where is_active = 1 and is_used is null and email_status = 'SUCCESS' and email_audit_id = ? and recipient_email = ? ;`
+    return dbutils.executeQuery(qry, [data.message_key, data?.email], 'getOTPData')
 }
 
 // Mark otp as used 

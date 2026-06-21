@@ -36,7 +36,7 @@ const RESPONSE_STATUS = {
 
     VALIDATION_ERROR: {
         code: 400,
-        message: 'Validation failed for requested data.'
+        message: 'Validation failed for request input data.'
     },
 
     UNAUTHORIZED: {

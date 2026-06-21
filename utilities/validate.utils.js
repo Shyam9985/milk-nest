@@ -1,8 +1,22 @@
 
 const isRequired = (value) => {
-    return value !== undefined &&
-        value !== null &&
-        String(value).trim() !== '';
+
+    // undefined or null
+    if (value === undefined || value === null) return false;
+
+    // string
+    if (typeof value === 'string' && value.trim() === '') return false;
+
+    // array
+    if (Array.isArray(value) && value.length === 0) return false;
+
+    // object
+    if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return false;
+
+    // invalid number
+    if (typeof value === 'number' && Number.isNaN(value)) return false;
+
+    return true;
 };
 
 const isValidMobile = (mobile) => {
@@ -102,8 +116,16 @@ const isValidAlphaNumeric = (value) => {
     return /^[A-Za-z0-9\s]+$/.test(String(value));
 };
 
-const isValidNumber = (value) => {
-    return !isNaN(value) && value !== '';
+const isValidNumber = (value, { min = null, max = null, label = 'Value' } = {}) => {
+
+    if (value === '' || value === null || value === undefined || isNaN(value)) return { status: false, message: `${label} must be a valid number.` };
+
+    value = Number(value);
+
+    if (min !== null && value < min) return { status: false, message: `${label} should be greater than or equal to ${min}.` };
+    if (max !== null && value > max) return { status: false, message: `${label} should be less than or equal to ${max}.` };
+
+    return { status: true, message: null };
 };
 
 const isPositiveNumber = (value) => {
@@ -174,7 +196,236 @@ const isValidEnum = (value, allowedValues = []) => {
     return allowedValues.includes(value);
 };
 
+const isValidString = (value, { minLength = 0, maxLength = Infinity, allowEmpty = false, trim = true, label = 'Value' } = {}
+) => {
+
+    if (typeof value !== 'string') return { status: false, message: `${label} must be a valid string.` };
+
+    if (trim) { value = value.trim(); }
+    if (!allowEmpty && value === '') return { status: false, message: `${label} cannot be empty.` };
+    if (value.length < minLength) return { status: false, message: `${label} should contain minimum ${minLength} characters.` };
+    if (value.length > maxLength) return { status: false, message: `${label} should contain maximum ${maxLength} characters.` };
+    return { status: true, message: null };
+};
+
+const isValidObject = (value, { allowEmpty = false, minKeys = 0, maxKeys = Infinity, label = 'Value' } = {}) => {
+
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return { status: false, message: `${label} must be a valid object.` };
+
+    const keyCount = Object.keys(value).length;
+
+    if (!allowEmpty && keyCount === 0) return { status: false, message: `${label} cannot be empty.` };
+    if (keyCount < minKeys) return { status: false, message: `${label} should contain minimum ${minKeys} properties.` };
+    if (keyCount > maxKeys) return { status: false, message: `${label} should contain maximum ${maxKeys} properties.` };
+    return { status: true, message: null };
+};
+
+const validateNode = (payload, schema, errors, strictMode = true, path = '') => {
+
+    // validate payload
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        errors.push(`${path || 'payload'} contains invalid object.`);
+        return;
+    }
+
+    // validate schema
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+        errors.push(`${path || 'schema'} contains invalid schema.`);
+        return;
+    }
+
+    const payloadKeys = Object.keys(payload);
+    const schemaKeys = Object.keys(schema);
+
+    // strict mode
+    if (strictMode) {
+
+        const extraFields = payloadKeys.filter(key => !schemaKeys.includes(key));
+
+        if (extraFields.length) {
+            extraFields.forEach(field => {
+                const fieldPath = path ? `${path}.${field}` : field;
+                errors.push(`${fieldPath} field is not allowed.`);
+            });
+            return;
+        }
+
+    }
+
+    // field validations
+    for (const field of schemaKeys) {
+
+        const rules = schema[field];
+        const value = payload[field];
+
+        const currentPath = path ? `${path}.${field}` : field;
+        // required validation
+        if (rules?.required && !isRequired(value)) {
+            errors.push(`${rules?.label || currentPath} is required.`); break;
+        }
+
+        // optional field
+        if (!isRequired(value)) {
+            continue;
+        }
+
+        // string validation
+        if (rules?.type === 'string') {
+
+            const result = isValidString(value, { minLength: rules?.minLength, maxLength: rules?.maxLength, label: rules?.label || currentPath });
+
+            if (!result.status) {
+                errors.push(result.message);
+                break;
+            }
+        }
+
+        // email validation
+        if (rules?.type === 'email') {
+
+            if (!isValidEmail(value)) {
+                errors.push(value + ' is not valid email.');
+                break;
+            }
+        }
+
+        // mobile no validation
+        if (rules?.type === 'mobile-no') {
+
+            if (!isValidMobile(value)) {
+                errors.push(value + ' is not valid mobile number.');
+                break;
+            }
+        }
+
+        // aadhaar no validation
+        if (rules?.type === 'aadhaar') {
+            if (!isValidAadhaar(value)) {
+                errors.push(value + ' is not valid aadhar number.');
+                break;
+            }
+        }
+
+        // alpha validation
+        if (rules?.type === 'alpha') {
+            if (!isValidAlpha(value)) {
+                errors.push(value + ' is not valid string.');
+                break;
+            }
+        }
+
+        // alph + numeric validation
+        if (rules?.type === 'alpha-numeric') {
+            if (!isValidAlphaNumeric(value)) {
+                errors.push(value + ' is not valid string.');
+                break;
+            }
+        }
+
+        // password validation
+        if (rules?.type === 'password') {
+            if (!isStrongPassword(value)) {
+                errors.push(value + ' is week, please check.');
+                break;
+            }
+        }
+
+        // number validation
+        if (rules?.type === 'number') {
+
+            const result = isValidNumber(value, { min: rules?.min, max: rules?.max, label: rules?.label || currentPath });
+            if (!result.status) {
+                errors.push(result.message);
+                break;
+            }
+        }
+
+        // boolean validation
+        if (rules?.type === 'boolean') {
+
+            const result = isValidBoolean(value);
+
+            if (!result.status) {
+                errors.push(result.message || `${rules?.label || currentPath} must be boolean.`);
+                break;
+            }
+        }
+
+        // array validation
+        if (rules?.type === 'array') {
+
+            const result = isValidArray(value, { minItems: rules?.minItems, maxItems: rules?.maxItems, allowEmpty: rules?.allowEmpty, label: rules?.label || currentPath });
+
+            if (!result.status) {
+                errors.push(result.message);
+                break;
+            }
+
+            // recursive array item validation
+            if (rules?.itemSchema && Array.isArray(value))
+                value.forEach((item, index) => { validateNode(this, item, rules.itemSchema, errors, strictMode, `${currentPath}[${index}]`); });
+            continue;
+        }
+
+        // object validation
+        if (rules?.type === 'object') {
+
+            const result = isValidObject(value, { minKeys: rules?.minKeys, maxKeys: rules?.maxKeys, allowEmpty: rules?.allowEmpty, label: rules?.label || currentPath });
+            if (!result.status) {
+                errors.push(result.message);
+                continue;
+            }
+
+            // recursive object validation
+            if (rules?.schema) validateNode(this, value, rules.schema, errors, strictMode, currentPath);
+            continue;
+        }
+
+        // enum validation
+        if (Array.isArray(rules?.enum) && !rules.enum.includes(value)) {
+            errors.push(`${rules?.label || currentPath} contains invalid value.`);
+            break;
+        }
+
+        // custom validator
+        if (typeof rules?.validator === 'function') {
+
+            const result = rules.validator(value);
+
+            if (result && typeof result === 'object') {
+
+                if (!result.status) {
+                    errors.push(result.message || `${rules?.label || currentPath} is invalid.`);
+                    break;
+                }
+            }
+
+            else if (result === false) {
+                errors.push(`${rules?.label || currentPath} is invalid.`);
+                break;
+            }
+        }
+    }
+};
+
+const validatePayload = async (payload, schema, strictMode = true) => {
+
+    const errors = [];
+
+    try {
+
+        // payload checks
+        validateNode(payload, schema, errors, strictMode);
+        if (errors.length) return { validationStatus: false, errors };
+        return { validationStatus: true, errors: [] };
+
+    } catch (error) {
+        throw error;
+    }
+};
+
 module.exports = {
+    validatePayload,
     isRequired,
     isValidMobile,
     isValidAadhaar,
@@ -188,5 +439,8 @@ module.exports = {
     isValidDate,
     isStrongPassword,
     isValidEnum,
-    isValidGstin
+    isValidGstin,
+    isValidString,
+    isValidNumber,
+    isValidObject
 };

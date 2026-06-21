@@ -41,7 +41,7 @@ app.all('*splat', (req, res) => {
 
 // global error handling
 app.use((error, req, res, next) => {
-    console.log('In Global error handler');
+    console.log('In Global error handler : ', error);
     response.sendErrorResponse(req, res, 'Unable to procee request. please try after some time !', RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Gloal error' })
 });
 module.exports = { app };
