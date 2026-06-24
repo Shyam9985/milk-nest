@@ -6,8 +6,12 @@ const response = require('./utilities/response.utils');
 const RESPONSE_STATUS = require('./utilities/standard.messages');
 const apiroutes = require('./routes/apiRoutes');
 const dbconfig = require('./config/db.config');
+const expressSession = require('express-session');
+const mySqlStore = require('express-mysql-session')(expressSession);
 // creting express app
 const app = express();
+
+require('./utilities/schedule.utils');
 
 // middlewares
 app.use(express.json({ limit: '20mb' }));
@@ -20,16 +24,43 @@ app.use(logger);
 async function makeSureDbConnected() {
     try {
         const connection = await dbconfig.pool.getConnection();
-        console.log('Database connected successfully!');
+        console.log('Database connected successfully and session store created!');
         connection.release();
     } catch (error) {
         console.error('Database connection failed:', error);
         process.exit(1);
     }
 }
-
 makeSureDbConnected();
 
+// create a session store 
+const sessionStore = new mySqlStore({
+    clearExpired: true,
+    checkExpirationInterval: 600000,
+    expiration: process.env.EXPRESS_SESSION_EXPIRES,
+}, dbconfig.pool);
+
+// express session middleware setup
+const sessionConfig = {
+    store: sessionStore,
+    rolling: true,
+    secret: process.env.EXPRESS_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    name: 'milk-nest-cookie',
+    cookie: {
+        maxAge: process.env.EXPRESS_SESSION_EXPIRES,
+        httpOnly: true,
+        sameSite: 'lax'
+    }
+}
+
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust-proxy', 1);
+    sessionConfig.cookie.secure = true;
+}
+
+app.use(expressSession(sessionConfig));
 
 // routes 
 app.use('/apiv1', apiroutes);

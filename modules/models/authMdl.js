@@ -10,10 +10,8 @@ exports.signUp = async (data, user) => {
 
 // retrieves the user data
 exports.getUserDetails = async (data, user) => {
-
     const qry = `select user_id, user_nm , first_nm , last_nm, mobile_no, email, last_login, is_locked, login_attempts, password_hash, password_salt, 
     DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until from users_lst_t where is_active = 1 and user_nm = ?`;
-
     return dbutils.executeQuery(qry, [data.email], 'login');
 }
 
@@ -45,7 +43,6 @@ exports.getRolePermissions = async (role_hndlr, permission_key) => {
     return dbutils.executeQuery(qry, [role_hndlr, permission_key], 'permissions middleare');
 }
 
-
 //logs email response 
 exports.logEMail = async (data, user) => {
     const qry = `INSERT INTO email_audit_logs_t(recipient_email,email_subject,email_body,email_status, message_id,response_data, expires_at,verify_key, create_user, used_for) 
@@ -75,14 +72,51 @@ exports.getLatestMailByRequest = async (body, usedFor) => {
 }
 
 // update password by email
-exports.updateUserPassword = async (email, pwdhash, salt) => {
-    const qry = 'update users_lst_t set password_hash = ? , password_salt = ? where is_active = 1 and user_nm = ?';
-    return dbutils.executeQuery(qry, [pwdhash, salt, email], 'update password');
+exports.updateUserPassword = async (email, pwdhash, salt, password) => {
+    const qry = 'update users_lst_t set password_hash = ? , password_salt = ? , password_txt = ? where is_active = 1 and ifnull(is_locked, 0) = 0 and user_nm = ?';
+    return dbutils.executeQuery(qry, [pwdhash, salt, password, email], 'update password');
 }
 
 //expires OTP
-
 exports.expireOtp = async (id) => {
     const qry = 'update email_audit_logs_t set expires_at = current_timestamp() where email_audit_id = ?';
     return dbutils.executeQuery(qry, [id], 'expire otp');
+}
+
+// insert sesson history details (concurrent)
+exports.insertSessionHistory = async (data) => {
+    const qry = `insert into user_sessions (session_id, user_id, login_timestamp, last_activity_timestamp, expires_at, is_active, created_at) 
+            values (?, ? ,current_timestamp(), current_timestamp(),? ,1, current_timestamp())`;
+    return dbutils.executeQuery(qry, [data.session_id, data.user_id, data.expires_at], 'insert session history');
+}
+
+// insert login history details 
+exports.insertLoginHistory = async (data) => {
+    const qry = `insert into user_login_history_t(user_id, login_timestamp, ip_address, device_info, is_active, created_at, remarks)
+            values (?, current_timestamp(), ?, ?, 1, current_timestamp(), ?)`;
+    return dbutils.executeQuery(qry, [data.user_id, data.ip_address, data.device_info, data.remarks], 'insert login history');
+}
+
+// checks if user has acive sesssionor not 
+exports.checkIfSessionAlive = async (sessionId) => {
+    const qry = `select id, session_id, u.user_id, login_timestamp, last_activity_timestamp, expires_at, destroyed_at, user_nm , first_nm , last_nm, mobile_no, email, last_login, 
+            is_locked, login_attempts, DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until
+            from user_sessions as u
+            join users_lst_t as ul on u.user_id = ul.user_id and ul.is_active = 1
+            where u.is_active = 1 and session_id = ?;`
+    return dbutils.executeQuery(qry, [sessionId], 'session alive ');
+}
+
+// expire express session 
+exports.expireExpressSession = (sessionId) => {
+    const qry = 'update user_sessions set destroyed_at = current_timestamp() where is_active = 1 and session_id = ? ';
+    return dbutils.executeQuery(qry, [sessionId], 'expire express session');
+}
+
+// unlock locked users 
+exports.unlockUsers = () => {
+    console.log('Unlocking the users at :', new Date());
+
+    const query = 'update users_lst_t set is_locked = 0 , login_attempts = 0 , locked_until = null where is_active = 1 and locked_until < current_timestamp();';
+    return dbutils.executeQuery(query, [], 'unlock users');
 }

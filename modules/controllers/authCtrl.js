@@ -5,14 +5,36 @@ const RESPONSE_STATUS = require('../../utilities/standard.messages');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const emailutils = require('../../utilities/email.utils');
+const UAParser = require('ua-parser-js');
+const dateFns = require('date-fns');
 
 // handelr function to generate jwt token
-function generateJWToken(user) {
+exports.generateJWToken = (user) => {
     const token = jwt.sign(user, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
     // console.log('Token : ', token);
     console.log(jwt.decode(token, { complete: true }));
     return token
 }
+
+// regenerates session-id
+const regenerateSession = () => {
+    return new Promise((resolve, reject) => {
+        req.session.regenerate((err) => {
+            if (err) return reject(err);
+            resolve(req.sessionID);
+        });
+    });
+};
+
+// regenerates session-id
+const destroySession = () => {
+    return new Promise((resolve, reject) => {
+        req.session.destroy((err) => {
+            if (err) return reject(error);
+            resolve(true);
+        });
+    });
+};
 
 //Sing up controller 
 exports.signUp = async (req, res, next) => {
@@ -51,14 +73,11 @@ exports.signUp = async (req, res, next) => {
         return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'signup-controller' });
     }
 }
-// generateJWToken({ userid: 1, name: 'shyam vara prasad', password: 'shyam@9985' });
 
 // login controller 
 exports.logIn = async (req, res) => {
     // Validate request body
     const body = req.body;
-    console.log('body:', body);
-
 
     try {
 
@@ -72,10 +91,19 @@ exports.logIn = async (req, res) => {
         if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
 
         const userData = await authMdl.getUserDetails(body);
-        console.log('user data: ', userData);
 
         // check if user existis 
-        if (userData?.code) resutils.createError('noDataFound', 'Unable to retrieve the data for ' + body.email);
+        if (userData?.code || !userData?.length) resutils.createError('noDataFound', 'Invalid email/password.');
+
+        const userObj = {
+            user_id: userData[0]?.user_id,
+            user_nm: userData[0]?.user_nm,
+            first_nm: userData[0]?.first_nm,
+            last_nm: userData[0]?.last_nm,
+            mobile_no: userData[0]?.mobile_no,
+            email: userData[0]?.email,
+            last_login: userData[0]?.last_login,
+        }
 
         // chek if temporarly locked
         if (userData[0]?.is_locked) {
@@ -84,31 +112,58 @@ exports.logIn = async (req, res) => {
 
         // compare passwords
         const isPasswordMatched = await bcrypt.compare(body.password, userData[0].password_hash);
+
         console.log('isPasswordMatched : ', isPasswordMatched);
 
+        const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || req._remoteAddress || null;
+        const parser = new UAParser(req.headers['user-agent']);
+        const result = parser.getResult();
+
+        const deviceInfo = [result?.ua, result.browser.name, result.browser.version, result.os.name].filter(Boolean).join(' | ');
 
         if (isPasswordMatched) {
-            // generatae jwt token
-            const tokenPayload = {
-                user_nm: userData[0]?.user_nm,
-                first_nm: userData[0]?.first_nm,
-                last_nm: userData[0]?.last_nm,
-                mobile_no: userData[0]?.mobile_no,
-                email: userData[0]?.email,
-                last_login: userData[0]?.last_login,
-            }
+            // regenerate express sesson
+            const sessionId = await regenerateSession();
 
-            // reset login attemts to 0
-            authMdl.unlockUser(userData[0]);
+            // modify the session 
+            req.session.user_id = userObj.user_id;
+
+            await new Promise((resolve, reject) => {
+                req.session.save(err => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+
+            const maxAge = req.session.cookie?.originalMaxAge || 30 * 60 * 1000;
+            const expiresAt = req.session.cookie?._expires || new Date(Date.now() + maxAge);
+            // console.log('cookie expiresAt:', dateFns.format(expiresAt, 'dd-MM-yyyy HH:mm'));
+
+            // generatae jwt token
+            const tokenPayload = { session_id: sessionId, ...userObj }
 
             //generte jwt token
             const token = generateJWToken(tokenPayload);
 
+            // store session details in database 
+            const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userObj?.user_id, expires_at: expiresAt });
+
+            if (!sessionHistory?.affectedRows) resutils.createError('sessionError', 'unable to create/store session');
+
+            // reset login attemts to 0
+            await authMdl.unlockUser(userObj);
+
+            // store login history 
+            const loginHistory = await authMdl.insertLoginHistory({ user_id: userObj?.user_id, ip_address: ipAddress, device_info: deviceInfo, remarks: 'logged in successfully.' });
+
             // Send response to the client 
-            return resutils.sendSuccessResponse(req, res, { user: tokenPayload, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
+            return resutils.sendSuccessResponse(req, res, { user: userObj, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
         } else {
             // increase the login attempts
-            authMdl.increaseLoginAttempts(userData[0]);
+            await authMdl.increaseLoginAttempts(userObj);
+
+            // store login history 
+            const loginHistory = await authMdl.insertLoginHistory({ user_id: userObj?.user_id, ip_address: ipAddress, device_info: deviceInfo, remarks: 'invalid credentials.' });
 
             // send response to the client
             return resutils.sendErrorResponse(req, res, 'Invalid email or password', RESPONSE_STATUS.INVALID_CREDENTIALS, { function: 'login-controller' });
@@ -116,15 +171,58 @@ exports.logIn = async (req, res) => {
 
     } catch (error) {
         console.log('Error occured at sign-up controller', error);
-        if (error.name === 'validationFailed') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA, { function: 'login-controller' });
-        if (error.name === 'noDataFound') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'login-controller' });
-        if (error.name === 'temporarlyLocked') return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.TEMPORARLY_LOCKED, { function: 'login-controller' });
-        return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'login-controller' });
+        let loginError = null;
+        switch (error.name) {
+            case 'validationFailed': loginError = RESPONSE_STATUS.INVALID_DATA; break;
+            case 'noDataFound': loginError = RESPONSE_STATUS.INVALID_CREDENTIALS; break;
+            case 'temporarlyLocked': loginError = RESPONSE_STATUS.TEMPORARLY_LOCKED; break;
+            case 'sessionError': loginError = RESPONSE_STATUS.INTERNAL_SERVER_ERROR; break;
+            default: loginError = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+        }
+
+        return resutils.sendErrorResponse(req, res, error?.message, loginError, { function: 'login-controller' });
+    }
+}
+
+exports.logOut = async (req, res) => {
+    try {
+
+        // get session 
+        const session = req.sessionID;
+
+        if (!session) resutils.createError('noSessionId', 'No session token available');
+
+        try {
+            // destroy session 
+            await destroySession();
+
+            // expire session in the database 
+            const expRes = await authMdl.expireExpressSession(session);
+
+            if (!expRes?.affectedRows) resutils.createError('destroyError', 'Unable to destroy express session');
+
+            resutils.sendSuccessResponse(req, res, [{ message: 'Loggged out successfully.' }], RESPONSE_STATUS.SUCCESS, { function: 'log out' });
+        } catch (error) {
+            resutils.createError('destroyError', 'Unable to desctroy the session');
+        }
+    } catch (error) {
+        console.log(error);
+
+        let errorName = null;
+        switch (error.name) {
+            case 'noSessionId': errorName = RESPONSE_STATUS.INVALID_TOKEN; break;
+            case 'destroyError': errorName = RESPONSE_STATUS.INTERNAL_SERVER_ERROR; break;
+            default: errorName = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+        }
+        resutils.sendErrorResponse(req, res, error?.message, errorName, { function: 'log out' });
     }
 }
 
 exports.getAllusers = async (req, res) => {
-    console.log('In getAllusers: ', req.user);
+    console.log('In getAllusers: ', req.user, req.session);
+
+    req.session.user = req.query?.id || '987';
+    console.log(req.sessionID);
 
     return resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
 }
@@ -229,7 +327,9 @@ exports.updatePassword = async (req, res) => {
         const pwdhsh = await bcrypt.hash(body.newPassword, saltKay);
 
         // update password
-        const updteres = await authMdl.updateUserPassword(body.email, pwdhsh, saltKay);
+        const updteres = await authMdl.updateUserPassword(body.email, pwdhsh, saltKay, body?.newPassword);
+        console.log(updteres);
+
 
         // expire otp 
         authMdl.expireOtp(body.otpKey);
@@ -357,9 +457,6 @@ exports.verifyEmailOtp = async (req, res) => {
 
         // mark otp asused 
         await authMdl.markOTPVerified(body.message_key, req.user);
-
-        // expire otp   
-        await authMdl.expireOtp(body?.message_key);
 
         // send response to the client
         return resutils.sendSuccessResponse(req, res, [{ verified: true, message: 'OTP verified successfully.' }], RESPONSE_STATUS.VALID_OTP, { function: 'verify-email otp' })
