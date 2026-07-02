@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const resutils = require("../utilities/response.utils");
-const RESPONSE_STATUS = require("../utilities/standard.messages");
+const resutils = require("../utils/response.utils");
+const RESPONSE_STATUS = require("../utils/standard.messages");
 const authMdl = require('../modules/models/authMdl');
 const authCtrl = require('../modules/controllers/authctrl');
 

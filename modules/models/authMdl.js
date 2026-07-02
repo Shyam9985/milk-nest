@@ -1,4 +1,4 @@
-const dbutils = require('../../utilities/db.utils');
+const dbutils = require('../../utils/db.utils');
 
 // sign up controller
 exports.signUp = async (data, user) => {

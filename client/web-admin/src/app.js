@@ -1,12 +1,14 @@
+import { useContext } from "react";
 import Layout from "./components/layout/LayoutContainer";
-import Products from "./components/products";
+import Login from "./pages/LogIn";
+import AuthContext from "./contexts/AuthContext";
 
 function App() {
 
+    const authCtx = useContext(AuthContext);
     return (
         <>
-            <Layout />
-
+            {authCtx.isLoggedIn ? <Layout /> : <Login />}
         </>
     )
 }

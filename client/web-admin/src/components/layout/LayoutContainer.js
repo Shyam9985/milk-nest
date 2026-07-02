@@ -6,7 +6,6 @@ import Sidemenu from "./Sidemenu";
 
 function LayoutContainer(props) {
 
-
     return (
         <div className="w-[100vw] h-[100vh] overflow-hide flex flex-row">
             {/* sidemenu */}

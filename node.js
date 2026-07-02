@@ -2,8 +2,8 @@ const express = require('express');
 const path = require('path');
 const logger = require('./middleware/logger');
 const cookieParser = require('cookie-parser');
-const response = require('./utilities/response.utils');
-const RESPONSE_STATUS = require('./utilities/standard.messages');
+const response = require('./utils/response.utils');
+const RESPONSE_STATUS = require('./utils/standard.messages');
 const apiroutes = require('./routes/apiRoutes');
 const dbconfig = require('./config/db.config');
 const expressSession = require('express-session');
@@ -11,7 +11,7 @@ const mySqlStore = require('express-mysql-session')(expressSession);
 // creting express app
 const app = express();
 
-require('./utilities/schedule.utils');
+require('./utils/schedule.utils');
 
 // middlewares
 app.use(express.json({ limit: '20mb' }));
