@@ -18,3 +18,25 @@
 html {
     font-size: var(--app-font-size);
 }
+
+/* Width */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Thumb */
+::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 999px;
+}
+
+/* Hover */
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
