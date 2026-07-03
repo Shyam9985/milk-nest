@@ -1,16 +1,15 @@
 
 import { useState, useEffect } from "react";
-import Model from "../utility-components/ModelComponent";
-import SideDrawer from "../utility-components/SideDrawer";
-import AlertMessage from "../utility-components/AlertMessage";
+import Model from "../../utils/ModelComponent";
+import SideDrawer from "../../utils/SideDrawer";
+import AlertMessage from "../../utils/AlertMessage";
 
-function Maincontent(props) {
+function Maincontent(props) {  
     const [isOpen, setIsOpen] = useState(props.isOpen || false);
     const [drawer, setDrawer] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
 
     function setOpen() {
-        console.log('in set open function', isOpen);
         setIsOpen(true);
     }
 
@@ -30,7 +29,6 @@ function Maincontent(props) {
         console.log('on sibmit called');
     }
     function onClose() {
-        console.log('on close called');
         setIsOpen(false);
     }
 
