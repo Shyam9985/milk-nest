@@ -66,7 +66,7 @@ function Modal({ isOpen, onClose, onSubmit, children, title = "Alert", buttonNam
                 className={`
                     w-auto
                     max-w-[80%]
-                    min-w-[400px]
+                    min-w-[25rem]
 
                     rounded-xl
                     bg-white

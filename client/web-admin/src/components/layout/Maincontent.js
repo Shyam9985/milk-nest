@@ -35,7 +35,7 @@ function Maincontent(props) {
     }
 
     return (
-        <div className="relative bg-[#456785] w-[400px] h-full overflow-auto">
+        <div className="relative bg-[#456785] w-[25rem] h-full overflow-auto">
             Maincontent content here !
             <br />
             <Model onSubmit={onSubmit} onClose={onClose} isOpen={isOpen} buttonName="Submit">

@@ -2,7 +2,7 @@
 
 function Footer(props) {
     return (
-        <div className="w-full max-h-100px] bg-black text-white">
+        <div className="w-full max-h-16 bg-black text-white text-sm">
             Footer content here !
         </div>
     )

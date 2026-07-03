@@ -11,3 +11,13 @@
         transform: scaleX(0);
     }
 }
+
+:root {
+    /* Typography */
+    --app-font-size: 16px;
+    --font-family: "Inter", sans-serif;
+}
+
+html {
+    font-size: var(--app-font-size);
+}

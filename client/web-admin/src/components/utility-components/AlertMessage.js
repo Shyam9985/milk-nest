@@ -84,7 +84,7 @@ function AlertMessage({ show, message, type = "success", duration = 1000, onClos
         >
 
             <div
-                className={`relative overflow-hidden min-w-[350px] rounded-lg shadow-xl text-white px-5 py-4 ${style.bg}`}
+                className={`relative overflow-hidden min-w-[20rem] rounded-lg shadow-xl text-white px-5 py-4 ${style.bg}`}
             >
 
                 <div className="flex justify-between items-center">
