@@ -4,7 +4,7 @@ import Model from "../../utils/ModelComponent";
 import SideDrawer from "../../utils/SideDrawer";
 import AlertMessage from "../../utils/AlertMessage";
 
-function Maincontent(props) {  
+function Maincontent(props) {
     const [isOpen, setIsOpen] = useState(props.isOpen || false);
     const [drawer, setDrawer] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
@@ -33,11 +33,19 @@ function Maincontent(props) {
     }
 
     return (
-        <div className="relative bg-[#456785] w-[25rem] h-full overflow-auto">
+        <div className="relative w-[25rem] h-full overflow-auto bg-[var(--bg-primary)] text-[var(--text-primary)] border-l border-[var(--border-primary)] transition-colors duration-300">
+
             Maincontent content here !
+
             <br />
-            <Model onSubmit={onSubmit} onClose={onClose} isOpen={isOpen} buttonName="Submit">
-                This is an alert medel using to display alert messages
+
+            <Model
+                onSubmit={onSubmit}
+                onClose={onClose}
+                isOpen={isOpen}
+                buttonName="Submit"
+            >
+                This is an alert model using to display alert messages.
             </Model>
 
             <SideDrawer
@@ -50,11 +58,43 @@ function Maincontent(props) {
                 Drawer Content
             </SideDrawer>
 
-            <AlertMessage message="This is an alert message" show={showAlert} type="success" duration={3000} onClose={alertClose} />
+            <AlertMessage
+                message="This is an alert message"
+                show={showAlert}
+                type="success"
+                duration={3000}
+                onClose={alertClose}
+            />
 
-            <br /> <button onClick={setOpen} >open model</button>
-            <br /> <button onClick={drawerOpen} >open drawer</button>
-            <br /> <button onClick={alertOpen} >Alert</button>
+            <br />
+
+            <button
+                onClick={setOpen}
+                className="px-4 py-2 rounded-md bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-border)] hover:opacity-90 transition"
+            >
+                Open Model
+            </button>
+
+            <br />
+            <br />
+
+            <button
+                onClick={drawerOpen}
+                className="px-4 py-2 rounded-md bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] border border-[var(--btn-secondary-border)] hover:bg-[var(--bg-secondary)] transition"
+            >
+                Open Drawer
+            </button>
+
+            <br />
+            <br />
+
+            <button
+                onClick={alertOpen}
+                className="px-4 py-2 rounded-md bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)] hover:opacity-90 transition"
+            >
+                Show Alert
+            </button>
+
         </div>
     )
 }

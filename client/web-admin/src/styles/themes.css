@@ -1,0 +1,101 @@
+
+/* initial/default light theme  */
+:root {
+    /* Typography */
+    --app-font-size: 16px;
+    --font-family: "Inter", sans-serif;
+
+    /* Backgrounds */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+
+    /* Text */
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+
+    /* Borders */
+    --border-primary: #d1d5db;
+    --border-secondary: #e5e7eb;
+    --border-tertiary: #f3f4f6;
+
+    /* Brand */
+    --brand-primary: #2563eb;
+    --brand-secondary: #1d4ed8;
+    --brand-tertiary: #60a5fa;
+
+    /* Status */
+    --success: #16a34a;
+    --warning: #f59e0b;
+    --danger: #dc2626;
+    --info: #0ea5e9;
+
+    /* Inputs */
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
+    --input-text: #111827;
+    --input-placeholder: #9ca3af;
+
+    /* Cards */
+    --card-bg: #ffffff;
+    --card-border: #e5e7eb;
+
+    /* Buttons */
+    --btn-primary-bg: #2563eb;
+    --btn-primary-text: #ffffff;
+    --btn-primary-border: #2563eb;
+
+    --btn-secondary-bg: #ffffff;
+    --btn-secondary-text: #111827;
+    --btn-secondary-border: #d1d5db;
+}
+
+/* Drak theme */
+.dark {
+
+    /* Backgrounds */
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+
+    /* Text */
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-tertiary: #9ca3af;
+
+    /* Borders */
+    --border-primary: #4b5563;
+    --border-secondary: #374151;
+    --border-tertiary: #1f2937;
+
+    /* Brand */
+    --brand-primary: #3b82f6;
+    --brand-secondary: #60a5fa;
+    --brand-tertiary: #93c5fd;
+
+    /* Status */
+    --success: #22c55e;
+    --warning: #fbbf24;
+    --danger: #ef4444;
+    --info: #38bdf8;
+
+    /* Inputs */
+    --input-bg: #1f2937;
+    --input-border: #4b5563;
+    --input-text: #f9fafb;
+    --input-placeholder: #9ca3af;
+
+    /* Cards */
+    --card-bg: #1f2937;
+    --card-border: #374151;
+
+    /* Buttons */
+    --btn-primary-bg: #3b82f6;
+    --btn-primary-text: #ffffff;
+    --btn-primary-border: #3b82f6;
+
+    --btn-secondary-bg: #374151;
+    --btn-secondary-text: #f9fafb;
+    --btn-secondary-border: #4b5563;
+}

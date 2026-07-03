@@ -8,10 +8,12 @@ export function ThemeContextProvider(props) {
 
     function setDarkTheme() {
         setTheme('dark');
+        document.documentElement.classList.add('dark');
     }
 
     function setLightTheme() {
         setTheme('light');
+        document.documentElement.classList.remove('dark');
     }
 
     return (
@@ -32,28 +34,22 @@ export function Theme(props) {
 
     /* ---------------- Theme ---------------- */
 
-    return (<div className="flex overflow-hidden rounded-lg border border-white/20 bg-white/15 backdrop-blur-md">
+    return (
+        <div className="flex overflow-hidden rounded-lg border border-white/20 bg-white/15 backdrop-blur-md">
 
-        <button
-            onClick={themeCtx.setLightTheme}
-            className={`p-2 ${themeCtx.theme === "light"
-                ? "bg-blue-600 text-white"
-                : "text-white hover:bg-white/20"
-                }`}
-        >
-            <Sun size={18} />
-        </button>
+            <button
+                onClick={themeCtx.setLightTheme}
+                className={`p-2 transition ${themeCtx.theme === "light" ? "bg-[var(--brand-primary)] text-white" : "text-white hover:bg-white/20"}`}>
+                <Sun size={18} />
+            </button>
 
-        <button
-            onClick={themeCtx.setDarkTheme}
-            className={`p-2 ${themeCtx.theme === "dark"
-                ? "bg-blue-600 text-white"
-                : "text-white hover:bg-white/20"
-                }`}
-        >
-            <Moon size={18} />
-        </button>
+            <button
+                onClick={themeCtx.setDarkTheme}
+                className={`p-2 transition ${themeCtx.theme === "dark" ? "bg-[var(--brand-primary)] text-white" : "text-white hover:bg-white/20"}`}>
+                <Moon size={18} />
+            </button>
 
-    </div>)
+        </div>
+    )
 }
 export default ThemeContext;

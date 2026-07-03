@@ -29,39 +29,32 @@ function Sidemenu({ collapsed, onToggle }) {
     ];
 
     return (
-        <aside
-            className={` ${collapsed ? "w-12" : "w-64"} transition-all duration-300 ease-in-out bg-white dark:bg-slate-950 border-r
-                border-slate-200 dark:border-slate-800 flex flex-col shadow-sm`}>
+        <aside className={`${collapsed ? "w-16" : "w-64"} transition-all duration-300 ease-in-out 
+        bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col shadow-sm`}     >
+
             {/* Logo */}
 
-            <div className="h-16 border-b flex items-center justify-between px-3">
+            <div className="h-16 border-b border-[var(--border-primary)] flex items-center justify-between px-3">
 
                 {!collapsed && (
                     <div className="flex items-center gap-3">
-
-                        <img
-                            src="/images/logo.png"
-                            alt="MilkNest"
-                            className="w-9 h-9 rounded-lg object-cover"
-                        />
-
+                        <img src="/images/logo.png" alt="MilkNest" className="w-9 h-9 rounded-lg object-cover" />
                         <div>
-                            <p className="font-semibold text-slate-800 dark:text-white">
+                            <p className="font-semibold text-[var(--text-primary)]">
                                 MilkNest
                             </p>
 
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-[var(--text-secondary)]">
                                 Admin Portal
                             </p>
+
                         </div>
 
                     </div>
                 )}
 
-                <button
-                    onClick={onToggle}
-                    className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                >
+                <button onClick={onToggle}
+                    className="rounded-lg p-2 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition"                >
                     {collapsed ? (
                         <PanelLeftOpen size={18} />
                     ) : (
@@ -82,41 +75,21 @@ function Sidemenu({ collapsed, onToggle }) {
 
                     return (
 
-                        <div
-                            key={menu.label}
-                            className="relative group"
-                        >
+                        <div key={menu.label} className="relative group">
 
-                            <button
-                                onClick={() => setSelected(menu.label)}
-                                className={`
-                                    w-full
-                                    flex
-                                    items-center
-                                    gap-3
-                                    rounded-xl
-                                    px-3
-                                    py-3
-                                    transition-all
-                                    duration-200
-
-                                    ${active
-                                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                                    }
-                                `}
+                            <button onClick={() => setSelected(menu.label)}
+                                className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200
+                                ${active ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"}
+                        `}
                             >
 
                                 {/* Left Indicator */}
 
                                 {active && (
-                                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-blue-600" />
+                                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[var(--brand-primary)]" />
                                 )}
 
-                                <Icon
-                                    size={20}
-                                    className="shrink-0"
-                                />
+                                <Icon size={20} className="shrink-0" />
 
                                 {!collapsed && (
                                     <span className="font-medium">
@@ -130,31 +103,11 @@ function Sidemenu({ collapsed, onToggle }) {
 
                             {collapsed && (
 
-                                <div
-                                    className="
-                                        absolute
-                                        left-full
-                                        top-1/2
-                                        -translate-y-1/2
-                                        ml-3
-                                        opacity-0
-                                        group-hover:opacity-100
-                                        pointer-events-none
-                                        transition
-                                        whitespace-nowrap
-                                        rounded-md
-                                        bg-slate-900
-                                        text-white
-                                        text-sm
-                                        px-3
-                                        py-1.5
-                                        shadow-lg
-                                        z-50
-                                    "
-                                >
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 pointer-events-none transition
+                                whitespace-nowrap rounded-md bg-[var(--card-bg)] text-[var(--text-primary)] border border-[var(--border-primary)]
+                                text-sm px-3 py-1.5 shadow-lg z-50">
                                     {menu.label}
                                 </div>
-
                             )}
 
                         </div>
@@ -167,15 +120,15 @@ function Sidemenu({ collapsed, onToggle }) {
 
             {/* Bottom */}
 
-            <div className="border-t p-3">
+            <div className="border-t border-[var(--border-primary)] p-3">
 
                 {!collapsed ? (
-                    <div className="text-xs text-slate-500 text-center">
+                    <div className="text-xs text-[var(--text-secondary)] text-center">
                         MilkNest Admin v1.0
                     </div>
                 ) : (
                     <div className="flex justify-center">
-                        <Settings size={18} className="text-slate-400" />
+                        <Settings size={18} className="text-[var(--text-tertiary)]" />
                     </div>
                 )}
 

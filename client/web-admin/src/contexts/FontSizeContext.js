@@ -18,7 +18,6 @@ function FontSizeContext() {
     }, [fontSize]);
 
     return (
-
         <div className="flex overflow-hidden rounded-lg border border-white/20 bg-white/15 backdrop-blur-md">
 
             <button
@@ -28,17 +27,17 @@ function FontSizeContext() {
                         Math.max(MIN_FONT, prev - 1)
                     )
                 }
-                className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40"
+                className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40 transition"
             >
                 A-
             </button>
 
             <button
                 onClick={() => setFontSize(DEFAULT_FONT)}
-                className={`px-3 py-2 transition ${fontSize === DEFAULT_FONT
-                    ? "bg-blue-600"
-                    : "hover:bg-white/20"
-                    } text-white`}
+                className={`px-3 py-2 text-white transition ${fontSize === DEFAULT_FONT
+                        ? "bg-[var(--brand-primary)]"
+                        : "hover:bg-white/20"
+                    }`}
             >
                 A
             </button>
@@ -50,13 +49,12 @@ function FontSizeContext() {
                         Math.min(MAX_FONT, prev + 1)
                     )
                 }
-                className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40"
+                className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40 transition"
             >
                 A+
             </button>
 
         </div>
-
     )
 }
 
