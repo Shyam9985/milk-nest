@@ -24,7 +24,7 @@ function FontSizeContext() {
                 disabled={fontSize === MIN_FONT}
                 onClick={() =>
                     setFontSize((prev) =>
-                        Math.max(MIN_FONT, prev - 1)
+                        Math.max(MIN_FONT, prev - 2)
                     )
                 }
                 className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40 transition"
@@ -46,7 +46,7 @@ function FontSizeContext() {
                 disabled={fontSize === MAX_FONT}
                 onClick={() =>
                     setFontSize((prev) =>
-                        Math.min(MAX_FONT, prev + 1)
+                        Math.min(MAX_FONT, prev + 2)
                     )
                 }
                 className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40 transition"

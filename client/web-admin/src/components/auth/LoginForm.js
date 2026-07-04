@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import AuthInput from "./AuthInput";
 import PasswordInput from "./PasswordInput";
+import AuthContext from "../../contexts/AuthContext";
 
 function LoginForm({ onForgotPassword, onRegister }) {
+    const authCtx = useContext(AuthContext);
 
     const [form, setForm] = useState({
         email: "",
@@ -38,6 +40,8 @@ function LoginForm({ onForgotPassword, onRegister }) {
             return;
 
         console.log(form);
+        localStorage.setItem("user", JSON.stringify(form));
+        authCtx.handleLogin()
 
     };
 
