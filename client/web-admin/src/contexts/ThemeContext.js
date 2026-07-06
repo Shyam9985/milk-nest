@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
-const ThemeContext = createContext({ theme: 'light', setDarkTheme: undefined, setLightTheme: undefined });
+const ThemeContext = createContext({ theme: undefined, setDarkTheme: undefined, setLightTheme: undefined });
 
 export function ThemeContextProvider(props) {
     const [theme, setTheme] = useState('light');

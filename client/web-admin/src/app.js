@@ -1,13 +1,11 @@
 import { useContext } from "react";
-import Layout from "./components/layout/LayoutContainer";
-
+import LayoutContainer from "./components/layout/LayoutContainer";
+import AppRouter from "./router/AppRouter";
 
 function App() {
 
     return (
-        <>
-         <Layout /> 
-        </>
+        <AppRouter />
     )
 }
 

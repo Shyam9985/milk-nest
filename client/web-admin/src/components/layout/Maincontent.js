@@ -3,11 +3,14 @@ import { useState, useEffect } from "react";
 import Model from "../../utils/ModelComponent";
 import SideDrawer from "../../utils/SideDrawer";
 import AlertMessage from "../../utils/AlertMessage";
+import { Outlet, useNavigate } from "react-router-dom";
+import Loader from "../Loading";
 
 function Maincontent(props) {
     const [isOpen, setIsOpen] = useState(props.isOpen || false);
     const [drawer, setDrawer] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
+    const navigate = useNavigate();
 
     function setOpen() {
         setIsOpen(true);
@@ -94,6 +97,16 @@ function Maincontent(props) {
             >
                 Show Alert
             </button>
+            <br />
+            <button
+                onClick={() => { navigate('/dashboard') }}
+                className="px-4 py-2 rounded-md bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)] hover:opacity-90 transition"
+            >
+                Go to dashboard
+            </button>
+            {/* <Loader /> */}
+
+            <Outlet />
 
         </div>
     )

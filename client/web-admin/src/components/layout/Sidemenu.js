@@ -1,5 +1,15 @@
-import { LayoutDashboard, Users, Package, ShoppingCart, Settings, PanelLeftClose, PanelLeftOpen, } from "lucide-react";
+import { LayoutDashboard, Users, Package, ShoppingCart, Settings, PanelLeftClose, PanelLeftOpen, Info, } from "lucide-react";
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
+
+const getNavLinkClass = ({ isActive }) => `
+    w-full flex items-center gap-3 rounded-xl px-3 py-3
+    transition-all duration-200
+    ${isActive
+        ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]"
+        : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+    }
+`;
 
 function Sidemenu({ collapsed, onToggle }) {
 
@@ -9,22 +19,32 @@ function Sidemenu({ collapsed, onToggle }) {
         {
             label: "Dashboard",
             icon: LayoutDashboard,
+            url: '/dashboard'
         },
         {
             label: "Users",
             icon: Users,
+            url: '/users'
         },
         {
             label: "Products",
             icon: Package,
+            url: '/package'
         },
         {
             label: "Orders",
             icon: ShoppingCart,
+            url: '/orders'
         },
         {
             label: "Settings",
             icon: Settings,
+            url: '/settings'
+        },
+        {
+            label: "About",
+            icon: Info,
+            url: '/about'
         },
     ];
 
@@ -74,48 +94,30 @@ function Sidemenu({ collapsed, onToggle }) {
                     const active = selected === menu.label;
 
                     return (
+                        <NavLink key={menu.label} to={menu.url}
+                            className={({ isActive }) =>
+                                `relative group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ${isActive
+                                    ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]"
+                                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+                                }`
+                            }
+                        >
+                            <Icon size={20} className="shrink-0" />
 
-                        <div key={menu.label} className="relative group">
-
-                            <button onClick={() => setSelected(menu.label)}
-                                className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200
-                                ${active ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"}
-                        `}
-                            >
-
-                                {/* Left Indicator */}
-
-                                {active && (
-                                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[var(--brand-primary)]" />
-                                )}
-
-                                <Icon size={20} className="shrink-0" />
-
-                                {!collapsed && (
-                                    <span className="font-medium">
-                                        {menu.label}
-                                    </span>
-                                )}
-
-                            </button>
-
-                            {/* Tooltip */}
+                            {!collapsed && (
+                                <span className="font-medium">{menu.label}</span>
+                            )}
 
                             {collapsed && (
-
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 pointer-events-none transition
-                                whitespace-nowrap rounded-md bg-[var(--card-bg)] text-[var(--text-primary)] border border-[var(--border-primary)]
-                                text-sm px-3 py-1.5 shadow-lg z-50">
+                                <div key={menu.label} className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 
+                                    pointer-events-none transition whitespace-nowrap rounded-md bg-[var(--card-bg)] text-[var(--text-primary)] 
+                                    border border-[var(--border-primary)] text-sm px-3 py-1.5 shadow-lg z-50">
                                     {menu.label}
                                 </div>
                             )}
-
-                        </div>
-
+                        </NavLink>
                     );
-
                 })}
-
             </nav>
 
             {/* Bottom */}
