@@ -10,6 +10,6 @@ export const publicRoutes = [
 
 export const protectedRoutes = [
     { path: "/dashboard", component: Dashboard, lazy: false },
-    { path: "/about", component: About, lazy: false },
+    { path: "/about", component: About, lazy: true },
     { path: "*", component: PageNotFound, lazy: false },
 ];

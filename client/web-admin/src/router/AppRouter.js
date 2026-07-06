@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
-import { PublicLayout, ProtectedLayout } from "../components/layout/LayoutContainer";
+import { ProtectedLayout } from "../components/layout/ProtectedLayout";
+import { PublicLayout } from "../components/layout/PublicLayout";
 import { publicRoutes, protectedRoutes } from "../router/router";
 import PublicRouteGuard from "./PublicRouterGuard";
 import ProtectedRouteGuard from "./ProtectedRouterGuard";
@@ -20,21 +21,17 @@ function AppRouter(props) {
                         } />
                     ))}
                 </Route>
-                <Route path="*" element={<PageNotFound />} />
             </Route>
 
             <Route element={<ProtectedRouteGuard />}>
                 <Route element={<ProtectedLayout />}>
-                    {protectedRoutes.map(route => {
-                        return (
-                            <Route key={route.path} path={route.path} element={
-                                route.lazy ? (
-                                    <Suspense fallback={<Loader />}><route.component /></Suspense>)
-                                    : (<route.component />)
-                            } />
-                        );
-                    })}
-                    <Route path="*" element={<PageNotFound />} />
+                    {protectedRoutes.map(route => (
+                        <Route key={route.path} path={route.path} element={
+                            route.lazy ? (
+                                <Suspense fallback={<Loader />}><route.component /></Suspense>)
+                                : (<route.component />)
+                        } />
+                    ))}
                 </Route>
             </Route>
         </Routes>
