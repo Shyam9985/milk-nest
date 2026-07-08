@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const cors = require('cors');
 const logger = require('./middleware/logger');
 const cookieParser = require('cookie-parser');
 const response = require('./utils/response.utils');
@@ -8,14 +9,34 @@ const apiroutes = require('./routes/apiRoutes');
 const dbconfig = require('./config/db.config');
 const expressSession = require('express-session');
 const mySqlStore = require('express-mysql-session')(expressSession);
+require('./utils/schedule.utils');
+
 // creting express app
 const app = express();
 
-require('./utils/schedule.utils');
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000',];
+// cors setup
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'access-token'],
+    exposedHeaders: ['access-token', 'new-access-token'],
+    credentials: true,
+    maxAge: 1800 // 30 minutes
+};
+
+// enable cors
+app.use(cors(corsOptions));
 
 // middlewares
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(logger);

@@ -7,6 +7,7 @@ const authCtrl = require('../modules/controllers/authctrl');
 // authntication validation middleware
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
+    let user = null
 
     try {
         // retrieve the access token form the headers 
@@ -20,6 +21,7 @@ exports.isAuthenticated = async (req, res, next) => {
         try {
             // check if token expires 
             decodedToken = jwt.verify(token, process.env.JWT_SECRET, {});
+            user = decodedToken;
         } catch (error) {
             if (error.name === 'TokenExpiredError') {
 
@@ -33,11 +35,14 @@ exports.isAuthenticated = async (req, res, next) => {
                 const isAlive = await authMdl.checkIfSessionAlive(sessionId);
 
                 // expired throw error 
-                if (!isAlive || !isAlive?.length || isAlive[0]?.destroyed_at != null) resutils.createError('sessionExpired', 'Session expred.');
+                if (!isAlive || !isAlive?.length || isAlive?.[0]?.destroyed_at != null) resutils.createError('sessionExpired', 'Session expred.');
+
+                if (isAlive?.[0]?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + isAlive?.[0]?.locked_until);
 
                 console.log('Session still alive but jwt token has expired.');
                 // alive - regenereate token and sent it to the client
                 const tokenPayload = {
+                    session_id: isAlive[0]?.session_id,
                     user_id: isAlive[0]?.user_id,
                     user_nm: isAlive[0]?.user_nm,
                     first_nm: isAlive[0]?.first_nm,
@@ -47,19 +52,13 @@ exports.isAuthenticated = async (req, res, next) => {
                     last_login: isAlive[0]?.last_login,
                 }
                 const newToken = authCtrl.generateJWToken(tokenPayload);
-                res.setHeaders('access-token', { session_id: sessionId, ...newToken })
+
+                decodedToken = tokenPayload;
+                user = tokenPayload;
+                res.setHeader('new-access-token', newToken);
             }
             else throw error;
         }
-
-        // check user active
-        const response = await authMdl.getUserDetails({ email: decodedToken?.user_nm });
-        const user = response[0];
-        // console.log(user);
-
-        if (!user) resutils.createError('userNotFound', 'Logged in user is not found. Please contact admin.');
-        if (user?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + user.locked_until);
-
 
         // bind user data to the request 
         req.user = user;
@@ -92,6 +91,10 @@ exports.isAuthenticated = async (req, res, next) => {
 
             case 'sessionExpired':
                 resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.SESSION_EXPIRED, { function: 'is authenticated middleware' });
+                break;
+
+            case 'unothorizedToken':
+                resutils.sendErrorResponse(req, res, 'Please provide valid access token to proceed.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
                 break;
 
             default:
