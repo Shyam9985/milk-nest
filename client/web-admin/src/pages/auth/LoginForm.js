@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
-import AuthInput from "./AuthInput";
-import PasswordInput from "./PasswordInput";
+import AuthInput from "../../components/AuthInput";
+import PasswordInput from "../../components/PasswordInput";
 import AuthContext from "../../contexts/AuthContext";
 import AuthCard from "./AuthCard";
 import { Navigate, useNavigate } from "react-router-dom";

@@ -11,9 +11,9 @@ import Loader from "../components/Loading";
 function AppRouter(props) {
     return <>
         <Routes>
-            <Route element={<PublicRouteGuard />}>
-                <Route element={<PublicLayout />}>
-                    {publicRoutes.map(route => (
+            <Route element={<ProtectedRouteGuard />}>
+                <Route element={<ProtectedLayout />}>
+                    {protectedRoutes.map(route => (
                         <Route key={route.path} path={route.path} element={
                             route.lazy ? (
                                 <Suspense fallback={<Loader />}><route.component /></Suspense>)
@@ -23,9 +23,9 @@ function AppRouter(props) {
                 </Route>
             </Route>
 
-            <Route element={<ProtectedRouteGuard />}>
-                <Route element={<ProtectedLayout />}>
-                    {protectedRoutes.map(route => (
+            <Route element={<PublicRouteGuard />}>
+                <Route element={<PublicLayout />}>
+                    {publicRoutes.map(route => (
                         <Route key={route.path} path={route.path} element={
                             route.lazy ? (
                                 <Suspense fallback={<Loader />}><route.component /></Suspense>)

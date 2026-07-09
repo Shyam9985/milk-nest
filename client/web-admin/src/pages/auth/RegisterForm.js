@@ -1,6 +1,6 @@
 import { useReducer } from "react";
-import AuthInput from "./AuthInput";
-import PasswordInput from "./PasswordInput";
+import AuthInput from "../../components/AuthInput";
+import PasswordInput from "../../components/PasswordInput";
 import AuthCard from "./AuthCard";
 import { useNavigate } from "react-router-dom";
 

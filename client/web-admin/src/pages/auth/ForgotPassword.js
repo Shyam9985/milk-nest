@@ -1,5 +1,5 @@
 import { useState } from "react";
-import AuthInput from "./AuthInput";
+import AuthInput from "../../components/AuthInput";
 import AuthCard from "./AuthCard";
 import { useNavigate } from "react-router-dom";
 
