@@ -12,7 +12,7 @@ exports.isAuthenticated = async (req, res, next) => {
     try {
         // retrieve the access token form the headers 
         if (!token || !token.startsWith('Bearer')) {
-            throw Error('Please provide valid token to proceed.');
+            resutils.createError('unauthorizedToken', 'Please provide valid token.');
         }
         token = token.split(' ')[1];
 
@@ -26,7 +26,7 @@ exports.isAuthenticated = async (req, res, next) => {
             if (error.name === 'TokenExpiredError') {
 
                 const decoded = jwt.decode(token);
-                console.log('decoded', decoded);
+                console.log('Session still alive...', decoded);
                 const sessionId = decoded?.session_id;
 
                 if (!sessionId) resutils.createError('invalidToken', 'Invalid credentials');
@@ -93,7 +93,7 @@ exports.isAuthenticated = async (req, res, next) => {
                 resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.SESSION_EXPIRED, { function: 'is authenticated middleware' });
                 break;
 
-            case 'unothorizedToken':
+            case 'unauthorizedToken':
                 resutils.sendErrorResponse(req, res, 'Please provide valid access token to proceed.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
                 break;
 
