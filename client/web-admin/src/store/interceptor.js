@@ -1,8 +1,7 @@
 import axios from "axios";
-import { config } from "dotenv";
 
 const axiosInstance = axios.create({
-    baseURL: process.env.SERVER_URL + 'apiv1/',
+    baseURL: process.env.REACT_APP_SERVER_URL + '/apiv1/',
     headers: {
         "Content-Type": "application/json",
         "Accept": "application/json"
@@ -32,17 +31,68 @@ axiosInstance.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-axiosInstance.interceptors.response.use((response) => {
+axiosInstance.interceptors.response.use(
 
-    // set new access token if present in response headers
-    const newAccessToken = response.headers['new-access-token'];
-    if (newAccessToken && newAccessToken !== localStorage.getItem("access-token")) {
-        localStorage.setItem("access-token", newAccessToken);
+    (response) => {
+
+
+        // Set jwt token in local storage 
+        const jwtToken = response.headers['access-token']
+        const localToken = localStorage.getItem("access-token");
+        
+        if (jwtToken && localToken !== jwtToken) {
+            localStorage.setItem("access-token", jwtToken);
+        }
+
+        // Refresh access token if server issued a new one
+        const refreshToken = response.headers["new-access-token"];
+
+
+        if (refreshToken && refreshToken !== localToken) {
+            localStorage.setItem("access-token", refreshToken);
+        }
+        return response.data;
+    },
+    (error) => {
+
+        // Network / CORS / Server unreachable
+        if (!error.response) {
+            return Promise.reject({
+                success: false,
+                code: 0,
+                statusKey: "NETWORK_ERROR",
+                message: "Unable to connect to the server.",
+                error: error.message
+            });
+        }
+
+        const { data } = error.response;
+        console.log(data);
+
+
+        switch (data.statusKey) {
+
+            case "TOKEN_EXPIRED":
+            case "SESSION_EXPIRED":
+            case "INVALID_TOKEN":
+            case "UNAUTHORIZED":
+            case "UN_AUTH_ACCESS":
+
+                // Clear authentication data
+                localStorage.removeItem("access-token");
+
+                // Notify AuthContext
+                window.dispatchEvent(new Event("logout"));
+
+                break;
+
+            default:
+                // Let the calling component handle it
+                break;
+        }
+
+        return Promise.reject(data);
     }
-    return response;
-}, (error) => {
-
-    return Promise.reject(error);
-});
+);
 
 export default axiosInstance;

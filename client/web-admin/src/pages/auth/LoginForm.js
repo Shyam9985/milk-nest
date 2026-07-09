@@ -4,10 +4,15 @@ import PasswordInput from "../../components/PasswordInput";
 import AuthContext from "../../contexts/AuthContext";
 import AuthCard from "./AuthCard";
 import { Navigate, useNavigate } from "react-router-dom";
+import * as validate from "../../utils/ValidateUtils";
+import { handleLogin } from "../../services/auth.service";
+import AlertMessage from "../../utils/AlertMessage";
+import { useToast } from "../../contexts/MessageContext";
 
 function LoginForm() {
-    const authCtx = useContext(AuthContext);
     const navigate = useNavigate();
+    const message = useToast();
+    const authCtx = useContext(AuthContext);
 
     const [form, setForm] = useState({
         email: "",
@@ -25,17 +30,22 @@ function LoginForm() {
 
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
 
         e.preventDefault();
 
         const validationErrors = {};
 
-        if (!form.email.trim())
-            validationErrors.email = "Email is required.";
+        const emailValidation = validate.isValidEmail(form.email);
+        if (!emailValidation.status) {
+            validationErrors.email = emailValidation.message;
+        }
 
-        if (!form.password.trim())
-            validationErrors.password = "Password is required.";
+        const passwordValidation = validate.isStrongPassword(form.password,
+            { minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 1 });
+        if (!passwordValidation.status) {
+            validationErrors.password = passwordValidation.message;
+        }
 
         setErrors(validationErrors);
 
@@ -43,9 +53,15 @@ function LoginForm() {
             return;
 
         console.log(form);
-        localStorage.setItem("user", JSON.stringify(form));
-        authCtx.handleLogin()
-
+        const result = await handleLogin(form);
+        if (!result?.success) {
+            message.error(result?.error || result?.message, 1000)
+        } else {
+            const user = result?.data?.user;
+            console.log(user);
+            authCtx.handleLogin(user);
+            message.success('Login successful!' || result?.message || 'Login successful');
+        }
     };
 
     const onForgotPassword = () => {
@@ -56,7 +72,7 @@ function LoginForm() {
     const onRegister = () => {
         console.log("Register clicked");
         navigate("/register");
-        
+
     }
 
     return (

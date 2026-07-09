@@ -1,203 +1,245 @@
 const RESPONSE_STATUS = {
+
     SUCCESS: {
         code: 200,
-        message: 'Request processed successfully.'
+        statusKey: "SUCCESS",
+        message: "Request processed successfully."
     },
 
     CREATED: {
         code: 201,
-        message: 'Resource created successfully.'
+        statusKey: "CREATED",
+        message: "Resource created successfully."
     },
 
     UPDATED: {
         code: 200,
-        message: 'Resource updated successfully.'
+        statusKey: "UPDATED",
+        message: "Resource updated successfully."
     },
 
     DELETED: {
         code: 200,
-        message: 'Resource deleted successfully.'
+        statusKey: "DELETED",
+        message: "Resource deleted successfully."
     },
 
     DATA_FOUND: {
         code: 200,
-        message: 'Data retrieved successfully.'
+        statusKey: "DATA_FOUND",
+        message: "Data retrieved successfully."
     },
 
     NO_DATA_FOUND: {
         code: 404,
-        message: 'No data found.'
+        statusKey: "NO_DATA_FOUND",
+        message: "No data found."
     },
 
     INVALID_REQUEST: {
         code: 400,
-        message: 'Invalid request.'
+        statusKey: "INVALID_REQUEST",
+        message: "Invalid request."
     },
 
     VALIDATION_ERROR: {
         code: 400,
-        message: 'Validation failed for request input data.'
+        statusKey: "VALIDATION_ERROR",
+        message: "Validation failed for request input data."
     },
 
     UNAUTHORIZED: {
         code: 401,
-        message: 'Unauthorized access.'
+        statusKey: "UNAUTHORIZED",
+        message: "Unauthorized access."
     },
 
     NO_SELECT_PERMISSION: {
         code: 403,
-        message: 'You do not have permission to view this resource.'
+        statusKey: "NO_SELECT_PERMISSION",
+        message: "You do not have permission to view this resource."
     },
 
     NO_INSERT_PERMISSION: {
         code: 403,
-        message: 'You do not have permission to create this resource.'
+        statusKey: "NO_INSERT_PERMISSION",
+        message: "You do not have permission to create this resource."
     },
 
     NO_UPDATE_PERMISSION: {
         code: 403,
-        message: 'You do not have permission to update this resource.'
+        statusKey: "NO_UPDATE_PERMISSION",
+        message: "You do not have permission to update this resource."
     },
 
     NO_DELETE_PERMISSION: {
         code: 403,
-        message: 'You do not have permission to delete this resource.'
+        statusKey: "NO_DELETE_PERMISSION",
+        message: "You do not have permission to delete this resource."
     },
 
     FORBIDDEN: {
         code: 403,
-        message: 'Access denied.'
+        statusKey: "FORBIDDEN",
+        message: "Access denied."
     },
 
     DUPLICATE_RECORD: {
         code: 409,
-        message: 'Record already exists with the given details.'
+        statusKey: "DUPLICATE_RECORD",
+        message: "Record already exists with the given details."
     },
 
     NOT_FOUND: {
         code: 404,
-        message: 'Requested resource not found.'
+        statusKey: "NOT_FOUND",
+        message: "Requested resource not found."
     },
 
     DB_ERROR: {
         code: 500,
-        message: 'Database operation failed.'
+        statusKey: "DB_ERROR",
+        message: "Database operation failed."
     },
 
     INVALID_DATA_FORMAT: {
-        code: 405,
-        message: "Data send in wrong format"
+        code: 400,
+        statusKey: "INVALID_DATA_FORMAT",
+        message: "Data sent in wrong format."
     },
+
     INVALID_DATA: {
-        code: 405,
-        message: "Invalid data has been sent. please check."
+        code: 400,
+        statusKey: "INVALID_DATA",
+        message: "Invalid data has been sent. Please check."
     },
 
     REQUIRED_FIELDS_MISSING: {
-        code: 405,
-        message: "Please fill the required fields/vlid input data and try again"
+        code: 400,
+        statusKey: "REQUIRED_FIELDS_MISSING",
+        message: "Please fill the required fields/valid input data and try again."
     },
 
     UN_AUTH_ACCESS: {
         code: 401,
-        message: "Unauthorized access/attempt. Please check and retry"
+        statusKey: "UN_AUTH_ACCESS",
+        message: "Unauthorized access/attempt. Please check and retry."
     },
 
     INVALID_OTP: {
         code: 401,
-        message: "Invalid/ Expired OTP"
+        statusKey: "INVALID_OTP",
+        message: "Invalid/Expired OTP."
     },
 
     VALID_OTP: {
         code: 200,
-        message: "OTP Validated successfully."
+        statusKey: "VALID_OTP",
+        message: "OTP validated successfully."
     },
 
     INVALID_CREDENTIALS: {
         code: 401,
-        message: "Invalid credentials.Please retry"
+        statusKey: "INVALID_CREDENTIALS",
+        message: "Invalid credentials. Please retry."
     },
 
     TEMPORARLY_LOCKED: {
-        code: 401,
-        message: "Account is temporarly locaked.please try after some time."
+        code: 423,
+        statusKey: "TEMPORARLY_LOCKED",
+        message: "Account is temporarily locked. Please try again later."
     },
 
     SESSION_ERR: {
-        code: 408,
-        message: "Session Database Query/Connection Error"
+        code: 500,
+        statusKey: "SESSION_ERR",
+        message: "Session database query/connection error."
     },
 
     TOOMANY_ATTEMPTS: {
-        code: 409,
-        message: "Too many wrong attempts. Please try after 24hrs/contact support."
+        code: 429,
+        statusKey: "TOOMANY_ATTEMPTS",
+        message: "Too many wrong attempts. Please try after 24 hours or contact support."
     },
 
     SESSION_EXPIRED: {
-        code: 403,
+        code: 401,
+        statusKey: "SESSION_EXPIRED",
         message: "Session expired. Please login again."
     },
 
     INVALID_TOKEN: {
-        code: 403,
+        code: 401,
+        statusKey: "INVALID_TOKEN",
         message: "Invalid token sent. Please provide a valid token."
     },
 
-
     TOKEN_EXPIRED: {
-        code: 403,
+        code: 401,
+        statusKey: "TOKEN_EXPIRED",
         message: "Token expired. Please login again."
     },
 
     UNAUTHORISED_URL: {
         code: 401,
+        statusKey: "UNAUTHORISED_URL",
         message: "Unauthorized URL. Access denied."
     },
 
     INTERNAL_SERVER_ERROR: {
         code: 500,
-        message: 'Internal server error.'
+        statusKey: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error."
     },
 
     SERVICE_UNAVAILABLE: {
         code: 503,
-        message: 'Service temporarily unavailable.'
+        statusKey: "SERVICE_UNAVAILABLE",
+        message: "Service temporarily unavailable."
     },
 
     DB_QUERY_ISSUE: {
-        code: 700,
-        message: "Database Query/Connection Error"
+        code: 500,
+        statusKey: "DB_QUERY_ISSUE",
+        message: "Database query/connection error."
     },
 
     MODEL_ERR: {
-        code: 700,
-        message: "Something went wrong"
+        code: 500,
+        statusKey: "MODEL_ERR",
+        message: "Something went wrong."
     },
 
     SYNTAX_ERROR: {
-        code: 701,
-        message: "Something went wrong. The error is reported to the administrator."
+        code: 500,
+        statusKey: "SYNTAX_ERROR",
+        message: "Something went wrong. The error has been reported to the administrator."
     },
 
     UNABLE_TO_PROCESS: {
         code: 400,
+        statusKey: "UNABLE_TO_PROCESS",
         message: "Unable to process request at the moment."
     },
 
     UNABLE_TO_SEND_EMAIL: {
-        code: 400,
+        code: 500,
+        statusKey: "UNABLE_TO_SEND_EMAIL",
         message: "Unable to send email. Please try again."
     },
 
     EMAIL_SENT: {
         code: 200,
+        statusKey: "EMAIL_SENT",
         message: "Email sent successfully."
     },
 
     PASSWORD_UPDATED: {
         code: 200,
-        message: 'Password updated successfully.'
+        statusKey: "PASSWORD_UPDATED",
+        message: "Password updated successfully."
     }
+
 };
 
 module.exports = RESPONSE_STATUS;

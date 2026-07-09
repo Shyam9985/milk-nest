@@ -10,15 +10,17 @@ export function AuthContextProvider(props) {
         setLogedIn(loginSts === 'true' ? true : false);
     }, []);
 
-    function onLogin() {
+    function onLogin(user) {
         setLogedIn(true);
         localStorage.setItem('isLogedIn', true);
+        localStorage.setItem('user-data', JSON.stringify(user));
     }
 
     function onLogout() {
         setLogedIn(false);
         localStorage.setItem('isLogedIn', false);
-
+        localStorage.removeItem('user-data');
+        localStorage.removeItem('access-token');
     }
 
     return (

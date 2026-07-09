@@ -45,7 +45,7 @@ app.use(logger);
 async function makeSureDbConnected() {
     try {
         const connection = await dbconfig.pool.getConnection();
-        console.log('Database connected successfully and session store created!');
+        console.log('Database connected successfully and ready to use!');
         connection.release();
     } catch (error) {
         console.error('Database connection failed:', error);
@@ -70,7 +70,7 @@ const sessionConfig = {
     saveUninitialized: false,
     name: 'milk-nest-cookie',
     cookie: {
-        maxAge: process.env.EXPRESS_SESSION_EXPIRES,
+        maxAge: Number(process.env.EXPRESS_SESSION_EXPIRES),
         httpOnly: true,
         sameSite: 'lax'
     }

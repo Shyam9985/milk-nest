@@ -16,17 +16,6 @@ exports.generateJWToken = (user) => {
     return token
 }
 
-// regenerates session-id
-const regenerateSession = () => {
-    return new Promise((resolve, reject) => {
-        req.session.regenerate((err) => {
-            if (err) return reject(err);
-            resolve(req.sessionID);
-        });
-    });
-};
-
-// regenerates session-id
 const destroySession = () => {
     return new Promise((resolve, reject) => {
         req.session.destroy((err) => {
@@ -122,10 +111,9 @@ exports.logIn = async (req, res) => {
         const deviceInfo = [result?.ua, result.browser.name, result.browser.version, result.os.name].filter(Boolean).join(' | ');
 
         if (isPasswordMatched) {
-            // regenerate express sesson
-            const sessionId = await regenerateSession();
+            const sessionId = req.sessionID;
 
-            // modify the session 
+            // modify the session-id 
             req.session.user_id = userObj.user_id;
 
             await new Promise((resolve, reject) => {
@@ -143,7 +131,7 @@ exports.logIn = async (req, res) => {
             const tokenPayload = { session_id: sessionId, ...userObj }
 
             //generte jwt token
-            const token = generateJWToken(tokenPayload);
+            const token = this.generateJWToken(tokenPayload);
 
             // store session details in database 
             const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userObj?.user_id, expires_at: expiresAt });
@@ -157,6 +145,7 @@ exports.logIn = async (req, res) => {
             const loginHistory = await authMdl.insertLoginHistory({ user_id: userObj?.user_id, ip_address: ipAddress, device_info: deviceInfo, remarks: 'logged in successfully.' });
 
             // Send response to the client 
+            res.setHeader('access-token', token);
             return resutils.sendSuccessResponse(req, res, { user: userObj, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
         } else {
             // increase the login attempts

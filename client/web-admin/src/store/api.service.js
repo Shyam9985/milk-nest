@@ -1,7 +1,7 @@
-import axios from "../store/interceptor";
+import axios from "./interceptor";
 
 export async function get(relativeUrl, queryParams = {}) {
-    const response = await axios.get(`${process.env.SERVER_URL}/${relativeUrl}`, {
+    const response = await axios.get(relativeUrl, {
         params: {
             ...queryParams
         }
@@ -11,17 +11,17 @@ export async function get(relativeUrl, queryParams = {}) {
 }
 
 export async function post(relativeUrl, payload) {
-    const response = await axios.post(`${process.env.SERVER_URL}/${relativeUrl}`, payload);
+    const response = await axios.post(relativeUrl, payload);
     return response;
 }
 
 export async function put(relativeUrl, payload) {
-    const response = await axios.put(`${process.env.SERVER_URL}/${relativeUrl}`, payload);
+    const response = await axios.put(relativeUrl, payload);
     return response;
 }
 
 export async function remove(relativeUrl, queryParams = {}) {
-    const response = await axios.delete(`${process.env.SERVER_URL}/${relativeUrl}`, {
+    const response = await axios.delete(relativeUrl, {
         params: {
             ...queryParams
         }
