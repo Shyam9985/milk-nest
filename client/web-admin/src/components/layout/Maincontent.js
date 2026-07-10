@@ -61,14 +61,6 @@ function Maincontent(props) {
                 Drawer Content
             </SideDrawer>
 
-            <AlertMessage
-                message="This is an alert message"
-                show={showAlert}
-                type="success"
-                duration={3000}
-                onClose={alertClose}
-            />
-
             <br />
 
             <button
@@ -87,23 +79,7 @@ function Maincontent(props) {
             >
                 Open Drawer
             </button>
-
             <br />
-            <br />
-
-            <button
-                onClick={alertOpen}
-                className="px-4 py-2 rounded-md bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)] hover:opacity-90 transition"
-            >
-                Show Alert
-            </button>
-            <br />
-            <button
-                onClick={() => { navigate('/dashboard') }}
-                className="px-4 py-2 rounded-md bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)] hover:opacity-90 transition"
-            >
-                Go to dashboard
-            </button>
             {/* <Loader /> */}
 
             <Outlet />

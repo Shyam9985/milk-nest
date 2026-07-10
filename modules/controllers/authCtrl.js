@@ -16,10 +16,14 @@ exports.generateJWToken = (user) => {
     return token
 }
 
-const destroySession = () => {
+const destroySession = (req) => {
+    // console.log("req.session", req.session);
+
     return new Promise((resolve, reject) => {
         req.session.destroy((err) => {
-            if (err) return reject(error);
+            if (err) {
+                return reject(err);
+            }
             resolve(true);
         });
     });
@@ -181,9 +185,11 @@ exports.logOut = async (req, res) => {
 
         if (!session) resutils.createError('noSessionId', 'No session token available');
 
+        console.log('session id :', session);
+
         try {
             // destroy session 
-            await destroySession();
+            await destroySession(req);
 
             // expire session in the database 
             const expRes = await authMdl.expireExpressSession(session);
@@ -192,6 +198,8 @@ exports.logOut = async (req, res) => {
 
             resutils.sendSuccessResponse(req, res, [{ message: 'Loggged out successfully.' }], RESPONSE_STATUS.SUCCESS, { function: 'log out' });
         } catch (error) {
+            console.log(error);
+
             resutils.createError('destroyError', 'Unable to desctroy the session');
         }
     } catch (error) {

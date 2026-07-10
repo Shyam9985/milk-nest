@@ -4,11 +4,14 @@ import { User, LogOut, ChevronDown, } from "lucide-react";
 import AuthContext from "../../contexts/AuthContext";
 import FontSizeContext from "../../contexts/FontSizeContext";
 import { Theme } from "../../contexts/ThemeContext";
+import { handleLogout } from "../../services/auth.service";
+import { useToast } from "../../contexts/MessageContext";
 
 function Header() {
     const authCtx = useContext(AuthContext);
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
+    const message = useToast();
 
     /* ---------------- Close Profile Menu ---------------- */
 
@@ -24,9 +27,18 @@ function Header() {
         return () => document.removeEventListener("mousedown", closeMenu);
     }, []);
 
-    function handleLogOut() {
-        setShowMenu(false);
-        authCtx.handleLogOut();
+    async function handleLogOut() {
+
+        // expire express session 
+        const result = await handleLogout();
+        if (result.success) {
+            authCtx.handleLogOut();
+            setShowMenu(false);
+            message.success('Loggesout successfully!')
+        } else {
+            message.error(result?.error || result?.message || 'Error logging out the user ', 1500)
+        }
+
     }
     return (
         <header className="relative h-16 overflow-visible shadow-md z-50 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] transition-colors duration-300">

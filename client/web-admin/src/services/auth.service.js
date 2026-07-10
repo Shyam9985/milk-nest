@@ -1,4 +1,4 @@
-import { post } from "../store/api.service";
+import { post, get } from "../store/api.service";
 
 
 export async function handleLogin(formData) {
@@ -14,4 +14,16 @@ export async function handleLogin(formData) {
         data = error;
     }
     return data;
+}
+
+export async function handleLogout() {
+    try {
+        const user = localStorage.getItem('user-data');
+        const response = await post('auth/logout', user);
+        console.log(response);
+        return response;
+    } catch (error) {
+        console.log(error);
+        return error;
+    }
 }
