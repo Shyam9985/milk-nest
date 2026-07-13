@@ -7,11 +7,11 @@ function PageNotFound() {
 
     const authCtx = useContext(AuthContext);
 
-    const redirectUrl = authCtx.isLogedIn ? "/" : "/login";
+    const redirectUrl = authCtx.isLogedIn ? "/dashboard" : "/login";
 
     return (
 
-        <div className="relative flex items-center justify-center h-[calc(100vh-4rem)] overflow-hidden bg-[var(--bg-primary)]">
+        <div className="relative flex items-center justify-center p-12 overflow-hidden bg-[var(--bg-primary)]">
 
             {/* Background Gradient */}
 

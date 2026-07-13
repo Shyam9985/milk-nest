@@ -36,7 +36,7 @@ function Maincontent(props) {
     }
 
     return (
-        <div className="relative w-[25rem] h-full overflow-auto bg-[var(--bg-primary)] text-[var(--text-primary)] border-l border-[var(--border-primary)] transition-colors duration-300">
+        <div className="relative h-full overflow-auto bg-[var(--bg-primary)] text-[var(--text-primary)] border-l border-[var(--border-primary)] transition-colors duration-300">
 
             Maincontent content here !
 

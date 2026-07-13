@@ -1,14 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { registerLogoutHandler } from '../store/interceptor';
 
 const AuthContext = React.createContext({ isLogedIn: false, user: null, handleLogin: undefined, handleLogOut: undefined });
 
 export function AuthContextProvider(props) {
     const [loggedIn, setLogedIn] = useState(false);
-
-    useEffect(() => {
-        const loginSts = localStorage.getItem('isLogedIn');
-        setLogedIn(loginSts === 'true' ? true : false);
-    }, []);
 
     function onLogin(user) {
         setLogedIn(true);
@@ -22,6 +18,15 @@ export function AuthContextProvider(props) {
         localStorage.removeItem('user-data');
         localStorage.removeItem('access-token');
     }
+
+    useEffect(() => {
+        const loginSts = localStorage.getItem("isLogedIn");
+        setLogedIn(loginSts === "true");
+
+        registerLogoutHandler(onLogout);
+
+        return () => registerLogoutHandler(null);
+    }, []);
 
     return (
         <AuthContext.Provider value={{ isLogedIn: loggedIn, handleLogin: onLogin, handleLogOut: onLogout }}>

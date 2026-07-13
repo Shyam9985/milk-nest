@@ -1,6 +1,8 @@
 import { LayoutDashboard, Users, Package, ShoppingCart, Settings, PanelLeftClose, PanelLeftOpen, Info, } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { getMenuItems } from "../../services/auth.service";
+import { useToast } from "../../contexts/MessageContext";
 
 const getNavLinkClass = ({ isActive }) => `
     w-full flex items-center gap-3 rounded-xl px-3 py-3
@@ -12,41 +14,27 @@ const getNavLinkClass = ({ isActive }) => `
 `;
 
 function Sidemenu({ collapsed, onToggle }) {
-
+    const message = useToast();
     const [selected, setSelected] = useState("Dashboard");
+    const isLoggeIn = localStorage.getItem('isLogedIn')
+    const [menus, setMenus] = useState([]);
 
-    const menus = [
-        {
-            label: "Dashboard",
-            icon: LayoutDashboard,
-            url: '/dashboard'
-        },
-        {
-            label: "Users",
-            icon: Users,
-            url: '/users'
-        },
-        {
-            label: "Products",
-            icon: Package,
-            url: '/package'
-        },
-        {
-            label: "Orders",
-            icon: ShoppingCart,
-            url: '/orders'
-        },
-        {
-            label: "Settings",
-            icon: Settings,
-            url: '/settings'
-        },
-        {
-            label: "About",
-            icon: Info,
-            url: '/about'
-        },
-    ];
+    useEffect(() => {
+        if (isLoggeIn) getMenus();
+        else setMenus([]);
+
+    }, [isLoggeIn]);
+    
+    async function getMenus() {
+        const menus = await getMenuItems();
+
+        if (menus?.success) {
+            console.log(menus);
+            setMenus(menus.data || []);
+        } else {
+            message.error(menus?.error || menus?.message || 'Unable to feth menus')
+        }
+    }
 
     return (
         <aside className={`${collapsed ? "w-16" : "w-64"} transition-all duration-300 ease-in-out 

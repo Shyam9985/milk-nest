@@ -27,3 +27,12 @@ export async function handleLogout() {
         return error;
     }
 }
+
+export async function getMenuItems() {
+    try {
+        const response = await get('admin/menu-items');
+        return response
+    } catch (error) {
+        return error
+    }
+}

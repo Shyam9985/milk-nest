@@ -19,12 +19,24 @@ const axiosInstance = axios.create({
     timeout: 30000, // 30 seconds
 });
 
+let logoutHandler = null;
+
+export function registerLogoutHandler(handler) {
+    logoutHandler = handler;
+}
+
+function handleLogout() {
+    if (logoutHandler) {
+        logoutHandler();
+    }
+}
+
 axiosInstance.interceptors.request.use((config) => {
     // add authentication token to headers
     const token = localStorage.getItem("access-token");
 
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers['access-token'] = `Bearer ${token}`;
     }
     return config;
 }, (error) => {
@@ -34,12 +46,13 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
 
     (response) => {
-
-
         // Set jwt token in local storage 
-        const jwtToken = response.headers['access-token']
+        const jwtToken = response.headers['access-token'];
+
+        console.log(jwtToken, response);
+
         const localToken = localStorage.getItem("access-token");
-        
+
         if (jwtToken && localToken !== jwtToken) {
             localStorage.setItem("access-token", jwtToken);
         }
@@ -71,18 +84,13 @@ axiosInstance.interceptors.response.use(
 
 
         switch (data.statusKey) {
-
             case "TOKEN_EXPIRED":
             case "SESSION_EXPIRED":
-            case "INVALID_TOKEN":
-            case "UNAUTHORIZED":
-            case "UN_AUTH_ACCESS":
+                console.log('use shold be logged out!');
 
                 // Clear authentication data
                 localStorage.removeItem("access-token");
-
-                // Notify AuthContext
-                window.dispatchEvent(new Event("logout"));
+                handleLogout();
 
                 break;
 

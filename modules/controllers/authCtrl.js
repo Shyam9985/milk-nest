@@ -194,7 +194,7 @@ exports.logOut = async (req, res) => {
             // expire session in the database 
             const expRes = await authMdl.expireExpressSession(session);
 
-            if (!expRes?.affectedRows) resutils.createError('destroyError', 'Unable to destroy express session');
+            // if (!expRes?.affectedRows) resutils.createError('destroyError', 'Unable to destroy express session');
 
             resutils.sendSuccessResponse(req, res, [{ message: 'Loggged out successfully.' }], RESPONSE_STATUS.SUCCESS, { function: 'log out' });
         } catch (error) {

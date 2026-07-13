@@ -1,0 +1,8 @@
+const express = require('express');
+const router = express.Router();
+const authmdlwre = require('../middleware/authMdlwre');
+const adminCtrl = require('../modules/controllers/adminCtrl');
+
+router.get('/menu-items', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), adminCtrl.getMenuItemsCtrl);
+
+module.exports = router;

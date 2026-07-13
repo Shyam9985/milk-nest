@@ -32,9 +32,9 @@ function Header() {
         // expire express session 
         const result = await handleLogout();
         if (result.success) {
+            message.success('Loggedout successfully!');
             authCtx.handleLogOut();
             setShowMenu(false);
-            message.success('Loggesout successfully!')
         } else {
             message.error(result?.error || result?.message || 'Error logging out the user ', 1500)
         }

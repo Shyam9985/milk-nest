@@ -8,6 +8,8 @@ const authCtrl = require('../modules/controllers/authctrl');
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
     let user = null
+    console.log(token);
+
 
     try {
         // retrieve the access token form the headers 
@@ -26,16 +28,19 @@ exports.isAuthenticated = async (req, res, next) => {
             if (error.name === 'TokenExpiredError') {
 
                 const decoded = jwt.decode(token);
-                console.log('Session still alive...', decoded);
+                console.log('Token expired checking session...', decoded);
                 const sessionId = decoded?.session_id;
 
                 if (!sessionId) resutils.createError('invalidToken', 'Invalid credentials');
 
                 // check if session is still alive or not 
                 const isAlive = await authMdl.checkIfSessionAlive(sessionId);
+                console.log(isAlive);
 
                 // expired throw error 
                 if (!isAlive || !isAlive?.length || isAlive?.[0]?.destroyed_at != null) resutils.createError('sessionExpired', 'Session expred.');
+
+                if (isAlive && isAlive?.[0]?.is_expired) resutils.createError('sessionExpired', 'Session expred.');
 
                 if (isAlive?.[0]?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + isAlive?.[0]?.locked_until);
 
