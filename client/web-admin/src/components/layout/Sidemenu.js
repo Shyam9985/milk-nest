@@ -24,7 +24,7 @@ function Sidemenu({ collapsed, onToggle }) {
         else setMenus([]);
 
     }, [isLoggeIn]);
-    
+
     async function getMenus() {
         const menus = await getMenuItems();
 
@@ -77,12 +77,19 @@ function Sidemenu({ collapsed, onToggle }) {
             <nav className="flex-1 p-2 space-y-1">
 
                 {menus.map((menu) => {
-
+                    // {
+                    //             "menu_name": "Users",
+                    //             "icon": "Users",
+                    //             "menu_url": "/users",
+                    //             "is_main_item": 1,
+                    //             "parent_item_id": 0,
+                    //             "display_order": 2
+                    //         },
                     const Icon = menu.icon;
-                    const active = selected === menu.label;
+                    const active = selected === menu.menu_name;
 
                     return (
-                        <NavLink key={menu.label} to={menu.url}
+                        <NavLink key={menu.menu_id} to={menu.menu_url}
                             className={({ isActive }) =>
                                 `relative group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ${isActive
                                     ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]"
@@ -90,17 +97,17 @@ function Sidemenu({ collapsed, onToggle }) {
                                 }`
                             }
                         >
-                            <Icon size={20} className="shrink-0" />
+                            {/* <Icon size={20} className="shrink-0" /> */}
 
                             {!collapsed && (
-                                <span className="font-medium">{menu.label}</span>
+                                <span className="font-medium">{menu.menu_name}</span>
                             )}
 
                             {collapsed && (
-                                <div key={menu.label} className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 
+                                <div key={menu.menu_id} className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 
                                     pointer-events-none transition whitespace-nowrap rounded-md bg-[var(--card-bg)] text-[var(--text-primary)] 
                                     border border-[var(--border-primary)] text-sm px-3 py-1.5 shadow-lg z-50">
-                                    {menu.label}
+                                    {menu.menu_name}
                                 </div>
                             )}
                         </NavLink>

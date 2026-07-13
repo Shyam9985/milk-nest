@@ -110,7 +110,12 @@ exports.checkIfSessionAlive = async (sessionId) => {
 
 // expire express session 
 exports.expireExpressSession = (sessionId) => {
-    const qry = 'update user_sessions set destroyed_at = current_timestamp() where is_active = 1 and session_id = ? ';
+    const qry = 'update user_sessions set destroyed_at = current_timestamp(), expires_at = current_timestamp() where is_active = 1 and session_id = ? ';
+    return dbutils.executeQuery(qry, [sessionId], 'expire express session');
+}
+// slide the express session time 
+exports.slideExpressSession = (sessionId) => {
+    const qry = 'update user_sessions set expires_at = DATE_ADD(NOW(), INTERVAL 30 MINUTE) where is_active = 1 and session_id = ? ';
     return dbutils.executeQuery(qry, [sessionId], 'expire express session');
 }
 

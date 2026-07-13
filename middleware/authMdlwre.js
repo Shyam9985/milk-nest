@@ -22,6 +22,8 @@ exports.isAuthenticated = async (req, res, next) => {
             // check if token expires 
             decodedToken = jwt.verify(token, process.env.JWT_SECRET, {});
             user = decodedToken;
+            console.log('JWT Token is still alive...');
+            
         } catch (error) {
             if (error.name === 'TokenExpiredError') {
 
@@ -44,7 +46,7 @@ exports.isAuthenticated = async (req, res, next) => {
                 console.log('Session still alive but jwt token has expired.');
                 // alive - regenereate token and sent it to the client
                 const tokenPayload = {
-                    session_id: isAlive[0]?.session_id,
+                    session_id: sessionId,
                     user_id: isAlive[0]?.user_id,
                     user_nm: isAlive[0]?.user_nm,
                     first_nm: isAlive[0]?.first_nm,
@@ -54,6 +56,10 @@ exports.isAuthenticated = async (req, res, next) => {
                     last_login: isAlive[0]?.last_login,
                 }
                 const newToken = authCtrl.generateJWToken(tokenPayload);
+
+                // update the express session time 
+                const updated = await authMdl.slideExpressSession(sessionId);
+                console.log('session successfully slided', updated);
 
                 decodedToken = tokenPayload;
                 user = tokenPayload;
