@@ -33,7 +33,6 @@ const destroySession = (req) => {
 exports.signUp = async (req, res, next) => {
     const body = req.body;
 
-    console.log(data)
     try {
 
         // validate payload
@@ -51,7 +50,6 @@ exports.signUp = async (req, res, next) => {
         const saltKay = await bcrypt.genSalt(10);
         const pwdhsh = await bcrypt.hash(data.password, saltKay);
         const response = await authMdl.signUp({ ...data, passwordHash: pwdhsh, saltKey: saltKay }, {});
-        console.log(response);
 
         if (response.code == 1062) resutils.createError('validationFailed', 'User already exists with the given email. please use different mail id');
 
@@ -105,8 +103,6 @@ exports.logIn = async (req, res) => {
 
         // compare passwords
         const isPasswordMatched = await bcrypt.compare(body.password, userData[0].password_hash);
-
-        console.log('isPasswordMatched : ', isPasswordMatched);
 
         const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || req._remoteAddress || null;
         const parser = new UAParser(req.headers['user-agent']);
@@ -184,9 +180,6 @@ exports.logOut = async (req, res) => {
         const session = req.sessionID;
 
         if (!session) resutils.createError('noSessionId', 'No session token available');
-
-        console.log('session id :', session);
-
         try {
             // destroy session 
             await destroySession(req);
@@ -198,12 +191,12 @@ exports.logOut = async (req, res) => {
 
             resutils.sendSuccessResponse(req, res, [{ message: 'Loggged out successfully.' }], RESPONSE_STATUS.SUCCESS, { function: 'log out' });
         } catch (error) {
-            console.log(error);
+            // console.log(error);
 
             resutils.createError('destroyError', 'Unable to desctroy the session');
         }
     } catch (error) {
-        console.log(error);
+        // console.log(error);
 
         let errorName = null;
         switch (error.name) {
@@ -216,11 +209,7 @@ exports.logOut = async (req, res) => {
 }
 
 exports.getAllusers = async (req, res) => {
-    console.log('In getAllusers: ', req.user, req.session);
-
     req.session.user = req.query?.id || '987';
-    console.log(req.sessionID);
-
     return resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
 }
 
@@ -279,7 +268,7 @@ exports.forgotPassword = async (req, res) => {
 
         resutils.sendErrorResponse(req, res, 'Unable to send email right now. please try again.', RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'forgotEmail' });
     } catch (error) {
-        console.log(error);
+        // console.log(error);
 
         let errorName = null;
         switch (error.name) {
@@ -325,7 +314,7 @@ exports.updatePassword = async (req, res) => {
 
         // update password
         const updteres = await authMdl.updateUserPassword(body.email, pwdhsh, saltKay, body?.newPassword);
-        console.log(updteres);
+        // console.log(updteres);
 
 
         // expire otp 
@@ -335,7 +324,7 @@ exports.updatePassword = async (req, res) => {
         resutils.sendErrorResponse(req, res, 'Unable to update password', RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'update respnse' })
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
 
         let status = null;
         switch (error.name) {

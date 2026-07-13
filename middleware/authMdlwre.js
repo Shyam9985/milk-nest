@@ -8,8 +8,6 @@ const authCtrl = require('../modules/controllers/authctrl');
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
     let user = null
-    console.log(token);
-
 
     try {
         // retrieve the access token form the headers 
@@ -35,7 +33,6 @@ exports.isAuthenticated = async (req, res, next) => {
 
                 // check if session is still alive or not 
                 const isAlive = await authMdl.checkIfSessionAlive(sessionId);
-                console.log(isAlive);
 
                 // expired throw error 
                 if (!isAlive || !isAlive?.length || isAlive?.[0]?.destroyed_at != null) resutils.createError('sessionExpired', 'Session expred.');
@@ -72,7 +69,7 @@ exports.isAuthenticated = async (req, res, next) => {
         next();
 
     } catch (error) {
-        console.log('Error in auth middleware: ', error);
+        // console.log('Error in auth middleware: ', error);
         switch (error.name) {
             case 'TokenExpiredError':
                 resutils.sendErrorResponse(req, res, 'Access token expired. please login again.', RESPONSE_STATUS.TOKEN_EXPIRED, { function: 'is authenticated middleware' });
@@ -119,10 +116,12 @@ exports.isAuthorized = (permission_key, action) => {
         try {
             //check if user has respective permission or not 
             const permissionsRes = await authMdl.getRolePermissions(user?.role?.role_hndlr || 'super_admin', permission_key);
-            console.log('permissionsRes', permissionsRes);
+            // console.log('permissionsRes', permissionsRes);
             const permissionList = permissionsRes?.[0];
 
-            if (!permissionList) resutils.createError('noPermissions', 'You do not have permissions to perform this action.please contact your admin.');
+            if (!permissionList) {
+                resutils.createError('noPermissions', `No permission settings are available for '${permission_key}'. Please contact your administrator.`);
+            }
 
             let errorMessage, errorName = null;
             let hasPermission = false;
@@ -130,21 +129,31 @@ exports.isAuthorized = (permission_key, action) => {
             switch (action) {
                 case 'create':
                     hasPermission = permissionList?.can_insert == 1;
-                    errorMessage = 'You do not have permission to insert ' + permission_key + ' data'; errorName = 'noInsertPermission';
+                    errorName = 'noInsertPermission';
+                    errorMessage = `You don't have permission to create ${permission_key} records. Please contact your administrator.`;
                     break;
+
                 case 'read':
                     hasPermission = permissionList?.can_view == 1;
-                    errorMessage = 'You do not have permission to view ' + permission_key + ' data'; errorName = 'noSelectPermission';
+                    errorName = 'noSelectPermission';
+                    errorMessage = `You don't have permission to view ${permission_key} records. Please contact your administrator.`;
                     break;
+
                 case 'update':
                     hasPermission = permissionList?.can_update == 1;
-                    errorMessage = 'You do not have permission to update ' + permission_key + ' data'; errorName = 'noUpdatePermission';
+                    errorName = 'noUpdatePermission';
+                    errorMessage = `You don't have permission to update ${permission_key} records. Please contact your administrator.`;
                     break;
+
                 case 'delete':
                     hasPermission = permissionList?.can_delete == 1;
-                    errorMessage = 'You do not have permission to delete ' + permission_key + ' data'; errorName = 'noDeletePermission';
+                    errorName = 'noDeletePermission';
+                    errorMessage = `You don't have permission to delete ${permission_key} records. Please contact your administrator.`;
                     break;
-                default: errorMessage = 'You do not have permission perform this action'; errorName = 'noPermissions'; break;
+                default:
+                    errorName = 'invalidPermissionAction';
+                    errorMessage = `The requested action is not supported for '${permission_key}'. Please contact your administrator.`;
+                    break;
             }
 
             if (!hasPermission) resutils.createError(errorName, errorMessage);
@@ -152,7 +161,7 @@ exports.isAuthorized = (permission_key, action) => {
             // deligate to the next middleware
             next();
         } catch (error) {
-            console.log('error in authorization middleware:', error);
+            // console.log('error in authorization middleware:', error);
 
             let resStatus = RESPONSE_STATUS.UNABLE_TO_PROCESS;
             let message = error?.message || 'Unable to process request right now. pleasetry after some time';
