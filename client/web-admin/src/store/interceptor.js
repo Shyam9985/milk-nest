@@ -46,22 +46,27 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
 
     (response) => {
+        console.log("URL:", response.config.url);
+        console.log("STATUS:", response.status);
         // Set jwt token in local storage 
         const jwtToken = response.headers['access-token'];
-
-        console.log(jwtToken, response);
 
         const localToken = localStorage.getItem("access-token");
 
         if (jwtToken && localToken !== jwtToken) {
+            console.log('setting new jwt token', jwtToken);
+
             localStorage.setItem("access-token", jwtToken);
         }
 
         // Refresh access token if server issued a new one
         const refreshToken = response.headers["new-access-token"];
 
+        console.log(refreshToken);
 
         if (refreshToken && refreshToken !== localToken) {
+            console.log('setting refresh token', refreshToken);
+
             localStorage.setItem("access-token", refreshToken);
         }
         return response.data;

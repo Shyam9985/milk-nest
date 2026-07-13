@@ -77,14 +77,6 @@ function Sidemenu({ collapsed, onToggle }) {
             <nav className="flex-1 p-2 space-y-1">
 
                 {menus.map((menu) => {
-                    // {
-                    //             "menu_name": "Users",
-                    //             "icon": "Users",
-                    //             "menu_url": "/users",
-                    //             "is_main_item": 1,
-                    //             "parent_item_id": 0,
-                    //             "display_order": 2
-                    //         },
                     const Icon = menu.icon;
                     const active = selected === menu.menu_name;
 
@@ -97,7 +89,7 @@ function Sidemenu({ collapsed, onToggle }) {
                                 }`
                             }
                         >
-                            {/* <Icon size={20} className="shrink-0" /> */}
+                            <Users size={20} className="shrink-0" />
 
                             {!collapsed && (
                                 <span className="font-medium">{menu.menu_name}</span>

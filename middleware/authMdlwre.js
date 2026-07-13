@@ -8,6 +8,7 @@ const authCtrl = require('../modules/controllers/authctrl');
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
     let user = null
+    console.log(token);
 
     try {
         // retrieve the access token form the headers 
@@ -22,8 +23,8 @@ exports.isAuthenticated = async (req, res, next) => {
             // check if token expires 
             decodedToken = jwt.verify(token, process.env.JWT_SECRET, {});
             user = decodedToken;
-            console.log('JWT Token is still alive...');
-            
+            console.log('JWT Token is still alive...', token);
+
         } catch (error) {
             if (error.name === 'TokenExpiredError') {
 
@@ -44,18 +45,17 @@ exports.isAuthenticated = async (req, res, next) => {
                 if (isAlive?.[0]?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + isAlive?.[0]?.locked_until);
 
                 console.log('Session still alive but jwt token has expired.');
+
+                const userData = await authMdl.getUserDetails({ email: decoded?.email });
+
                 // alive - regenereate token and sent it to the client
-                const tokenPayload = {
-                    session_id: sessionId,
-                    user_id: isAlive[0]?.user_id,
-                    user_nm: isAlive[0]?.user_nm,
-                    first_nm: isAlive[0]?.first_nm,
-                    last_nm: isAlive[0]?.last_nm,
-                    mobile_no: isAlive[0]?.mobile_no,
-                    email: isAlive[0]?.email,
-                    last_login: isAlive[0]?.last_login,
-                }
-                const newToken = authCtrl.generateJWToken(tokenPayload);
+
+                // fetch user data 
+                if (!userData?.length) resutils.createError('userNotFound', 'User details not found.');
+
+                const userObj = userData?.[0];
+
+                const newToken = authCtrl.generateJWToken(userObj, sessionId);
 
                 // update the express session time 
                 const updated = await authMdl.slideExpressSession(sessionId);

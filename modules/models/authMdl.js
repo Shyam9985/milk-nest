@@ -10,27 +10,34 @@ exports.signUp = async (data, user) => {
 
 // retrieves the user data
 exports.getUserDetails = async (data, user) => {
-    const qry = `select user_id, user_nm , first_nm , last_nm, mobile_no, email, last_login, is_locked, login_attempts, password_hash, password_salt, 
-    DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until from users_lst_t where is_active = 1 and user_nm = ?`;
+    const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login, 
+        u.is_locked, u.login_attempts, u.password_hash, u.password_salt, DATE_FORMAT(u.locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
+        r.role_id, r.role_nm, r.role_hndlr, r.description, r.hierarchy_id, h.hierarchy_nm , h.parent_hirrarchy_id , h.level_type, 
+        p.position_id, p.position_nm, p.end_date
+        from users_lst_t u 
+        join roles_lst_t r on r.role_id = u.role_id and r.is_active = 1
+        join hierarchy_lst_t h on h.hirrarchy_id = r.hierarchy_id and h.is_active = 1 
+        join position_lst_t p on p.user_id = u.user_id and p.end_date >= CURDATE()
+        where u.is_active = 1 and u.user_nm = ?`;
     return dbutils.executeQuery(qry, [data.email], 'login');
 }
 
 // increases login attempts
-exports.increaseLoginAttempts = (user) => {
+exports.increaseLoginAttempts = (email) => {
     console.log('in incease login attempts model');
 
     const qry = `update users_lst_t set login_attempts = ifnull(login_attempts, 0) + 1, is_locked = case when login_attempts > 4 then 1 else 0 end,
     locked_until = case when login_attempts > 4 then date_add(current_timestamp(),INTERVAL 1 day) else null end  
     where user_nm = ?`;
-    return dbutils.executeQuery(qry, [user.email], 'increaseLoginAttempts');
+    return dbutils.executeQuery(qry, [email], 'increaseLoginAttempts');
 
 }
 
 // reset login attempts
-exports.unlockUser = (user) => {
+exports.unlockUser = (email) => {
     console.log('in unlockUser model');
     const qry = `update users_lst_t set login_attempts = 0, is_locked = 0, locked_until = null where user_nm = ?`;
-    return dbutils.executeQuery(qry, [user.email], 'unlockUser');
+    return dbutils.executeQuery(qry, [email], 'unlockUser');
 }
 
 // get user role permissions
@@ -75,6 +82,11 @@ exports.getLatestMailByRequest = async (body, usedFor) => {
 exports.updateUserPassword = async (email, pwdhash, salt, password) => {
     const qry = 'update users_lst_t set password_hash = ? , password_salt = ? , password_txt = ? where is_active = 1 and ifnull(is_locked, 0) = 0 and user_nm = ?';
     return dbutils.executeQuery(qry, [pwdhash, salt, password, email], 'update password');
+}
+// update last login time by email
+exports.updateLastLoginTime = async (email) => {
+    const qry = 'update users_lst_t set last_login = current_timestamp() where is_active = 1 and email = ?';
+    return dbutils.executeQuery(qry, [email], 'update last login time');
 }
 
 //expires OTP

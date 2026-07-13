@@ -9,9 +9,27 @@ const UAParser = require('ua-parser-js');
 const dateFns = require('date-fns');
 
 // handelr function to generate jwt token
-exports.generateJWToken = (user) => {
-    const token = jwt.sign(user, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
-    // console.log('Token : ', token);
+exports.generateJWToken = async (user, session_id) => {
+
+    const obj = {
+        user_id: user?.user_id,
+        user_nm: user?.user_nm,
+        first_nm: user?.first_nm,
+        last_nm: user?.last_nm,
+        mobile_no: user?.mobile_no,
+        email: user?.email,
+        last_login: user?.last_login,
+        role: {
+            role_id: user?.role_id, role_nm: user?.role_nm, role_hndlr: user?.role_hndlr,
+        },
+        hierarchy: {
+            hierarchy_id: user?.hierarchy_id,
+            position_id: user?.position_id, position_nm: user?.position_nm,
+            hierarchy_nm: user?.hierarchy_nm, parent_hirrarchy_id: user?.parent_hirrarchy_id
+        }
+    }
+    const token = jwt.sign(obj, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
+    console.log('Token : ', token);
     console.log(jwt.decode(token, { complete: true }));
     return token
 }
@@ -87,22 +105,30 @@ exports.logIn = async (req, res) => {
         if (userData?.code || !userData?.length) resutils.createError('noDataFound', 'Invalid email/password.');
 
         const userObj = {
-            user_id: userData[0]?.user_id,
-            user_nm: userData[0]?.user_nm,
-            first_nm: userData[0]?.first_nm,
-            last_nm: userData[0]?.last_nm,
-            mobile_no: userData[0]?.mobile_no,
-            email: userData[0]?.email,
-            last_login: userData[0]?.last_login,
-        }
+            user_id: userData?.[0]?.user_id,
+            user_nm: userData?.[0]?.user_nm,
+            first_nm: userData?.[0]?.first_nm,
+            last_nm: userData?.[0]?.last_nm,
+            mobile_no: userData?.[0]?.mobile_no,
+            email: userData?.[0]?.email,
+            last_login: userData?.[0]?.last_login,
+            role: {
+                role_id: userData?.[0]?.role_id, role_nm: userData?.[0]?.role_nm, role_hndlr: userData?.[0]?.role_hndlr,
+            },
+            hierarchy: {
+                hierarchy_id: userData?.[0]?.hierarchy_id,
+                position_id: userData?.[0]?.position_id, position_nm: userData?.[0]?.position_nm,
+                hierarchy_nm: userData?.[0]?.hierarchy_nm, parent_hirrarchy_id: userData?.[0]?.parent_hirrarchy_id
+            }
+        };
 
         // chek if temporarly locked
-        if (userData[0]?.is_locked) {
+        if (userData?.[0]?.is_locked) {
             resutils.createError('temporarlyLocked', `Your accunt is temporarly locked due to multiple failed attemps. please try after ${userData[0]?.locked_until}`);
         }
 
         // compare passwords
-        const isPasswordMatched = await bcrypt.compare(body.password, userData[0].password_hash);
+        const isPasswordMatched = await bcrypt.compare(body.password, userData?.[0]?.password_hash);
 
         const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || req._remoteAddress || null;
         const parser = new UAParser(req.headers['user-agent']);
@@ -127,11 +153,8 @@ exports.logIn = async (req, res) => {
             const expiresAt = req.session.cookie?._expires || new Date(Date.now() + maxAge);
             // console.log('cookie expiresAt:', dateFns.format(expiresAt, 'dd-MM-yyyy HH:mm'));
 
-            // generatae jwt token
-            const tokenPayload = { session_id: sessionId, ...userObj }
-
             //generte jwt token
-            const token = this.generateJWToken(tokenPayload);
+            const token = await this.generateJWToken(userObj, sessionId);
 
             // store session details in database 
             const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userObj?.user_id, expires_at: expiresAt });
@@ -139,17 +162,21 @@ exports.logIn = async (req, res) => {
             if (!sessionHistory?.affectedRows) resutils.createError('sessionError', 'unable to create/store session');
 
             // reset login attemts to 0
-            await authMdl.unlockUser(userObj);
+            await authMdl.unlockUser(userObj?.email);
 
             // store login history 
             const loginHistory = await authMdl.insertLoginHistory({ user_id: userObj?.user_id, ip_address: ipAddress, device_info: deviceInfo, remarks: 'logged in successfully.' });
 
+            // update last login time 
+            await authMdl.updateLastLoginTime(userObj?.email);
             // Send response to the client 
             res.setHeader('access-token', token);
-            return resutils.sendSuccessResponse(req, res, { user: userObj, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
+            return resutils.sendSuccessResponse(req, res, {
+                user: userObj, token
+            }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
         } else {
             // increase the login attempts
-            await authMdl.increaseLoginAttempts(userObj);
+            await authMdl.increaseLoginAttempts(userObj?.email);
 
             // store login history 
             const loginHistory = await authMdl.insertLoginHistory({ user_id: userObj?.user_id, ip_address: ipAddress, device_info: deviceInfo, remarks: 'invalid credentials.' });
