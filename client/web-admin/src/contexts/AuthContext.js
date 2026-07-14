@@ -10,6 +10,7 @@ export function AuthContextProvider(props) {
         setLogedIn(true);
         localStorage.setItem('isLogedIn', true);
         localStorage.setItem('user-data', JSON.stringify(user));
+        localStorage.setItem('landing-url', user?.landing_url)
     }
 
     function onLogout() {

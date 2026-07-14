@@ -6,8 +6,9 @@ import AuthContext from "../contexts/AuthContext";
 function PageNotFound() {
 
     const authCtx = useContext(AuthContext);
+    const landingUrl = localStorage.getItem('landing-url');
 
-    const redirectUrl = authCtx.isLogedIn ? "/dashboard" : "/login";
+    const redirectUrl = authCtx.isLogedIn ? landingUrl : "/login";
 
     return (
 

@@ -171,9 +171,7 @@ exports.logIn = async (req, res) => {
             await authMdl.updateLastLoginTime(userObj?.email);
             // Send response to the client 
             res.setHeader('access-token', token);
-            return resutils.sendSuccessResponse(req, res, {
-                user: userObj, token
-            }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
+            return resutils.sendSuccessResponse(req, res, { user: { ...userObj, landing_url: userData?.[0]?.landing_url }, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
         } else {
             // increase the login attempts
             await authMdl.increaseLoginAttempts(userObj?.email);

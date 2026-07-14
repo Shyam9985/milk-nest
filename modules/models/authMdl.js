@@ -13,7 +13,7 @@ exports.getUserDetails = async (data, user) => {
     const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login, 
         u.is_locked, u.login_attempts, u.password_hash, u.password_salt, DATE_FORMAT(u.locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
         r.role_id, r.role_nm, r.role_hndlr, r.description, r.hierarchy_id, h.hierarchy_nm , h.parent_hirrarchy_id , h.level_type, 
-        p.position_id, p.position_nm, p.end_date
+        p.position_id, p.position_nm, p.end_date, r.landing_url
         from users_lst_t u 
         join roles_lst_t r on r.role_id = u.role_id and r.is_active = 1
         join hierarchy_lst_t h on h.hirrarchy_id = r.hierarchy_id and h.is_active = 1 
@@ -111,12 +111,14 @@ exports.insertLoginHistory = async (data) => {
 
 // checks if user has acive sesssionor not 
 exports.checkIfSessionAlive = async (sessionId) => {
+    
     const qry = `select id, session_id, u.user_id, login_timestamp, last_activity_timestamp, expires_at, destroyed_at, user_nm , first_nm , last_nm, mobile_no, 
             email, last_login, is_locked, login_attempts, DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
             ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired
             from user_sessions as u
             join users_lst_t as ul on u.user_id = ul.user_id and ul.is_active = 1
             where u.is_active = 1 and session_id = ?;`
+            console.log(qry, sessionId)
     return dbutils.executeQuery(qry, [sessionId], 'session alive ');
 }
 

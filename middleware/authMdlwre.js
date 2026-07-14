@@ -32,7 +32,7 @@ exports.isAuthenticated = async (req, res, next) => {
                 console.log('Token expired checking session...', decoded);
                 const sessionId = decoded?.session_id;
 
-                if (!sessionId) resutils.createError('invalidToken', 'Invalid credentials');
+                if (!sessionId) resutils.createError('sessionExpired', 'Session expired/invalid');
 
                 // check if session is still alive or not 
                 const isAlive = await authMdl.checkIfSessionAlive(sessionId);
