@@ -29,8 +29,8 @@ exports.generateJWToken = async (user, session_id) => {
         }
     }
     const token = jwt.sign(obj, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
-    console.log('Token : ', token);
-    console.log(jwt.decode(token, { complete: true }));
+    // console.log('Token : ', token);
+    // console.log(jwt.decode(token, { complete: true }));
     return token
 }
 
@@ -154,7 +154,7 @@ exports.logIn = async (req, res) => {
             // console.log('cookie expiresAt:', dateFns.format(expiresAt, 'dd-MM-yyyy HH:mm'));
 
             //generte jwt token
-            const token = await this.generateJWToken(userObj, sessionId);
+            const token = await this.generateJWToken(userData[0], sessionId);
 
             // store session details in database 
             const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userObj?.user_id, expires_at: expiresAt });
@@ -449,8 +449,6 @@ exports.verifyEmailOtp = async (req, res) => {
             otp: { required: true, type: 'number', label: 'OTP' },
             message_key: { required: true, type: 'number', label: 'OTP validation key' }
         });
-        console.log(validation);
-
 
         if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
 

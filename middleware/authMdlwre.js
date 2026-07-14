@@ -22,6 +22,8 @@ exports.isAuthenticated = async (req, res, next) => {
         try {
             // check if token expires 
             decodedToken = jwt.verify(token, process.env.JWT_SECRET, {});
+            console.log('decodedToken',decodedToken);
+            
             user = decodedToken;
             console.log('JWT Token is still alive...', token);
 
@@ -61,8 +63,8 @@ exports.isAuthenticated = async (req, res, next) => {
                 const updated = await authMdl.slideExpressSession(sessionId);
                 console.log('session successfully slided', updated);
 
-                decodedToken = tokenPayload;
-                user = tokenPayload;
+                decodedToken = userObj;
+                user = userObj;
                 res.setHeader('new-access-token', newToken);
             }
             else throw error;
