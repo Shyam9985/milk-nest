@@ -10,8 +10,31 @@ function Settings() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
     const [expandedCategories, setExpandedCategories] = useState({});
 
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    const filteredCategories = categories
+        .map((category, index) => {
+            const categoryKey = category.categoryName || `category-${index}`;
+            const categoryName = (category.categoryName || '').toLowerCase();
+            const matchedItems = (category.items || []).filter((item) => {
+                const itemText = `${item.menu_name || ''} ${item.menu_url || ''} ${item.menu_item_id || ''}`.toLowerCase();
+                return itemText.includes(normalizedSearch);
+            });
+
+            const hasCategoryMatch = categoryName.includes(normalizedSearch);
+            const visibleItems = normalizedSearch ? matchedItems : category.items || [];
+
+            return {
+                ...category,
+                categoryKey,
+                items: visibleItems,
+                hasMatch: normalizedSearch ? hasCategoryMatch || visibleItems.length > 0 : true
+            };
+        })
+        .filter((category) => category.hasMatch);
 
     const fetchSetupMenus = async (isMounted) => {
         try {
@@ -79,127 +102,139 @@ function Settings() {
 
     return (
         <div className="space-y-4 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
-            <div className={`flex flex-col gap-2 rounded-xl border p-4 sm:flex-row sm:items-end sm:justify-between ${isDarkTheme ? 'border-slate-700 bg-slate-800/70 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>
+            <div className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-end sm:justify-between ${isDarkTheme ? 'border-slate-700 bg-slate-800/70 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>
                 <div>
                     <h1 className="text-2xl font-semibold">Setup menus</h1>
                     <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-slate-600'}`}>Browse the available setup actions grouped by category.</p>
                 </div>
-                <div className={`rounded-full px-3 py-1 text-sm ${isDarkTheme ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                    Theme: {isDarkTheme ? 'Dark' : 'Light'} · Font size: {typeof window !== 'undefined' ? window.getComputedStyle(document.documentElement).getPropertyValue('--app-font-size').trim() : '16px'}
+                <div className="flex flex-col gap-2 sm:items-end">
+                    <div className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${isDarkTheme ? 'border-slate-700 bg-slate-700/60 text-slate-200' : 'border-slate-200 bg-slate-100 text-slate-700'}`}>
+                        <Icons.Search size={16} />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search setup items"
+                            className={`w-48 bg-transparent text-sm outline-none ${isDarkTheme ? 'text-slate-100 placeholder:text-slate-400' : 'text-slate-700 placeholder:text-slate-400'}`}
+                        />
+                    </div>
+                    <div className={`rounded-full px-3 py-1 text-sm ${isDarkTheme ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
+                        Categories: {filteredCategories.length}
+                    </div>
                 </div>
             </div>
 
-            {categories.length === 0 ? (
+            {filteredCategories.length === 0 ? (
                 <div className={`rounded-xl border border-dashed p-6 text-sm ${isDarkTheme ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-300 bg-slate-50 text-slate-600'}`}>
-                    No setup menus are available right now.
+                    {searchTerm.trim() ? 'No setup items match your search.' : 'No setup menus are available right now.'}
                 </div>
             ) : (
                 <div className="grid gap-4">
 
-                    {categories.map((category, index) => {
+                    {filteredCategories.map((category) => {
 
-    const categoryKey = category.categoryName || `category-${index}`;
-    const isExpanded = expandedCategories[categoryKey] ?? true;
-
-    return (
-
-        <div key={categoryKey}
-        className=" overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-sm transition-all duration-300 hover:shadow-lg">
-            {/* Category Header */}
-
-            <button                type="button"                onClick={() => toggleCategory(categoryKey)}
-                className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-[var(--card-hover-bg)]">
-
-                <div className="flex items-center gap-4">
-
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--icon-bg)] text-[var(--icon-color)]">
-                        <Icons.FolderOpen size={24} />
-                    </div>
-
-                    <div>
-
-                        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                            {category.categoryName}
-                        </h3>
-
-                        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                            {category.items?.length || 0} Modules
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div className="flex items-center gap-3">
-
-                    <span className="rounded-full bg-[var(--badge-bg)] px-3 py-1 text-xs font-semibold text-[var(--badge-text)]">
-                        {category.items?.length || 0}
-                    </span>
-
-                    {isExpanded
-                        ? <Icons.ChevronDown size={20} className="text-[var(--text-secondary)]" />
-                        : <Icons.ChevronRight size={20} className="text-[var(--text-secondary)]" />
-                    }
-
-                </div>
-
-            </button>
-
-            {isExpanded && (
-
-                <div className="grid gap-4 border-t border-[var(--card-border)] p-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {category.items?.map((item) => {
-
-                        const Icon = Icons[item.icon] || Icons.Settings;
+                        const categoryKey = category.categoryKey;
+                        const isExpanded = expandedCategories[categoryKey] ?? true;
 
                         return (
 
-                            <Link key={item.menu_item_id} to={item.menu_url || "#"}
-                                className="group flex items-center justify-between rounded-xl border border-[var(--card-border)] bg-[var(--bg-secondary)] 
+                            <div key={categoryKey}
+                                className=" overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-sm transition-all duration-300 hover:shadow-lg">
+                                {/* Category Header */}
+
+                                <button type="button" onClick={() => toggleCategory(categoryKey)}
+                                    className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-[var(--card-hover-bg)]">
+
+                                    <div className="flex items-center gap-4">
+
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--icon-bg)] text-[var(--icon-color)]">
+                                            <Icons.FolderOpen size={24} />
+                                        </div>
+
+                                        <div>
+
+                                            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                                                {category.categoryName}
+                                            </h3>
+
+                                            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                                {category.items?.length || 0} Modules
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+
+                                        <span className="rounded-full bg-[var(--badge-bg)] px-3 py-1 text-xs font-semibold text-[var(--badge-text)]">
+                                            {category.items?.length || 0}
+                                        </span>
+
+                                        {isExpanded
+                                            ? <Icons.ChevronDown size={20} className="text-[var(--text-secondary)]" />
+                                            : <Icons.ChevronRight size={20} className="text-[var(--text-secondary)]" />
+                                        }
+
+                                    </div>
+
+                                </button>
+
+                                {isExpanded && (
+
+                                    <div className="grid gap-4 border-t border-[var(--card-border)] p-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                        {category.items?.map((item) => {
+
+                                            const Icon = Icons[item.icon] || Icons.Settings;
+
+                                            return (
+
+                                                <Link key={item.menu_item_id} to={item.menu_url || "#"}
+                                                    className="group flex items-center justify-between rounded-xl border border-[var(--card-border)] bg-[var(--bg-secondary)] 
                                 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-[var(--card-hover-bg)] hover:shadow-md">
 
-                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-3">
 
-                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--icon-bg)] text-[var(--icon-color)]">
+                                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--icon-bg)] text-[var(--icon-color)]">
 
-                                        <Icon size={22} />
+                                                            <Icon size={22} />
+
+                                                        </div>
+
+                                                        <div>
+
+                                                            <p className="font-semibold text-[var(--text-primary)]">
+                                                                {item.menu_name}
+                                                            </p>
+
+                                                            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                                                                Configure {item.menu_name.toLowerCase()}
+                                                            </p>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                    <Icons.ArrowRight size={18} className="text-[var(--text-secondary)] transition-transform duration-300 group-hover:translate-x-1" />
+                                                </Link>
+
+                                            );
+
+                                        })}
 
                                     </div>
 
-                                    <div>
+                                )}
 
-                                        <p className="font-semibold text-[var(--text-primary)]">
-                                            {item.menu_name}
-                                        </p>
-
-                                        <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                                            Configure {item.menu_name.toLowerCase()}
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                                <Icons.ArrowRight size={18} className="text-[var(--text-secondary)] transition-transform duration-300 group-hover:translate-x-1"/>
-                            </Link>
+                            </div>
 
                         );
 
                     })}
-
-                </div>
-
-            )}
-
-        </div>
-
-    );
-
-})}
                 </div>
             )}
         </div>
-        
+
     );
 }
 

@@ -32,38 +32,21 @@ function UnderDevelopment({
 
             {/* Card */}
 
-            <div
-                className="
-                    relative
-                    z-10
+            <div className="relative z-10 w-full max-w-md rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-2xl px-8 py-10 text-center">
 
-                    w-full
-                    max-w-md
+                {/* Logo */}
 
-                    rounded-3xl
-
-                    border
-                    border-[var(--card-border)]
-
-                    bg-[var(--card-bg)]
-
-                    shadow-2xl
-
-                    px-8
-                    py-10
-
-                    text-center
-                "
-            >
+                <img
+                    src="/images/logo.png"
+                    alt="MilkNest"
+                    className="mx-auto mb-5 h-16 w-16 object-contain rounded-full"
+                />
 
                 {/* Icon */}
 
                 <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--brand-tertiary)]">
 
-                    <Construction
-                        size={42}
-                        className="text-[var(--brand-primary)]"
-                    />
+                    <Construction size={42} className="text-[var(--brand-primary)]" />
 
                 </div>
 
@@ -91,29 +74,8 @@ function UnderDevelopment({
 
                 <NavLink
                     to={resolvedBackRoute}
-                    className="
-                        mt-8
-
-                        inline-flex
-                        w-full
-
-                        items-center
-                        justify-center
-                        gap-2
-
-                        rounded-lg
-
-                        bg-[var(--btn-primary-bg)]
-
-                        px-5
-                        py-3
-
-                        text-[var(--btn-primary-text)]
-
-                        transition
-                        hover:opacity-90
-                    "
-                >
+                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--btn-primary-bg)] 
+                    px-5 py-3 text-[var(--btn-primary-text)] transition hover:opacity-90">
 
                     <ArrowLeft size={18} />
 

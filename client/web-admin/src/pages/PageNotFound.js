@@ -24,36 +24,12 @@ function PageNotFound() {
 
             {/* Card */}
 
-            <div
-                className="
-                    relative
-                    z-10
-
-                    w-full
-                    max-w-md
-
-                    rounded-3xl
-
-                    border
-                    border-[var(--card-border)]
-
-                    bg-[var(--card-bg)]
-
-                    shadow-2xl
-
-                    px-8
-                    py-10
-
-                    text-center
-                "
-            >
+            <div className="relative z-10 w-full max-w-md rounded-3xl border border-[var(--card-border)]
+                    bg-[var(--card-bg)] shadow-2xl px-8 py-10 text-center">
 
                 {/* Logo */}
 
-                <img
-                    src="/images/logo.png"
-                    alt="MilkNest"
-                    className="mx-auto mb-5 h-16 w-16 object-contain"
+                <img src="/images/logo.png" alt="MilkNest" className="mx-auto mb-5 h-16 w-16 object-contain  rounded-full"
                 />
 
                 {/* Icon */}
@@ -91,38 +67,11 @@ function PageNotFound() {
 
                 <NavLink
                     to={redirectUrl}
-                    className="
-                        mt-8
-
-                        inline-flex
-                        items-center
-                        justify-center
-                        gap-2
-
-                        w-full
-
-                        rounded-lg
-
-                        bg-[var(--btn-primary-bg)]
-
-                        px-5
-                        py-3
-
-                        text-[var(--btn-primary-text)]
-
-                        transition
-
-                        hover:opacity-90
-                    "
-                >
-
+                    className=" mt-8 inline-flex items-center justify-center gap-2 w-full rounded-lg
+                        bg-[var(--btn-primary-bg)] px-5 py-3 text-[var(--btn-primary-text)] transition hover:opacity-90">
                     <ArrowLeft size={18} />
 
-                    {authCtx.isLogedIn
-                        ? "Back to Dashboard"
-                        : "Back to Login"}
-
-                </NavLink>
+                    {authCtx.isLogedIn ? "Back to Dashboard" : "Back to Login"}</NavLink>
 
             </div>
 
