@@ -89,7 +89,7 @@ function Sidemenu({ collapsed, onToggle }) {
                                 }`
                             }
                         >
-                            {Icon ? <Icon size={20} className="shrink-0" /> : <icons.HelpCircle size={20} className="shrink-0" />}
+                            {Icon ? <Icon size={20} className="shrink-0" /> : <Icons.HelpCircle size={20} className="shrink-0" />}
 
                             {!collapsed && (
                                 <span className="font-medium">{menu.menu_name}</span>
@@ -117,7 +117,7 @@ function Sidemenu({ collapsed, onToggle }) {
                     </div>
                 ) : (
                     <div className="flex justify-center">
-                        <Settings size={18} className="text-[var(--text-tertiary)]" />
+                        <Icons.Settings size={18} className="text-[var(--text-tertiary)]" />
                     </div>
                 )}
 

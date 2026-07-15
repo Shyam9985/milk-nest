@@ -37,11 +37,6 @@ function Maincontent(props) {
 
     return (
         <div className="relative h-full overflow-auto bg-[var(--bg-primary)] text-[var(--text-primary)] border-l border-[var(--border-primary)] transition-colors duration-300">
-
-            Maincontent content here !
-
-            <br />
-
             <Model
                 onSubmit={onSubmit}
                 onClose={onClose}
@@ -61,14 +56,12 @@ function Maincontent(props) {
                 Drawer Content
             </SideDrawer>
 
-            <br />
-
-            <button
+            {/* <button
                 onClick={setOpen}
                 className="px-4 py-2 rounded-md bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-border)] hover:opacity-90 transition"
             >
                 Open Model
-            </button>
+            </button> 
 
             <br />
             <br />
@@ -79,7 +72,7 @@ function Maincontent(props) {
             >
                 Open Drawer
             </button>
-            <br />
+            <br />*/}
             {/* <Loader /> */}
 
             <Outlet />

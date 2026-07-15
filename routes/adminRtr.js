@@ -4,5 +4,6 @@ const authmdlwre = require('../middleware/authMdlwre');
 const adminCtrl = require('../modules/controllers/adminCtrl');
 
 router.get('/menu-items', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), adminCtrl.getMenuItemsCtrl);
+router.get('/setup-menus', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), adminCtrl.getSetupMenusCtrl);
 
 module.exports = router;

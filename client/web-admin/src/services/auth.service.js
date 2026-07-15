@@ -36,3 +36,12 @@ export async function getMenuItems() {
         return error
     }
 }
+
+export async function getSetupMenus() {
+    try {
+        const response = await get('admin/setup-menus');
+        return response;
+    } catch (error) {
+        return error;
+    }
+}
