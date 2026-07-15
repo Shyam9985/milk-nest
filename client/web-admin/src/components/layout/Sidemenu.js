@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, ShoppingCart, Settings, PanelLeftClose, PanelLeftOpen, Info, } from "lucide-react";
+import * as Icons from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { getMenuItems } from "../../services/auth.service";
@@ -64,9 +64,9 @@ function Sidemenu({ collapsed, onToggle }) {
                 <button onClick={onToggle}
                     className="rounded-lg p-2 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition"                >
                     {collapsed ? (
-                        <PanelLeftOpen size={18} />
+                        <Icons.PanelLeftOpen size={18} />
                     ) : (
-                        <PanelLeftClose size={18} />
+                        <Icons.PanelLeftClose size={18} />
                     )}
                 </button>
 
@@ -77,11 +77,11 @@ function Sidemenu({ collapsed, onToggle }) {
             <nav className="flex-1 p-2 space-y-1">
 
                 {menus.map((menu) => {
-                    const Icon = menu.icon;
+                    const Icon = Icons[menu.icon];
                     const active = selected === menu.menu_name;
 
                     return (
-                        <NavLink key={menu.menu_id} to={menu.menu_url}
+                        <NavLink key={menu.menu_item_id} to={menu.menu_url}
                             className={({ isActive }) =>
                                 `relative group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ${isActive
                                     ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]"
@@ -89,14 +89,14 @@ function Sidemenu({ collapsed, onToggle }) {
                                 }`
                             }
                         >
-                            <Users size={20} className="shrink-0" />
+                            {Icon ? <Icon size={20} className="shrink-0" /> : <icons.HelpCircle size={20} className="shrink-0" />}
 
                             {!collapsed && (
                                 <span className="font-medium">{menu.menu_name}</span>
                             )}
 
                             {collapsed && (
-                                <div key={menu.menu_id} className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 
+                                <div key={menu.menu_item_id} className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 
                                     pointer-events-none transition whitespace-nowrap rounded-md bg-[var(--card-bg)] text-[var(--text-primary)] 
                                     border border-[var(--border-primary)] text-sm px-3 py-1.5 shadow-lg z-50">
                                     {menu.menu_name}
