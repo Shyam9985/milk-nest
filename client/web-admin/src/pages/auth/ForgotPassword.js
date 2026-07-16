@@ -18,15 +18,9 @@ function ForgotPasswordForm({ onBack }) {
             setError("Email is required.");
 
             return;
-
         }
 
         setError("");
-
-        console.log({
-            email
-        });
-
     };
 
     return (

@@ -29,7 +29,6 @@ function Sidemenu({ collapsed, onToggle }) {
         const menus = await getMenuItems();
 
         if (menus?.success) {
-            console.log(menus);
             setMenus(menus.data || []);
         } else {
             message.error(menus?.error || menus?.message || 'Unable to feth menus')

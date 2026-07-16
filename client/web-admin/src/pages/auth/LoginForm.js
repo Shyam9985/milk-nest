@@ -52,25 +52,25 @@ function LoginForm() {
         if (Object.keys(validationErrors).length)
             return;
 
-        console.log(form);
+        // console.log(form);
         const result = await handleLogin(form);
         if (!result?.success) {
             message.error(result?.error || result?.message, 1000)
         } else {
             const user = result?.data?.user;
-            console.log(user);
+            // console.log(user);
             authCtx.handleLogin(user);
             message.success('Login successful!' || result?.message || 'Login successful');
         }
     };
 
     const onForgotPassword = () => {
-        console.log("Forgot Password clicked");
+        // console.log("Forgot Password clicked");
         navigate("/forgot-password");
     }
 
     const onRegister = () => {
-        console.log("Register clicked");
+        // console.log("Register clicked");
         navigate("/register");
 
     }

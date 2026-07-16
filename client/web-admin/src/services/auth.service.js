@@ -4,13 +4,13 @@ import { post, get } from "../store/api.service";
 export async function handleLogin(formData) {
     let data = null;
     try {
-        console.log('in handle login service', formData);
+        // console.log('in handle login service', formData);
         const response = await post('auth/login', formData);
-        console.log(response);
+        // console.log(response);
         data = response;
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         data = error;
     }
     return data;
@@ -20,10 +20,10 @@ export async function handleLogout() {
     try {
         const user = localStorage.getItem('user-data');
         const response = await post('auth/logout', user);
-        console.log(response);
+        // console.log(response);
         return response;
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         return error;
     }
 }

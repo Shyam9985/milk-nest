@@ -46,15 +46,15 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
 
     (response) => {
-        console.log("URL:", response.config.url);
-        console.log("STATUS:", response.status);
+        // console.log("URL:", response.config.url);
+        // console.log("STATUS:", response.status);
         // Set jwt token in local storage 
         const jwtToken = response.headers['access-token'];
 
         const localToken = localStorage.getItem("access-token");
 
         if (jwtToken && localToken !== jwtToken) {
-            console.log('setting new jwt token', jwtToken);
+            // console.log('setting new jwt token', jwtToken);
 
             localStorage.setItem("access-token", jwtToken);
         }
@@ -62,10 +62,10 @@ axiosInstance.interceptors.response.use(
         // Refresh access token if server issued a new one
         const refreshToken = response.headers["new-access-token"];
 
-        console.log(refreshToken);
+        // console.log(refreshToken);
 
         if (refreshToken && refreshToken !== localToken) {
-            console.log('setting refresh token', refreshToken);
+            // console.log('setting refresh token', refreshToken);
 
             localStorage.setItem("access-token", refreshToken);
         }
@@ -85,13 +85,13 @@ axiosInstance.interceptors.response.use(
         }
 
         const { data } = error.response;
-        console.log(data);
+        // console.log(data);
 
 
         switch (data.statusKey) {
             case "TOKEN_EXPIRED":
             case "SESSION_EXPIRED":
-                console.log('use shold be logged out!');
+                console.log('user shold be logged out!');
 
                 // Clear authentication data
                 localStorage.removeItem("access-token");

@@ -9,7 +9,7 @@ import Footer from "./Footer";
 
 
 export function ProtectedLayout(props) {
-    console.log('protected layout rendered');
+    // console.log('protected layout rendered');
 
     const themeCtx = useContext(ThemeContext);
 

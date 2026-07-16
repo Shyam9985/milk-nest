@@ -77,7 +77,7 @@ exports.isAuthenticated = async (req, res, next) => {
         next();
 
     } catch (error) {
-        // console.log('Error in auth middleware: ', error);
+        console.log('Error in auth middleware: ', error);
         switch (error.name) {
             case 'TokenExpiredError':
                 resutils.sendErrorResponse(req, res, 'Access token expired. please login again.', RESPONSE_STATUS.TOKEN_EXPIRED, { function: 'is authenticated middleware' });

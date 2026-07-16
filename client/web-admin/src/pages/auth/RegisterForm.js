@@ -63,7 +63,7 @@ function RegisterForm({ onLogin }) {
         dispatch({ type: "SET_ERRORS", errors });
 
         if (Object.keys(errors).length) return;
-        console.log(state.values);
+        // console.log(state.values);
 
     };
 

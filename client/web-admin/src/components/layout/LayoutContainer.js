@@ -11,7 +11,6 @@ import PageNotFound from "../../pages/PageNotFound";
 import { Outlet } from "react-router-dom";
 
 export function ProtectedLayout(props) {
-    console.log('protected layout rendered');
 
     const themeCtx = useContext(ThemeContext);
 
@@ -51,8 +50,6 @@ export function ProtectedLayout(props) {
 }
 
 export function PublicLayout(props) {
-    console.log('plblic layout rendered');
-
     return (<>
          <Outlet />
     </>)
