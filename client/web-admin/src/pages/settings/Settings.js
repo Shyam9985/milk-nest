@@ -103,7 +103,7 @@ function Settings() {
 
     return (
         <>
-            <DataGrid />
+           <div className='p-6'> <DataGrid /></div>
             <br />
             <div className="space-y-4 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
                 <div className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-end sm:justify-between ${isDarkTheme ? 'border-slate-700 bg-slate-800/70 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>

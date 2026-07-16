@@ -1,4 +1,4 @@
-import Settings from "./Setings";
+import Settings from "./Settings";
 import Country from "./Country";
 import State from "./State";
 import District from "./District";
