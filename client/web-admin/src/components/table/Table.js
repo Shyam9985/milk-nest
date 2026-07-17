@@ -101,140 +101,187 @@ function DataTable({ data = [], columns = [], config = {} }) {
     }
 
     return (
-        <Paper
-            variant="outlined"
-            sx={{
-                borderRadius: 3,
-                overflow: 'hidden',
-                bgcolor: theme === 'dark' ? 'background.paper' : 'background.default',
-                borderColor: borderStyle.color || 'divider',
-            }}
-        >
+        <Paper variant="outlined"
+            className="overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--table-row-bg)] shadow-[var(--shadow-sm)]">
+
             {(enableSearch || enableExportCsv || enableExportExcel) && (
-                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b 
+                    border-[var(--table-toolbar-border)] bg-[var(--table-toolbar-bg)] px-4 py-3">
+
                     {enableSearch && (
-                        <TextField
-                            size="small"
-                            placeholder="Search"
-                            value={searchText}
+
+                        <TextField size="small" placeholder="Search..." value={searchText}
                             onChange={(event) => {
-                                const v = event.target.value;
-                                setSearchText(v);
+                                const value = event.target.value;
+                                setSearchText(value);
                                 setPage(0);
-                                if (typeof onFilterChange === 'function') onFilterChange(v);
+                                onFilterChange?.(value);
                             }}
-                            sx={{ flexGrow: 1, minWidth: 200, bgcolor: 'transparent' }}
-                            InputProps={{
-                                sx: {
-                                    backgroundColor: 'var(--surface-primary)',
-                                    color: 'var(--text-primary)'
+
+                            className="flex-1 !min-w-[15rem] !max-w-[20rem]"
+
+                            sx={{
+                                "& .MuiOutlinedInput-root": {
+                                    backgroundColor: "var(--table-search-bg)",
+                                    color: "var(--table-search-text)",
+
+                                    "& fieldset": {
+                                        borderColor: "var(--table-search-border)"
+                                    },
+
+                                    "&:hover fieldset": {
+                                        borderColor: "var(--brand-primary)"
+                                    },
+
+                                    "&.Mui-focused fieldset": {
+                                        borderColor: "var(--brand-primary)"
+                                    }
+                                },
+
+                                "& input::placeholder": {
+                                    color: "var(--table-search-placeholder)",
+                                    opacity: 1
                                 }
                             }}
                         />
+
                     )}
 
-                    <Box sx={{ display: 'flex', gap: 1, ml: enableSearch ? 1 : 0 }}>
+                    <div className="flex items-center gap-2">
+
                         {enableExportCsv && (
+
                             <Tooltip title="Export CSV">
+
                                 <IconButton
-                                    size="small"
                                     onClick={handleExportCsv}
-                                    sx={{
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        color: 'var(--text-primary)',
-                                        bgcolor: 'transparent'
-                                    }}
-                                >
+                                    className="!rounded-lg !border !border-[var(--card-border)] !bg-[var(--table-row-bg)]
+                                !text-[var(--text-primary)] hover:!bg-[var(--hover-bg)]">
+
                                     <FileDownloadIcon fontSize="small" />
+
                                 </IconButton>
+
                             </Tooltip>
+
                         )}
 
                         {enableExportExcel && (
+
                             <Tooltip title="Export Excel">
+
                                 <IconButton
-                                    size="small"
                                     onClick={handleExportExcel}
-                                    sx={{
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        color: 'var(--text-primary)',
-                                        bgcolor: 'transparent'
-                                    }}
+                                    className="!rounded-lg !border !border-[var(--card-border)] !bg-[var(--table-row-bg)]
+                                !text-[var(--text-primary)] hover:!bg-[var(--hover-bg)]
+                            "
                                 >
+
                                     <TableChartIcon fontSize="small" />
+
                                 </IconButton>
+
                             </Tooltip>
+
                         )}
-                    </Box>
-                </Box>
-            )}
 
-            <TableContainer>
-                <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+                    </div>
+
+                </div>
+
+            )}
+            <TableContainer className="bg-[var(--table-row-bg)]">
+
+                <Table size="small">
+
                     <TableHead>
-                        <TableRow>
-                            {tableColumns.map((column) => (
-                                <TableCell
-                                    key={column.field}
-                                    sx={{
-                                        fontWeight: 700,
-                                        cursor: enableSorting && column.sortable ? 'pointer' : 'default',
-                                        borderBottom: borderStyle.horizontal || '1px solid rgba(224, 224, 224, 1)',
-                                        borderRight: borderStyle.vertical || 'none',
-                                        ...headerStyle,
-                                    }}
-                                    onClick={() => handleSort(column.field)}
-                                >
-                                    {column.renderHeader ? column.renderHeader(column) : column.headerName}
-                                    {enableSorting && column.sortable && sortConfig?.field === column.field ? (sortConfig.direction === 'asc' ? ' ↑' : ' ↓') : ''}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {pagedRows.map((row, rowIndex) => (
-                            <TableRow
-                                key={rowIndex}
-                                hover
-                                onClick={() => { if (typeof onRowClick === 'function') onRowClick(row, rowIndex); }}
-                                sx={{
-                                    cursor: typeof onRowClick === 'function' ? 'pointer' : 'default',
-                                    ...rowStyle,
-                                    '& td': {
-                                        borderBottom: borderStyle.horizontal || '1px solid rgba(224, 224, 224, 1)',
-                                        borderRight: borderStyle.vertical || 'none',
-                                        ...cellStyle,
-                                    },
-                                }}
-                            >
-                                {tableColumns.map((column) => (
-                                    <TableCell
-                                        key={`${rowIndex}-${column.field}`}
-                                        sx={{ textAlign: column.align || 'left' }}
-                                        onClick={(e) => { e.stopPropagation(); if (typeof onCellClick === 'function') onCellClick(row[column.field], row, column); }}
-                                    >
-                                        {column.renderCell ? column.renderCell(row[column.field], row, column) : formatCellValue(row[column.field], column)}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
 
-            {enablePagination && (
-                <TablePagination
-                    component="div"
-                    count={filteredRows.length}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    rowsPerPageOptions={rowsPerPageOptions}
-                />
-            )}
+                        <TableRow>
+
+                            {tableColumns.map(column => (
+
+                                <TableCell
+
+                                    key={column.field}
+
+                                    onClick={() => handleSort(column.field)}
+
+                                    className="!border-b !border-[var(--table-header-border)] !bg-[var(--table-header-bg)] !px-4
+                                    !py-3 !font-semibold !text-[var(--table-header-text)]"
+                                    sx={{
+                                        cursor: enableSorting && column.sortable ? "pointer" : "default"
+                                    }}
+
+                                >
+
+                                    {column.headerName}
+
+                                    {enableSorting &&
+                                        column.sortable &&
+                                        sortConfig?.field === column.field &&
+                                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                                </TableCell>
+
+                            ))}
+
+                        </TableRow>
+
+                    </TableHead>
+
+                    <TableBody>
+
+                        {pagedRows.map((row, rowIndex) => (
+
+                            <TableRow hover key={rowIndex} onClick={() => onRowClick?.(row, rowIndex)}
+
+                                className="cursor-pointer bg-[var(--table-row-bg)] transition-colors duration-200 hover:bg-[var(--table-row-hover)]">
+
+                                {tableColumns.map(column => (
+
+                                    <TableCell
+
+                                        key={`${rowIndex}-${column.field}`}
+
+                                        className="!border-b !border-[var(--table-header-border)] !bg-[var(--table-header-bg)] !px-4 !py-3
+                                        !text-[var(--table-header-text)]"
+                                        sx={{
+                                            textAlign: column.align || "left"
+                                        }}
+
+                                        onClick={(e) => {
+
+                                            e.stopPropagation();
+
+                                            onCellClick?.(row[column.field], row, column);
+
+                                        }}
+
+                                    >
+
+                                        {column.renderCell
+                                            ? column.renderCell(row[column.field], row, column) : formatCellValue(row[column.field], column)}
+                                    </TableCell>
+
+                                ))}
+
+                            </TableRow>
+
+                        ))}
+
+                    </TableBody>
+
+                </Table>
+
+            </TableContainer>
+            <TablePagination component="div" count={filteredRows.length} page={page} rowsPerPage={rowsPerPage}
+                onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} rowsPerPageOptions={rowsPerPageOptions}
+                className=" border-t border-[var(--table-toolbar-border)] bg-[var(--table-pagination-bg)] !text-[var(--table-pagination-text)]"
+                sx={{
+                    "& .MuiSelect-icon": {
+                        color: "var(--table-pagination-text)",
+                    }
+                }} />
         </Paper>
     );
 }

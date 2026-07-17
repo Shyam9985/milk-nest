@@ -1,6 +1,25 @@
-
 /* initial/default light theme  */
 :root {
+
+    /* Hover */
+    --hover-bg: #f3f4f6;
+
+    /* Active */
+    --active-bg: #dbeafe;
+
+    /* Focus */
+    --focus-ring: #2563eb;
+
+    /* Shadow */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, .10);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, .15);
+
+    /* Disabled */
+    --disabled-bg: #f3f4f6;
+    --disabled-text: #9ca3af;
+    --disabled-border: #e5e7eb;
+    
     /* Typography */
     --app-font-size: 16px;
     --font-family: "Inter", sans-serif;
@@ -49,10 +68,46 @@
     --btn-secondary-bg: #ffffff;
     --btn-secondary-text: #111827;
     --btn-secondary-border: #d1d5db;
+
+    /* Table */
+    --table-header-bg: #f8fafc;
+    --table-header-text: #111827;
+    --table-header-border: #d1d5db;
+
+    --table-row-bg: #ffffff;
+    --table-row-hover: #eff6ff;
+    --table-row-selected: #dbeafe;
+
+    --table-cell-border: #e5e7eb;
+
+    --table-pagination-bg: #ffffff;
+    --table-pagination-text: #111827;
+
+    --table-toolbar-bg: #ffffff;
+    --table-toolbar-border: #e5e7eb;
+
+    --table-search-bg: #ffffff;
+    --table-search-border: #d1d5db;
+    --table-search-text: #111827;
+    --table-search-placeholder: #9ca3af;
 }
 
 /* Drak theme */
 .dark {
+
+    --hover-bg: #374151;
+
+    --active-bg: #1d4ed8;
+
+    --focus-ring: #60a5fa;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .25);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, .35);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, .45);
+
+    --disabled-bg: #374151;
+    --disabled-text: #6b7280;
+    --disabled-border: #4b5563;
 
     /* Backgrounds */
     --bg-primary: #111827;
@@ -98,4 +153,26 @@
     --btn-secondary-bg: #374151;
     --btn-secondary-text: #f9fafb;
     --btn-secondary-border: #4b5563;
+
+    /* Table */
+    --table-header-bg: #111827;
+    --table-header-text: #f9fafb;
+    --table-header-border: #374151;
+
+    --table-row-bg: #1f2937;
+    --table-row-hover: #374151;
+    --table-row-selected: #1d4ed8;
+
+    --table-cell-border: #374151;
+
+    --table-pagination-bg: #1f2937;
+    --table-pagination-text: #f9fafb;
+
+    --table-toolbar-bg: #1f2937;
+    --table-toolbar-border: #374151;
+
+    --table-search-bg: #111827;
+    --table-search-border: #4b5563;
+    --table-search-text: #f9fafb;
+    --table-search-placeholder: #9ca3af;
 }
