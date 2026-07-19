@@ -19,6 +19,7 @@ exports.generateJWToken = async (user, session_id) => {
         mobile_no: user?.mobile_no,
         email: user?.email,
         last_login: user?.last_login,
+        session_id: session_id,
         role: {
             role_id: user?.role_id, role_nm: user?.role_nm, role_hndlr: user?.role_hndlr,
         },
@@ -29,9 +30,9 @@ exports.generateJWToken = async (user, session_id) => {
         }
     }
     const token = jwt.sign(obj, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
-    // console.log('Token : ', token);
+    console.log('Token : ', token);
     // console.log(jwt.decode(token, { complete: true }));
-    return token
+    return { token, obj }
 }
 
 const destroySession = (req) => {
@@ -154,7 +155,7 @@ exports.logIn = async (req, res) => {
             // console.log('cookie expiresAt:', dateFns.format(expiresAt, 'dd-MM-yyyy HH:mm'));
 
             //generte jwt token
-            const token = await this.generateJWToken(userData[0], sessionId);
+            const tokenRes = await this.generateJWToken(userData[0], sessionId);
 
             // store session details in database 
             const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userObj?.user_id, expires_at: expiresAt });
@@ -170,8 +171,8 @@ exports.logIn = async (req, res) => {
             // update last login time 
             await authMdl.updateLastLoginTime(userObj?.email);
             // Send response to the client 
-            res.setHeader('access-token', token);
-            return resutils.sendSuccessResponse(req, res, { user: { ...userObj, landing_url: userData?.[0]?.landing_url }, token }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
+            res.setHeader('access-token', tokenRes.token);
+            return resutils.sendSuccessResponse(req, res, { user: { ...userObj, landing_url: userData?.[0]?.landing_url } }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
         } else {
             // increase the login attempts
             await authMdl.increaseLoginAttempts(userObj?.email);

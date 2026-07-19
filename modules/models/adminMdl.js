@@ -6,7 +6,7 @@ exports.getMenuItemsMdl = async (user) => {
         join menu_items_t m on rm.menu_item_id = m.menu_item_id and rm.is_active = 1
         where rm.is_active = 1 and m.is_quick_menu <> 1 and rm.role_id = ?
         order by rm.display_order asc;`;
-    return dbutils.executeQuery(qry, [user.role?.role_id]);
+    return dbutils.executeQuery(qry, [user.role?.role_id], 'get menu items model');
 }
 
 exports.getSetupMenusMdl = async (user, menuItemCategory = 'SETUP') => {

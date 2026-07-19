@@ -8,7 +8,7 @@ const authCtrl = require('../modules/controllers/authctrl');
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
     let user = null
-    console.log(token);
+    // console.log(token);
 
     try {
         // retrieve the access token form the headers 
@@ -22,16 +22,16 @@ exports.isAuthenticated = async (req, res, next) => {
         try {
             // check if token expires 
             decodedToken = jwt.verify(token, process.env.JWT_SECRET, {});
-            console.log('decodedToken',decodedToken);
-            
+            // console.log('decodedToken',decodedToken);
+
             user = decodedToken;
-            console.log('JWT Token is still alive...', token);
+            // console.log('JWT Token is still alive...', token);
 
         } catch (error) {
             if (error.name === 'TokenExpiredError') {
 
                 const decoded = jwt.decode(token);
-                console.log('Token expired checking session...', decoded);
+                // console.log('Token expired checking session...', decoded);
                 const sessionId = decoded?.session_id;
 
                 if (!sessionId) resutils.createError('sessionExpired', 'Session expired/invalid');
@@ -46,7 +46,7 @@ exports.isAuthenticated = async (req, res, next) => {
 
                 if (isAlive?.[0]?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + isAlive?.[0]?.locked_until);
 
-                console.log('Session still alive but jwt token has expired.');
+                // console.log('Session still alive but jwt token has expired.');
 
                 const userData = await authMdl.getUserDetails({ email: decoded?.email });
 
@@ -57,15 +57,14 @@ exports.isAuthenticated = async (req, res, next) => {
 
                 const userObj = userData?.[0];
 
-                const newToken = authCtrl.generateJWToken(userObj, sessionId);
+                const newToken = await authCtrl.generateJWToken(userObj, sessionId);
 
                 // update the express session time 
                 const updated = await authMdl.slideExpressSession(sessionId);
-                console.log('session successfully slided', updated);
+                // console.log('session successfully slided', updated);
 
-                decodedToken = userObj;
-                user = userObj;
-                res.setHeader('new-access-token', newToken);
+                user = newToken.obj;
+                res.setHeader('new-access-token', newToken.token);
             }
             else throw error;
         }
