@@ -26,11 +26,10 @@ const styles = {
 };
 
 
-function AlertMessage({ show, message, type = "success", duration = 1000, onClose, showCloseIcon = true }) {
+function AlertMessage({ id, show, message, type = "success", duration = 1000, onClose, showCloseIcon = true }) {
 
     const [visible, setVisible] = useState(false);
     const [progress, setProgress] = useState(100);
-
 
     useEffect(() => {
         if (!show) return;
@@ -41,14 +40,14 @@ function AlertMessage({ show, message, type = "success", duration = 1000, onClos
             setVisible(false);
 
             setTimeout(() => {
-                onClose?.();
+                onClose?.(id);
             }, 350);
 
         }, duration);
 
         return () => clearTimeout(hideTimer);
 
-    }, [show, duration, onClose]);
+    }, [show, duration]);
 
     if (!show)
         return null;
@@ -62,73 +61,50 @@ function AlertMessage({ show, message, type = "success", duration = 1000, onClos
         default: style = styles.info; break;
     }
 
-    return createPortal(
-
-        <div
-
-            className={`
-            fixed
-            top-5
-            right-5
-            z-[9999]
-
-            transform
-            transition-all
-            duration-300
-
-            ${visible
-                    ? "translate-y-0 opacity-100 scale-100"
-                    : "-translate-y-5 opacity-0 scale-95"
-                }
+    return <div className={`transform transition-all duration-300
+            ${visible ? "translate-y-0 opacity-100 scale-100" : "-translate-y-5 opacity-0 scale-95"}
             `}
-        >
+    >
 
-            <div
-                className={`relative overflow-hidden min-w-[20rem] rounded-lg shadow-xl text-white px-5 py-4 ${style.bg}`}
-            >
+        <div className={`relative overflow-hidden min-w-[20rem] rounded-lg shadow-xl text-white px-5 py-4 ${style.bg}`}            >
 
-                <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center">
 
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
 
-                        <span className="text-xl">{style.icon}</span>
+                    <span className="text-xl">{style.icon}</span>
 
-                        <span>{message}</span>
-
-                    </div>
-
-                    {showCloseIcon && (
-
-                        <button
-                            onClick={() => {
-                                setVisible(false);
-                                setTimeout(() => onClose?.(), 300);
-                            }}
-                        >
-                            ✕
-                        </button>
-
-                    )}
+                    <span>{message}</span>
 
                 </div>
 
-                {/* Progress Bar */}
-                <div className="absolute bottom-0 left-0 h-1 w-full bg-white/20">
-                    <div
-                        className="h-full bg-white origin-left"
-                        style={{
-                            animation: `toastProgress ${duration}ms linear forwards`
+                {showCloseIcon && (
+
+                    <button
+                        onClick={() => {
+                            setVisible(false);
+                            setTimeout(() => onClose?.(), 300);
                         }}
-                    />
-                </div>
+                    >
+                        ✕
+                    </button>
+
+                )}
+
             </div>
 
-        </div >,
+            {/* Progress Bar */}
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-white/20">
+                <div
+                    className="h-full bg-white origin-left"
+                    style={{
+                        animation: `toastProgress ${duration}ms linear forwards`
+                    }}
+                />
+            </div>
+        </div>
 
-        document.getElementById("modal-root")
-
-    );
-
+    </div >
 }
 
 export default AlertMessage;

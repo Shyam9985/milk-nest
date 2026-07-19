@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import ToastContainer from "./MessageContainer";
 
 const ToastContext = createContext();
@@ -7,7 +7,10 @@ export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
 
     const removeToast = (id) => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        setToasts(prev => {
+            const next = prev.filter(t => t.id !== id);
+            return next;
+        });
     };
 
     const addToast = (message, type, duration = 1000) => {
