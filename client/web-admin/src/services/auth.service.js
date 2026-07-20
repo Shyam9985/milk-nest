@@ -69,9 +69,19 @@ export async function updatePassword(body) {
     try {
         const response = await post('auth/update-password', {
             email: body.email,
+            usedFor: body?.usedFor || 'forgot-password',
             newPassword: body.newPassword,
             otpKey: body.otpKey
         });
+        return response;
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function resetPasswordMail() {
+    try {
+        const response = await get('auth/reset-password/send-email');
         return response;
     } catch (error) {
         return error;

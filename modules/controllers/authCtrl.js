@@ -314,13 +314,14 @@ exports.updatePassword = async (req, res) => {
         const validation = await validutils.validatePayload(body, {
             email: { required: true, type: 'email', label: 'Email' },
             newPassword: { required: true, type: 'password', label: 'Password' },
+            usedFor: { required: false, type: 'string', label: 'used for' },
             otpKey: { required: true, type: 'number', label: 'OTP validation key' }
         })
 
         if (!validation?.validationStatus) resutils.createError('validationFailed', validation.errors[0]);
 
-        // validate otp 
-        const forgotMailRes = await authMdl.getLatestMailByRequest(body, 'forgot-password');
+        // validate otp      
+        const forgotMailRes = await authMdl.getLatestMailByRequest(body, body?.usedFor);
         const response = forgotMailRes?.[0];
 
         if (!response || (response.email_audit_id != body.otpKey)) {

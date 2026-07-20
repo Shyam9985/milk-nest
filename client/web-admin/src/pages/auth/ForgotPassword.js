@@ -6,18 +6,21 @@ import { useNavigate } from "react-router-dom";
 import { isStrongPassword, isValidEmail } from "../../utils/ValidateUtils";
 import { useToast } from "../../contexts/MessageContext";
 import * as authService from "../../services/auth.service";
+import VerifyOtp from "./VerifyOTP";
+import UpdatePassword from "./UpdatePassword";
 
 function ForgotPasswordForm() {
 
     const [email, setEmail] = useState("");
-    const [otp, setOtp] = useState("");
     const [newPassword, setNewPassword] = useState("");
+
+    const [step, setStep] = useState("send");
+    const [verifiedOtp, setVerifiedOtp] = useState("");
+
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [otpResponse, setOtpResponse] = useState(null);
-    const [otpVerified, setOtpVerified] = useState(false);
     const [sendingOtp, setSendingOtp] = useState(false);
-    const [verifyingOtp, setVerifyingOtp] = useState(false);
     const [updatingPassword, setUpdatingPassword] = useState(false);
 
     const message = useToast();
@@ -210,25 +213,19 @@ function ForgotPasswordForm() {
                                     <>
                                         {/* OTP */}
 
-                                        <AuthInput
-                                            label="Verification Code"
-                                            name="otp"
-                                            type="text"
-                                            value={otp}
-                                            placeholder="Enter 6-digit OTP"
-                                            onChange={(e) =>
-                                                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                                            }
-                                        />
+                                        <VerifyOtp email={email} messageKey={otpResponse.message_key}
+                                            onVerified={(otp) => {
+                                                setVerifiedOtp(otp);
+                                                setStep("update");
+                                            }}
 
-                                        <button
-                                            type="button"
-                                            onClick={handleVerifyOtp}
-                                            disabled={verifyingOtp}
-                                            className="mt-2 w-full rounded-lg py-3 font-medium transition-all bg-[var(--btn-primary-bg)]
-                                                text-[var(--btn-primary-text)] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed">
-                                            {verifyingOtp ? "Verifying..." : "✔ Verify OTP"}
-                                        </button>
+                                            onResend={handleSubmit}
+
+                                            onChangeEmail={() => {
+                                                setOtpResponse(null);
+                                                setStep("send");
+                                            }}
+                                        />
 
                                         {/* Links */}
 
@@ -258,31 +255,12 @@ function ForgotPasswordForm() {
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="space-y-3">
-                                        <PasswordInput
-                                            label="New Password"
-                                            name="newPassword"
-                                            value={newPassword}
-                                            placeholder="Enter a strong password"
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                        />
-
-                                        <PasswordInput
-                                            label="Confirm Password"
-                                            name="confirmPassword"
-                                            value={confirmPassword}
-                                            placeholder="Re-enter your password"
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                        />
-
-                                        <button
-                                            type="submit"
-                                            disabled={updatingPassword}
-                                            className="mt-2 w-full rounded-lg py-3 font-medium transition-all bg-[var(--btn-primary-bg)]
-                                                text-[var(--btn-primary-text)] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed">
-                                            {updatingPassword ? "Updating Password..." : "🔐 Update Password"}
-                                        </button>
-                                    </div>
+                                    <UpdatePassword
+                                        email={email}
+                                        requestFor={'forgot-password'}
+                                        messageKey={otpResponse.message_key}
+                                        onSuccess={() => navigate("/login")}
+                                    />
                                 )}
 
                             </div>

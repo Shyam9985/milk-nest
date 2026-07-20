@@ -72,8 +72,8 @@ exports.markOTPVerified = async (key, user) => {
 }
 
 // gets latest mail audit by mail and used for
-exports.getLatestMailByRequest = async (body, usedFor) => {
-    const qry = `select email_audit_id, recipient_email, verify_key, email_status, expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, is_used
+exports.getLatestMailByRequest = async (body, usedFor = 'forgot-password') => {
+    const qry = `select email_audit_id, recipient_email, verify_key, email_status, DATE_FORMAT(expires_at, '%d-%m-%Y %h:%i %p') as expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, is_used
          from email_audit_logs_t where is_active = 1 and email_status = 'SUCCESS' and recipient_email = ? and used_for = ? order by email_audit_id desc limit 1;`
     return dbutils.executeQuery(qry, [body.email, usedFor], 'get latest mail request');
 }
@@ -111,14 +111,14 @@ exports.insertLoginHistory = async (data) => {
 
 // checks if user has acive sesssionor not 
 exports.checkIfSessionAlive = async (sessionId) => {
-    
+
     const qry = `select id, session_id, u.user_id, login_timestamp, last_activity_timestamp, expires_at, destroyed_at, user_nm , first_nm , last_nm, mobile_no, 
             email, last_login, is_locked, login_attempts, DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
             ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired
             from user_sessions as u
             join users_lst_t as ul on u.user_id = ul.user_id and ul.is_active = 1
             where u.is_active = 1 and session_id = ?;`
-            console.log(qry, sessionId)
+    // console.log(qry, sessionId)
     return dbutils.executeQuery(qry, [sessionId], 'session alive ');
 }
 
@@ -136,7 +136,6 @@ exports.slideExpressSession = (sessionId) => {
 // unlock locked users 
 exports.unlockUsers = () => {
     console.log('Unlocking the users at :', new Date());
-
     const query = 'update users_lst_t set is_locked = 0 , login_attempts = 0 , locked_until = null where is_active = 1 and locked_until < current_timestamp();';
     return dbutils.executeQuery(query, [], 'unlock users');
 }
