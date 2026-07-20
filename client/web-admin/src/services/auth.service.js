@@ -45,3 +45,35 @@ export async function getSetupMenus() {
         return error;
     }
 }
+
+export async function sendForgotPasswordEmail(email) {
+    try {
+        const response = await post('/auth/forgot-password', { email: email });
+        return response
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function verifyForgotPasswordOtp(body) {
+    try {
+        const response = await post('auth/email/verify-otp', { email: body.email, otp: body.otp, message_key: body.key });
+        return response;
+    } catch (error) {
+        return error
+    }
+
+}
+
+export async function updatePassword(body) {
+    try {
+        const response = await post('auth/update-password', {
+            email: body.email,
+            newPassword: body.newPassword,
+            otpKey: body.otpKey
+        });
+        return response;
+    } catch (error) {
+        return error;
+    }
+}

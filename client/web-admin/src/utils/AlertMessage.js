@@ -66,26 +66,17 @@ function AlertMessage({ id, show, message, type = "success", duration = 1000, on
             `}
     >
 
-        <div className={`relative overflow-hidden min-w-[20rem] rounded-lg shadow-xl text-white px-5 py-4 ${style.bg}`}            >
+        <div className={`relative overflow-hidden min-w-[20rem] rounded-lg shadow-xl text-white px-5 py-4 ${style.bg}`}>
 
             <div className="flex justify-between items-center">
 
                 <div className="flex items-center gap-3">
-
-                    <span className="text-xl">{style.icon}</span>
-
                     <span>{message}</span>
-
                 </div>
 
                 {showCloseIcon && (
 
-                    <button
-                        onClick={() => {
-                            setVisible(false);
-                            setTimeout(() => onClose?.(), 300);
-                        }}
-                    >
+                    <button onClick={() => { setVisible(false); setTimeout(() => onClose?.(), 300); }}>
                         ✕
                     </button>
 
