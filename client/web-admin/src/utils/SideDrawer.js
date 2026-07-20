@@ -81,50 +81,33 @@ function SideDrawer({
     return createPortal(
 
         <div
-            className={`fixed inset-0 z-50 flex ${current.wrapper}
-            bg-black/50
-            transition-opacity
-            duration-300
-            ${isOpen ? "opacity-100" : "opacity-0"}`}
-            onClick={onClose}
-        >
+            className={`fixed inset-0 z-50 flex ${current.wrapper} bg-black/50 transition-opacity
+            duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`} onClick={onClose}>
 
             <div
 
                 onClick={(e) => e.stopPropagation()}
                 style={current.style}
 
-                className={`
-                    bg-white
-                    shadow-xl
-                    transition-transform
-                    duration-300
-                    ease-in-out
-                    ${current.class}
-                    h-full
-                `}
-            >
+                className={`bg-[var(--bg-primary)] text-[var(--text-primary)] border-l border-[var(--border-primary)] shadow-2xl
+                    transition-all duration-300 ease-in-out ${current.class} h-full`}>
 
-                <div className="flex justify-between items-center border-b px-5 py-4">
-
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
                     <h3 className="text-lg font-semibold">
 
                         {title}
 
                     </h3>
 
-                    <button
-                        onClick={onClose}
-                        className="text-xl hover:text-red-500"
-                    >
+                    <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg
+                        text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] hover:text-[var(--danger)] transition-colors">
                         ✕
 
                     </button>
 
                 </div>
 
-                <div className="p-5 overflow-auto h-[calc(100%-70px)]">
-
+                <div className="h-[calc(100%-73px)] overflow-y-auto bg-[var(--bg-primary)] text-[var(--text-primary)] p-6">
                     {children}
 
                 </div>
