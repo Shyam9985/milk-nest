@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import AuthContext from "../../contexts/AuthContext";
 import ThemeContext from "../../contexts/ThemeContext";
 import Sidemenu from "./Sidemenu";
@@ -17,12 +17,27 @@ export function ProtectedLayout(props) {
         JSON.parse(localStorage.getItem("sidebarCollapsed")) ?? false
     );
 
-    const toggleSidebar = () => {
-        setSidebarCollapsed((prev) => {
-            localStorage.setItem("sidebarCollapsed", JSON.stringify(!prev));
-            return !prev;
-        });
-    };
+
+    const [isTablet, setIsTablet] = useState(window.innerWidth < 1024);
+
+
+    useEffect(() => {
+
+        const handleResize = () => {
+            setIsTablet(window.innerWidth < 1024);
+        };
+
+        window.addEventListener("resize", handleResize);
+
+        return () => {
+            window.removeEventListener("resize", handleResize);
+        };
+
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem("sidebar-collapsed", JSON.stringify(sidebarCollapsed));
+    }, [sidebarCollapsed]);
 
     return (
         <div className="w-screen h-screen flex flex-col overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
@@ -31,8 +46,10 @@ export function ProtectedLayout(props) {
             <div className="flex-1 flex overflow-hidden">
 
                 <Sidemenu
-                    collapsed={sidebarCollapsed}
-                    onToggle={toggleSidebar}
+                    collapsed={isTablet ? true : sidebarCollapsed}
+                    onToggle={() =>
+                        setSidebarCollapsed(prev => !prev)
+                    }
                 />
 
                 <div className="flex-1 flex flex-col overflow-hidden">

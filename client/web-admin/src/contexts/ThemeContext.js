@@ -37,7 +37,7 @@ export function Theme(props) {
     return (
         <div className="inline-flex items-center rounded-xl border border-[var(--toggle-border)] bg-[var(--toggle-bg)] p-1 shadow-sm">
 
-            <button onClick={themeCtx.setLightTheme} className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200
+            <button onClick={themeCtx.setLightTheme} className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200
             ${themeCtx.theme === "light" ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm" : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"}      `}
                 title="Light Theme"
             >
@@ -46,7 +46,7 @@ export function Theme(props) {
 
             <button
                 onClick={themeCtx.setDarkTheme}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200
+                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200
             ${themeCtx.theme === "dark" ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm" : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"}        `}
                 title="Dark Theme"
             >
