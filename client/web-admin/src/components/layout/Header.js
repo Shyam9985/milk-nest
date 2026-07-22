@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { User, LogOut, ChevronDown, } from "lucide-react";
+import { User, LogOut, ChevronDown, Type, Sun, } from "lucide-react";
 
 import AuthContext from "../../contexts/AuthContext";
 import FontSizeContext from "../../contexts/FontSizeContext";
@@ -89,16 +89,13 @@ function Header() {
 
                     <div className="flex items-center gap-4">
 
-                        {/* Font Controls */}
-
-                        <FontSizeContext />
-
-                        {/* Theme */}
-
-                        <Theme />
+                        {/* Desktop Controls */}
+                        <div className="hidden sm:flex items-center gap-4">
+                            <FontSizeContext />
+                            <Theme />
+                        </div>
 
                         {/* Profile */}
-
                         {authCtx.isLogedIn && (
 
                             <div className="relative" ref={menuRef}>
@@ -121,14 +118,45 @@ function Header() {
 
                                 {showMenu && (
 
-                                    <div className="absolute right-0 top-full mt-2 w-52 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-2xl overflow-hidden z-50 transition-colors duration-300">
+                                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-2xl overflow-hidden z-50">
 
-                                        <button className="w-full flex items-center gap-3 px-4 py-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors border-b border-[var(--border-primary)]"
-                                            onClick={handleProfileClick}>
+                                        {/* Mobile Only */}
+                                        <div className="sm:hidden border-b border-[var(--border-primary)]">
+
+                                            <div className="flex items-center justify-between px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Type size={18} />
+                                                    <span className="text-sm font-medium">
+                                                        Font Size
+                                                    </span>
+                                                </div>
+
+                                                <FontSizeContext mobile />
+                                            </div>
+
+                                            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border-primary)]">
+                                                <div className="flex items-center gap-3">
+                                                    <Sun size={18} />
+                                                    <span className="text-sm font-medium">
+                                                        Theme
+                                                    </span>
+                                                </div>
+
+                                                <Theme mobile />
+                                            </div>
+
+                                        </div>
+
+                                        {/* Profile */}
+                                        <button
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors border-b border-[var(--border-primary)]"
+                                            onClick={handleProfileClick}
+                                        >
                                             <User size={18} />
                                             Profile
                                         </button>
 
+                                        {/* Logout */}
                                         <button
                                             onClick={handleLogOut}
                                             className="w-full flex items-center gap-3 px-4 py-3 text-[var(--danger)] hover:bg-red-50 transition-colors"
@@ -154,7 +182,7 @@ function Header() {
                 isOpen={showProfile}
                 onClose={() => setShowProfile(false)}
                 title="My Profile"
-                width="70vw"
+                drawerSize='lg'
             >
                 <Profile />
             </SideDrawer>

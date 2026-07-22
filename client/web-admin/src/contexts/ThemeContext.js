@@ -35,17 +35,21 @@ export function Theme(props) {
     /* ---------------- Theme ---------------- */
 
     return (
-        <div className="flex overflow-hidden rounded-lg border border-white/20 bg-white/15 backdrop-blur-md">
+        <div className="inline-flex items-center rounded-xl border border-[var(--toggle-border)] bg-[var(--toggle-bg)] p-1 shadow-sm">
 
-            <button
-                onClick={themeCtx.setLightTheme}
-                className={`p-2 transition ${themeCtx.theme === "light" ? "bg-[var(--brand-primary)] text-white" : "text-white hover:bg-white/20"}`}>
+            <button onClick={themeCtx.setLightTheme} className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200
+            ${themeCtx.theme === "light" ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm" : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"}      `}
+                title="Light Theme"
+            >
                 <Sun size={18} />
             </button>
 
             <button
                 onClick={themeCtx.setDarkTheme}
-                className={`p-2 transition ${themeCtx.theme === "dark" ? "bg-[var(--brand-primary)] text-white" : "text-white hover:bg-white/20"}`}>
+                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200
+            ${themeCtx.theme === "dark" ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm" : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"}        `}
+                title="Dark Theme"
+            >
                 <Moon size={18} />
             </button>
 

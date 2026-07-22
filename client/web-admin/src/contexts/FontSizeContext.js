@@ -18,26 +18,37 @@ function FontSizeContext() {
     }, [fontSize]);
 
     return (
-        <div className="flex overflow-hidden rounded-lg border border-white/20 bg-white/15 backdrop-blur-md">
+        <div className="inline-flex items-center rounded-xl border border-[var(--toggle-border)] bg-[var(--toggle-bg)] p-1 shadow-sm">
 
             <button
                 disabled={fontSize === MIN_FONT}
                 onClick={() =>
-                    setFontSize((prev) =>
-                        Math.max(MIN_FONT, prev - 2)
-                    )
+                    setFontSize(prev => Math.max(MIN_FONT, prev - 2))
                 }
-                className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40 transition"
+                className="
+            flex h-9 w-10 items-center justify-center rounded-lg
+            text-[var(--toggle-text)]
+            transition-all duration-200
+            hover:bg-[var(--toggle-hover)]
+            disabled:cursor-not-allowed
+            disabled:opacity-40
+        "
+                title="Decrease Font Size"
             >
                 A-
             </button>
 
             <button
                 onClick={() => setFontSize(DEFAULT_FONT)}
-                className={`px-3 py-2 text-white transition ${fontSize === DEFAULT_FONT
-                        ? "bg-[var(--brand-primary)]"
-                        : "hover:bg-white/20"
-                    }`}
+                className={`
+            flex h-9 w-10 items-center justify-center rounded-lg
+            transition-all duration-200
+            ${fontSize === DEFAULT_FONT
+                        ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm"
+                        : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"
+                    }
+        `}
+                title="Default Font Size"
             >
                 A
             </button>
@@ -45,11 +56,17 @@ function FontSizeContext() {
             <button
                 disabled={fontSize === MAX_FONT}
                 onClick={() =>
-                    setFontSize((prev) =>
-                        Math.min(MAX_FONT, prev + 2)
-                    )
+                    setFontSize(prev => Math.min(MAX_FONT, prev + 2))
                 }
-                className="px-3 py-2 text-white hover:bg-white/20 disabled:opacity-40 transition"
+                className="
+            flex h-9 w-10 items-center justify-center rounded-lg
+            text-[var(--toggle-text)]
+            transition-all duration-200
+            hover:bg-[var(--toggle-hover)]
+            disabled:cursor-not-allowed
+            disabled:opacity-40
+        "
+                title="Increase Font Size"
             >
                 A+
             </button>

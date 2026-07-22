@@ -208,7 +208,7 @@ function DataTable({ data = [], columns = [], config = {} }) {
                                     onClick={() => handleSort(column.field)}
 
                                     className="!border-b !border-[var(--table-header-border)] !bg-[var(--table-header-bg)] !px-4
-                                    !py-3 !font-semibold !text-[var(--table-header-text)]"
+                                    !py-3 !font-semibold !text-[var(--table-header-text)] !min-w-[5rem]"
                                     sx={{
                                         cursor: enableSorting && column.sortable ? "pointer" : "default"
                                     }}
