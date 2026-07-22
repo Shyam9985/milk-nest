@@ -31,7 +31,7 @@ exports.generateJWToken = async (user, session_id) => {
     }
     const token = jwt.sign(obj, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
     console.log('Token : ', token);
-    // console.log(jwt.decode(token, { complete: true }));
+    console.log(jwt.decode(token, { complete: true }));
     return { token, obj }
 }
 

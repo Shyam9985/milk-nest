@@ -28,7 +28,7 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'access-token'],
     exposedHeaders: ['access-token', 'new-access-token'],
     credentials: true,
-    maxAge: 1800 // 30 minutes
+    maxAge: 18000 // 30 minutes
 };
 
 // enable cors

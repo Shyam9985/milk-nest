@@ -8,7 +8,7 @@ const authCtrl = require('../modules/controllers/authctrl');
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
     let user = null
-    // console.log(token);
+    console.log('token', token);
 
     try {
         // retrieve the access token form the headers 
@@ -31,7 +31,7 @@ exports.isAuthenticated = async (req, res, next) => {
             if (error.name === 'TokenExpiredError') {
 
                 const decoded = jwt.decode(token);
-                // console.log('Token expired checking session...', decoded);
+                console.log('Token expired checking session...', decoded);
                 const sessionId = decoded?.session_id;
 
                 if (!sessionId) resutils.createError('sessionExpired', 'Session expired/invalid');
