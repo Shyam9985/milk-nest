@@ -8,11 +8,13 @@ import { handleLogout } from "../../services/auth.service";
 import { useToast } from "../../contexts/MessageContext";
 import SideDrawer from "../../utils/SideDrawer";
 import Profile from "../../pages/profile/Profile";
+import Modal from "../../utils/ModelComponent";
 
 function Header() {
     const authCtx = useContext(AuthContext);
     const [showMenu, setShowMenu] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const menuRef = useRef(null);
     const message = useToast();
@@ -31,18 +33,23 @@ function Header() {
         return () => document.removeEventListener("mousedown", closeMenu);
     }, []);
 
-    async function handleLogOut() {
+    async function confirmLogout() {
 
-        // expire express session 
         const result = await handleLogout();
+
         if (result.success) {
-            message.success('Loggedout successfully!');
+            message.success("Logged out successfully!");
             authCtx.handleLogOut();
-            setShowMenu(false);
         } else {
-            message.error(result?.error || result?.message || 'Error logging out the user ', 1500)
+            message.error(
+                result?.error ||
+                result?.message ||
+                "Error logging out the user.",
+                1500
+            );
         }
 
+        setShowLogoutModal(false);
     }
 
     const handleProfileClick = () => {
@@ -158,7 +165,10 @@ function Header() {
 
                                         {/* Logout */}
                                         <button
-                                            onClick={handleLogOut}
+                                            onClick={() => {
+                                                setShowMenu(false);
+                                                setShowLogoutModal(true);
+                                            }}
                                             className="w-full flex items-center gap-3 px-4 py-3 text-[var(--danger)] hover:bg-red-50 transition-colors"
                                         >
                                             <LogOut size={18} />
@@ -186,6 +196,23 @@ function Header() {
             >
                 <Profile />
             </SideDrawer>
+            <Modal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onSubmit={confirmLogout}
+                title="Confirm Logout"
+                buttonName="Logout"
+            >
+                <div className="space-y-3">
+                    <p className="text-[var(--text-primary)]">
+                        Are you sure you want to logout?
+                    </p>
+
+                    <p className="text-sm text-[var(--text-secondary)]">
+                        You will need to sign in again to access MilkNest.
+                    </p>
+                </div>
+            </Modal>
         </>
     );
 }
