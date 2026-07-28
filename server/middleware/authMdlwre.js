@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const resutils = require("../utils/response.utils");
 const RESPONSE_STATUS = require("../utils/standard.messages");
-const authMdl = require('../modules/models/authMdl');
-const authCtrl = require('../modules/controllers/authctrl');
+const authMdl = require('../models/authMdl');
+const authCtrl = require('../controllers/authctrl');
 
 // authntication validation middleware
 exports.isAuthenticated = async (req, res, next) => {

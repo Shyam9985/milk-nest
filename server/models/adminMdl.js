@@ -1,4 +1,4 @@
-const dbutils = require("../../utils/db.utils");
+const dbutils = require("../utils/db.utils");
 
 
 exports.getMenuItemsMdl = async (user) => {

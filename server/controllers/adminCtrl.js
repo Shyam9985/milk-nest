@@ -1,6 +1,6 @@
-const { CACHE_TYPES } = require("../../utils/cache.utils");
-const resutils = require("../../utils/response.utils")
-const RESPONSE_STATUS = require("../../utils/standard.messages")
+const { CACHE_TYPES } = require("../utils/cache.utils");
+const resutils = require("../utils/response.utils")
+const RESPONSE_STATUS = require("../utils/standard.messages")
 const admMdl = require("../models/adminMdl")
 const _ = require('lodash')
 

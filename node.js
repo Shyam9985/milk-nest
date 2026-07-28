@@ -1,15 +1,15 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const logger = require('./middleware/logger');
+const logger = require('./server/middleware/logger');
 const cookieParser = require('cookie-parser');
-const response = require('./utils/response.utils');
-const RESPONSE_STATUS = require('./utils/standard.messages');
-const apiroutes = require('./routes/apiRoutes');
-const dbconfig = require('./config/db.config');
+const response = require('./server/utils/response.utils');
+const RESPONSE_STATUS = require('./server/utils/standard.messages');
+const apiroutes = require('./server/routes/apiRoutes');
+const dbconfig = require('./server/config/db.config');
 const expressSession = require('express-session');
 const mySqlStore = require('express-mysql-session')(expressSession);
-require('./utils/schedule.utils');
+require('./server/utils/schedule.utils');
 
 // creting express app
 const app = express();
@@ -38,7 +38,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'server/public')));
 app.use(logger);
 
 // Wait for teh database to connect 

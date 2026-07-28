@@ -1,7 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authCtrl = require('../modules/controllers/authctrl');
+const authCtrl = require('../controllers/authctrl');
 const authmdlwre = require('../middleware/authMdlwre');
 
 router.post('/signup', authCtrl.signUp);

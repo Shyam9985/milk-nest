@@ -1,10 +1,10 @@
 const authMdl = require('../models/authMdl');
-const resutils = require('../../utils/response.utils');
-const validutils = require('../../utils/validate.utils');
-const RESPONSE_STATUS = require('../../utils/standard.messages');
+const resutils = require('../utils/response.utils');
+const validutils = require('../utils/validate.utils');
+const RESPONSE_STATUS = require('../utils/standard.messages');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const emailutils = require('../../utils/email.utils');
+const emailutils = require('../utils/email.utils');
 const UAParser = require('ua-parser-js');
 const dateFns = require('date-fns');
 

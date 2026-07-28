@@ -1,5 +1,5 @@
 const scheduler = require('node-schedule');
-const authMdl = require('../modules/models/authMdl');
+const authMdl = require('../models/authMdl');
 const dateFns = require('date-fns');
 
 // schedulers

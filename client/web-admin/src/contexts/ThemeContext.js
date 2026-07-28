@@ -26,6 +26,7 @@ export function ThemeContextProvider(props) {
 export function Theme(props) {
 
     const themeCtx = useContext(ThemeContext);
+    const activeTheme = themeCtx.theme;
 
     useEffect(() => {
         console.log('theme changes: ', themeCtx.theme);
@@ -35,10 +36,10 @@ export function Theme(props) {
     /* ---------------- Theme ---------------- */
 
     return (
-        <div className="inline-flex items-center rounded-xl border border-[var(--toggle-border)] bg-[var(--toggle-bg)] p-1 shadow-sm">
+        <div className="inline-flex items-center rounded-xl border border-white/20 bg-white/15 backdrop-blur-md text-white p-1 shadow-sm">
 
-            <button onClick={themeCtx.setLightTheme} className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200
-            ${themeCtx.theme === "light" ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm" : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"}      `}
+            <button onClick={themeCtx.setLightTheme}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 ${activeTheme == 'light' ? 'bg-[var(--brand-primary)]' : ''}`}
                 title="Light Theme"
             >
                 <Sun size={18} />
@@ -46,8 +47,7 @@ export function Theme(props) {
 
             <button
                 onClick={themeCtx.setDarkTheme}
-                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200
-            ${themeCtx.theme === "dark" ? "bg-[var(--toggle-active-bg)] text-[var(--toggle-active-text)] shadow-sm" : "text-[var(--toggle-text)] hover:bg-[var(--toggle-hover)]"}        `}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 ${activeTheme == 'dark' ? 'bg-[var(--brand-primary)]' : ''}`}
                 title="Dark Theme"
             >
                 <Moon size={18} />

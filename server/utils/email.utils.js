@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const authMdl = require('../modules/models/authMdl');
+const authMdl = require('../models/authMdl');
 
 exports.get6DigitOtp = () => {
     return parseInt(Math.random(9) * 1000000);

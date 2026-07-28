@@ -8,8 +8,8 @@ process.on('uncaughtException', (error) => {
 });
 
 const server = require('./node');
-const dbutils = require('./utils/db.utils');
-const dbconfig = require('./config/db.config');
+const dbutils = require('./server/utils/db.utils');
+const dbconfig = require('./server/config/db.config');
 
 const port = process.env.PORT || 4901;
 
