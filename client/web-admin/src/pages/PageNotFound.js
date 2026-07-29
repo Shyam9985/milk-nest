@@ -8,7 +8,7 @@ function PageNotFound() {
     const authCtx = useContext(AuthContext);
     const landingUrl = localStorage.getItem('landing-url');
 
-    const redirectUrl = authCtx.isLogedIn ? landingUrl : "/login";
+    const redirectUrl = authCtx.isLoggedIn ? landingUrl : "/login";
 
     return (
 
@@ -71,7 +71,7 @@ function PageNotFound() {
                         bg-[var(--btn-primary-bg)] px-5 py-3 text-[var(--btn-primary-text)] transition hover:opacity-90">
                     <ArrowLeft size={18} />
 
-                    {authCtx.isLogedIn ? "Back to Dashboard" : "Back to Login"}</NavLink>
+                    {authCtx.isLoggedIn ? "Back to Dashboard" : "Back to Login"}</NavLink>
 
             </div>
 

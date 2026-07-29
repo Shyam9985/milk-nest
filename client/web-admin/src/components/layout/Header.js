@@ -104,7 +104,7 @@ function Header() {
                         </div>
 
                         {/* Profile */}
-                        {authCtx.isLogedIn && (
+                        {authCtx.isLoggedIn && (
 
                             <div className="relative" ref={menuRef}>
 

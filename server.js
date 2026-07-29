@@ -22,7 +22,7 @@ const serverVar = server.app.listen(port, 'localhost', () => {
 // Global rejected promise handling
 process.on('unhandledRejection', (error) => {
     console.log('Unhandled Rejection : ', error);
-    console.log('Unhandled rejection occured. shuttion down the server...');
+    console.log('Unhandled rejection occured. shutting down the server...');
     serverVar.close(() => {
         process.exit(1);
     });

@@ -13,17 +13,17 @@ const getNavLinkClass = ({ isActive }) => `
     }
 `;
 
-function Sidemenu({ collapsed, onToggle }) {
+function SideMenu({ collapsed, onToggle }) {
     const message = useToast();
     const [selected, setSelected] = useState("Dashboard");
-    const isLoggeIn = localStorage.getItem('isLogedIn')
+    const isLoggedIn = localStorage.getItem('isLoggedIn')
     const [menus, setMenus] = useState([]);
 
     useEffect(() => {
-        if (isLoggeIn) getMenus();
+        if (isLoggedIn) getMenus();
         else setMenus([]);
 
-    }, [isLoggeIn]);
+    }, [isLoggedIn]);
 
     async function getMenus() {
         const menus = await getMenuItems();
@@ -31,7 +31,7 @@ function Sidemenu({ collapsed, onToggle }) {
         if (menus?.success) {
             setMenus(menus.data || []);
         } else {
-            message.error(menus?.error || menus?.message || 'Unable to feth menus')
+            message.error(menus?.error || menus?.message || 'Unable to fetch menus')
         }
     }
 
@@ -126,4 +126,4 @@ function Sidemenu({ collapsed, onToggle }) {
     );
 }
 
-export default Sidemenu;
+export default SideMenu;

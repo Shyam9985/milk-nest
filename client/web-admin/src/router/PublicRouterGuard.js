@@ -7,7 +7,7 @@ function PublicRouterGuard() {
     const authCtx = useContext(AuthContext);
     const landingUrl = localStorage.getItem('landing-url');
 
-    if (authCtx.isLogedIn) return <Navigate to={landingUrl} replace />;
+    if (authCtx.isLoggedIn) return <Navigate to={landingUrl} replace />;
     return <Outlet />
 }
 

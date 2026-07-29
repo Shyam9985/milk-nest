@@ -1,18 +1,39 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
 const logger = require('./server/middleware/logger');
 const cookieParser = require('cookie-parser');
 const response = require('./server/utils/response.utils');
 const RESPONSE_STATUS = require('./server/utils/standard.messages');
-const apiroutes = require('./server/routes/apiRoutes');
-const dbconfig = require('./server/config/db.config');
+const apiRoutes = require('./server/routes/apiRoutes');
+const dbConfig = require('./server/config/db.config');
 const expressSession = require('express-session');
 const mySqlStore = require('express-mysql-session')(expressSession);
 require('./server/utils/schedule.utils');
 
-// creting express app
+// creating express app
 const app = express();
+
+// content security policy 
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'"],
+                imgSrc: ["'self'", "data:"],
+                objectSrc: ["'none'"],
+                fontSrc: ["'self'"],
+                connectSrc: ["'self'"],
+                mediaSrc: ["'self'"],
+                frameAncestors: ["'none'"]
+            }
+        }
+    })
+);
+
 
 const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000',];
 // cors setup
@@ -44,7 +65,7 @@ app.use(logger);
 // Wait for teh database to connect 
 async function makeSureDbConnected() {
     try {
-        const connection = await dbconfig.pool.getConnection();
+        const connection = await dbConfig.pool.getConnection();
         console.log('Database connected successfully and ready to use!');
         connection.release();
     } catch (error) {
@@ -59,7 +80,7 @@ const sessionStore = new mySqlStore({
     clearExpired: true,
     checkExpirationInterval: 600000,
     expiration: process.env.EXPRESS_SESSION_EXPIRES,
-}, dbconfig.pool);
+}, dbConfig.pool);
 
 // express session middleware setup
 const sessionConfig = {
@@ -84,7 +105,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use(expressSession(sessionConfig));
 
 // routes 
-app.use('/apiv1', apiroutes);
+app.use('/apiv1', apiRoutes);
 // handling unknown roots
 app.all('*splat', (req, res) => {
     console.log('In Global Router handler function');
@@ -94,6 +115,6 @@ app.all('*splat', (req, res) => {
 // global error handling
 app.use((error, req, res, next) => {
     console.log('In Global error handler : ', error);
-    response.sendErrorResponse(req, res, 'Unable to procee request. please try after some time !', RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Gloal error' })
+    response.sendErrorResponse(req, res, 'Unable to process request. please try after some time !', RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Global error' })
 });
 module.exports = { app };

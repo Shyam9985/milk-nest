@@ -15,8 +15,8 @@ function UnderDevelopment({
     const authCtx = useContext(AuthContext);
 
     const landingUrl = localStorage.getItem("landing-url");
-    const resolvedBackRoute = backRoute || redirectTo || (authCtx.isLogedIn ? landingUrl : "/login");
-    const resolvedButtonLabel = buttonLabel || (backRoute ? "Back to Settings" : (authCtx.isLogedIn ? "Back to Dashboard" : "Back to Login"));
+    const resolvedBackRoute = backRoute || redirectTo || (authCtx.isLoggedIn ? landingUrl : "/login");
+    const resolvedButtonLabel = buttonLabel || (backRoute ? "Back to Settings" : (authCtx.isLoggedIn ? "Back to Dashboard" : "Back to Login"));
 
     return (
 
