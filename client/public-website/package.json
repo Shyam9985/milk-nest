@@ -9,9 +9,15 @@
     "preview": "vite preview --host localhost"
   },
   "dependencies": {
+    "framer-motion": "^12.43.0",
     "lucide-react": "^1.17.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "vite": "^7.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "tailwindcss": "^4.3.3"
   }
 }

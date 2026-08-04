@@ -6,6 +6,8 @@ coverage/
 dist/
 
 public/
+# server/public is build output, but the public website's static assets are source
+!client/public-website/public/
 
 *.log
 
