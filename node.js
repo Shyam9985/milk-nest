@@ -28,7 +28,8 @@ app.use(
                 fontSrc: ["'self'"],
                 connectSrc: ["'self'"],
                 mediaSrc: ["'self'"],
-                frameAncestors: ["'none'"]
+                frameAncestors: ["'none'"],
+                baseUri: ["'self'"]
             }
         }
     })
