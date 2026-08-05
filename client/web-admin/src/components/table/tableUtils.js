@@ -7,6 +7,7 @@ export function normalizeColumns(columns = [], data = []) {
       sortable: column.sortable !== false,
       filterable: column.filterable !== false,
       searchable: column.searchable !== false,
+      exportable: column.exportable !== false,
       headerStyle: column.headerStyle || {},
       cellStyle: column.cellStyle || {},
       align: column.align || 'left',
@@ -102,7 +103,20 @@ export function paginateRows(rows = [], page = 0, rowsPerPage = 10) {
   return rows.slice(start, start + rowsPerPage);
 }
 
-export function buildCsvData(rows = [], columns = []) {
+// builds an array-of-arrays (header row + data rows) for sheet exports
+export function buildSheetData(rows = [], allColumns = []) {
+  const columns = allColumns.filter((column) => column.exportable !== false);
+
+  return [
+    columns.map((column) => column.headerName || column.field),
+    ...rows.map((row) =>
+      columns.map((column) => formatCellValue(row[column.field], column))
+    ),
+  ];
+}
+
+export function buildCsvData(rows = [], allColumns = []) {
+  const columns = allColumns.filter((column) => column.exportable !== false);
   const headerLine = columns.map((column) => column.headerName || column.field).join(',');
   const rowsCsv = rows.map((row) =>
     columns

@@ -4,6 +4,7 @@ import { getSetupMenus } from '../../services/auth.service';
 import ThemeContext from '../../contexts/ThemeContext';
 import * as Icons from "lucide-react";
 import DataGrid from '../../components/table/DataGrid';
+import Skeleton from '../../utils/Skeleton';
 
 function Settings() {
     const themeCtx = useContext(ThemeContext);
@@ -83,10 +84,15 @@ function Settings() {
 
     if (loading) {
         return (
-            <div className="p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
-                <div className={`rounded-xl border p-6 text-sm shadow-sm ${isDarkTheme ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 bg-white text-slate-600'}`}>
-                    Loading setup menus...
+            <div className="space-y-4 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
+                <div className="flex items-center justify-between rounded-xl border border-[var(--card-border)] p-4">
+                    <div className="space-y-2">
+                        <Skeleton variant="title" />
+                        <Skeleton variant="custom" width="18rem" height="1rem" />
+                    </div>
+                    <Skeleton variant="button" width="12rem" />
                 </div>
+                <Skeleton variant="card" count={3} />
             </div>
         );
     }
@@ -103,7 +109,7 @@ function Settings() {
 
     return (
         <>
-           <div className='p-6'> <DataGrid /></div>
+           {/* <div className='p-6'> <DataGrid /></div> */}
             <br />
             <div className="space-y-4 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
                 <div className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-end sm:justify-between ${isDarkTheme ? 'border-slate-700 bg-slate-800/70 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>

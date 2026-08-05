@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
-    Box, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead,
-    TablePagination, TableRow, TextField, Tooltip, Typography, CircularProgress,
+    IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead,
+    TablePagination, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Skeleton from '../../utils/Skeleton';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import { buildCsvData, filterRows, formatCellValue, normalizeColumns, paginateRows, sortRows } from './tableUtils';
+import InboxIcon from '@mui/icons-material/Inbox';
+import { buildCsvData, buildSheetData, filterRows, formatCellValue, normalizeColumns, paginateRows, sortRows } from './tableUtils';
 
 function DataTable({ data = [], columns = [], config = {} }) {
     const rowsPerPageOptions = [5, 10, 25];
@@ -72,31 +74,31 @@ function DataTable({ data = [], columns = [], config = {} }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'table-data.csv';
+        link.download = `${config.exportFileName || 'table-data'}.csv`;
         link.click();
         URL.revokeObjectURL(url);
     };
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
         if (!enableExportExcel) return;
+
+        // pages can still take over with their own handler
         if (typeof config.onExportExcel === 'function') {
-            config.onExportExcel(sortedRows, tableColumns);
+            return config.onExportExcel(sortedRows, tableColumns);
         }
+
+        // xlsx is loaded on demand to keep it out of the main bundle
+        const XLSX = await import('xlsx');
+
+        const worksheet = XLSX.utils.aoa_to_sheet(buildSheetData(sortedRows, tableColumns));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+        XLSX.writeFile(workbook, `${config.exportFileName || 'table-data'}.xlsx`);
     };
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (!data.length) {
-        return (
-            <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-                {emptyMessage}
-            </Typography>
+            <Skeleton variant="table" rows={rowsPerPage} columns={tableColumns.length || 4} />
         );
     }
 
@@ -230,6 +232,29 @@ function DataTable({ data = [], columns = [], config = {} }) {
                     </TableHead>
 
                     <TableBody>
+
+                        {pagedRows.length === 0 && (
+
+                            <TableRow>
+
+                                <TableCell colSpan={tableColumns.length || 1}
+                                    className="!border-b !border-[var(--table-header-border)] !bg-[var(--table-row-bg)]">
+
+                                    <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--text-secondary)]">
+
+                                        <InboxIcon fontSize="medium" />
+
+                                        <Typography variant="body2">
+                                            {emptyMessage}
+                                        </Typography>
+
+                                    </div>
+
+                                </TableCell>
+
+                            </TableRow>
+
+                        )}
 
                         {pagedRows.map((row, rowIndex) => (
 

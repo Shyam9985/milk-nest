@@ -4,6 +4,9 @@
     /* Hover */
     --hover-bg: #f3f4f6;
 
+    /* Skeleton loading */
+    --skeleton-bg: #e2e8f0;
+
     /* Active */
     --active-bg: #dbeafe;
 
@@ -103,6 +106,9 @@
 
 /* Drak theme */
 .dark {
+
+    /* Skeleton loading */
+    --skeleton-bg: #334155;
 
     --hover-bg: #374151;
 
