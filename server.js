@@ -3,7 +3,7 @@ require('dotenv').config();
 // Global unhandled exception handling
 process.on('uncaughtException', (error) => {
     console.log('Unhandled Exception : ', error);
-    console.log('Unhandled exception occured. shuttion down the server...');
+    console.log('Unhandled exception occurred. shutting down the server...');
     process.exit(1);
 });
 
@@ -22,7 +22,7 @@ const serverVar = server.app.listen(port, 'localhost', () => {
 // Global rejected promise handling
 process.on('unhandledRejection', (error) => {
     console.log('Unhandled Rejection : ', error);
-    console.log('Unhandled rejection occured. shutting down the server...');
+    console.log('Unhandled rejection occurred. shutting down the server...');
     serverVar.close(() => {
         process.exit(1);
     });
