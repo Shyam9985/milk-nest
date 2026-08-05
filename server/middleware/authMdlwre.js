@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const resutils = require("../utils/response.utils");
 const RESPONSE_STATUS = require("../utils/standard.messages");
 const authMdl = require('../models/authMdl');
-const authCtrl = require('../controllers/authctrl');
+const authService = require('../services/authService');
 
 // authntication validation middleware
 exports.isAuthenticated = async (req, res, next) => {
@@ -57,7 +57,7 @@ exports.isAuthenticated = async (req, res, next) => {
 
                 const userObj = userData?.[0];
 
-                const newToken = await authCtrl.generateJWToken(userObj, sessionId);
+                const newToken = await authService.generateJWToken(userObj, sessionId);
 
                 // update the express session time 
                 const updated = await authMdl.slideExpressSession(sessionId);
@@ -129,6 +129,14 @@ exports.isAuthorized = (permission_key, action) => {
             if (!permissionList) {
                 resutils.createError('noPermissions', `No permission settings are available for '${permission_key}'. Please contact your administrator.`);
             }
+
+            // bind permission flags to the request so controllers can send them to the client
+            req.permissions = {
+                can_insert: permissionList?.can_insert == 1,
+                can_view: permissionList?.can_view == 1,
+                can_update: permissionList?.can_update == 1,
+                can_delete: permissionList?.can_delete == 1
+            };
 
             let errorMessage, errorName = null;
             let hasPermission = false;

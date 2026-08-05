@@ -20,8 +20,14 @@ function logUpcomingJobTime(jobName, job) {
 function registerJobs() {
     console.log('\n', '=============== in schedules registry ===============', '\n');
 
-    // unlocking the lockedusers
-    const unlockJob = scheduler.scheduleJob('0 */60 * * * *', authMdl.unlockUsers);
+    // unlocking the lockedusers (guarded so a db failure never crashes the server)
+    const unlockJob = scheduler.scheduleJob('0 */60 * * * *', async () => {
+        try {
+            await authMdl.unlockUsers();
+        } catch (error) {
+            console.error('Unlock users job failed:', error.message);
+        }
+    });
     logUpcomingJobTime('Unlock users', unlockJob);
 
     console.log('\n', '=============== end of schedules registry ===============', '\n');

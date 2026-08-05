@@ -1,0 +1,212 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const authMdl = require('../models/authMdl');
+const resutils = require('../utils/response.utils');
+const emailutils = require('../utils/email.utils');
+
+// builds the client facing user object from a user row
+const buildUserObj = (row) => ({
+    user_id: row?.user_id,
+    user_nm: row?.user_nm,
+    first_nm: row?.first_nm,
+    last_nm: row?.last_nm,
+    mobile_no: row?.mobile_no,
+    email: row?.email,
+    last_login: row?.last_login,
+    role: {
+        role_id: row?.role_id, role_nm: row?.role_nm, role_hndlr: row?.role_hndlr,
+    },
+    hierarchy: {
+        hierarchy_id: row?.hierarchy_id,
+        position_id: row?.position_id, position_nm: row?.position_nm,
+        hierarchy_nm: row?.hierarchy_nm, parent_hirrarchy_id: row?.parent_hirrarchy_id
+    }
+});
+
+// builds the OTP email payload for forgot/reset password mails
+const buildOtpEmailData = (email, fullName, otp, { reason, subject, heading, intro }) => ({
+    reason,
+    email,
+    key: otp,
+    subject,
+    body: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #2c3e50;">${heading}</h2>
+
+            <p>Hello ${fullName || 'User'},</p>
+            <p>${intro}</p>
+            <p>Your One-Time Password (OTP) is:</p>
+            <div style="
+                display: inline-block;
+                padding: 12px 24px;
+                font-size: 24px;
+                font-weight: bold;
+                letter-spacing: 4px;
+                color: #ffffff;
+                background-color: #007bff;
+                border-radius: 6px;
+                margin: 10px 0;
+            ">
+                ${otp}
+            </div>
+
+            <p>This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone.</p>
+            <p>If you did not request this, please ignore this email. No changes will be made to your account.</p>
+            <br>
+            <p>
+                Regards,<br>
+                <strong>Team MilkNest</strong>
+            </p>
+
+            <hr>
+
+            <small style="color: #777;">This is an automated email. Please do not reply to this message.</small>
+        </div>`
+});
+
+// sends an OTP mail and returns the message references
+const sendOtpEmail = async (email, data, user) => {
+    const mailRes = await emailutils.sendEmail([email], data, user);
+    const mail = mailRes?.[0];
+
+    if (!mail?.success) resutils.createError('emailNotSent', 'Unable to send email right now. please try again.');
+
+    return { email: mail.email, message_key: mail.messageKey, message_id: mail.messageId };
+}
+
+// generates a signed jwt for the given user row and session
+exports.generateJWToken = async (user, session_id) => {
+    const obj = { ...buildUserObj(user), session_id };
+    const token = jwt.sign(obj, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
+    return { token, obj };
+}
+
+// creates a new user with a hashed password
+exports.signUpSrvc = async (payload) => {
+    const saltKey = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(payload.password, saltKey);
+
+    try {
+        const response = await authMdl.signUp({ ...payload, passwordHash, saltKey }, {});
+
+        if (!response?.affectedRows) resutils.createError('noDataInserted', 'Unable to create user. please try again');
+
+        return { user_id: response.insertId };
+
+    } catch (error) {
+        if (error.name === 'DatabaseError' && error.code === 'ER_DUP_ENTRY') {
+            resutils.createError('duplicateUser', 'User already exists with the given email. please use different mail id');
+        }
+        throw error;
+    }
+}
+
+// verifies credentials and lock status; records the failed attempt when the password is wrong
+exports.authenticateUserSrvc = async (payload, context = {}) => {
+    const userData = await authMdl.getUserDetails(payload);
+
+    if (!userData?.length) resutils.createError('invalidCredentials', 'Invalid email/password.');
+
+    const userRow = userData[0];
+
+    if (userRow.is_locked) {
+        resutils.createError('temporarlyLocked', `Your account is temporarily locked due to multiple failed attempts. please try after ${userRow.locked_until}`);
+    }
+
+    const isPasswordMatched = await bcrypt.compare(payload.password, userRow.password_hash);
+
+    if (!isPasswordMatched) {
+        await authMdl.increaseLoginAttempts(userRow.email);
+        await authMdl.insertLoginHistory({ user_id: userRow.user_id, ip_address: context.ipAddress, device_info: context.deviceInfo, remarks: 'invalid credentials.' });
+        resutils.createError('invalidCredentials', 'Invalid email or password');
+    }
+
+    return userRow;
+}
+
+// records session/login history, resets attempts and returns the jwt with the user object
+exports.establishSessionSrvc = async (userRow, sessionId, expiresAt, context = {}) => {
+    const tokenRes = await exports.generateJWToken(userRow, sessionId);
+
+    const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userRow.user_id, expires_at: expiresAt });
+    if (!sessionHistory?.affectedRows) resutils.createError('sessionError', 'unable to create/store session');
+
+    await authMdl.unlockUser(userRow.email);
+    await authMdl.insertLoginHistory({ user_id: userRow.user_id, ip_address: context.ipAddress, device_info: context.deviceInfo, remarks: 'logged in successfully.' });
+    await authMdl.updateLastLoginTime(userRow.email);
+
+    return { token: tokenRes.token, user: { ...buildUserObj(userRow), landing_url: userRow.landing_url } };
+}
+
+// expires the stored session record
+exports.logoutSrvc = async (sessionId) => {
+    return authMdl.expireExpressSession(sessionId);
+}
+
+// sends the forgot password OTP mail
+exports.sendForgotPasswordOtpSrvc = async (email, fullName, user = null) => {
+    const otp = emailutils.get6DigitOtp();
+
+    const data = buildOtpEmailData(email, fullName, otp, {
+        reason: 'forgot-password',
+        subject: 'Forgot Password OTP - MilkNest',
+        heading: 'Password update Request',
+        intro: 'We received a request to update your MilkNest account password.'
+    });
+
+    return sendOtpEmail(email, data, user);
+}
+
+// sends the reset password OTP mail for the logged in user
+exports.sendResetPasswordOtpSrvc = async (user) => {
+    const otp = emailutils.get6DigitOtp();
+
+    const data = buildOtpEmailData(user.email, user?.full_name, otp, {
+        reason: 'reset-password',
+        subject: 'Password Reset OTP - MilkNest',
+        heading: 'Password Reset Request',
+        intro: 'We received a request to reset your MilkNest account password.'
+    });
+
+    return sendOtpEmail(user.email, data, user);
+}
+
+// validates the entered OTP and marks it as used
+exports.verifyEmailOtpSrvc = async (payload, user) => {
+    const otpRes = await authMdl.getOTPData(payload, user);
+
+    if (!otpRes?.length) resutils.createError('noOtpRes', 'OTP request not found.');
+
+    const otpData = otpRes[0];
+
+    if (String(otpData.verify_key) !== String(payload.otp)) resutils.createError('otpMismatch', 'Invalid OTP entered');
+
+    if (otpData.is_expired == 1) resutils.createError('otpExpired', 'OTP has expired. Please generate new otp.');
+
+    await authMdl.markOTPVerified(payload.message_key, user);
+
+    return { verified: true };
+}
+
+// updates the password after checking the OTP was verified and not expired
+exports.updatePasswordSrvc = async (payload) => {
+    const forgotMailRes = await authMdl.getLatestMailByRequest(payload, payload?.usedFor);
+    const response = forgotMailRes?.[0];
+
+    if (!response || (response.email_audit_id != payload.otpKey)) resutils.createError('invalidOtp', 'Invalid password request');
+
+    if (response?.is_expired) resutils.createError('otpExpired', 'OTP expired. please try again.');
+
+    if (!response?.is_used) resutils.createError('otpNotVerified', 'OTP not verified. please verify and try again.');
+
+    const saltKey = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(payload.newPassword, saltKey);
+
+    const updateRes = await authMdl.updateUserPassword(payload.email, passwordHash, saltKey, payload.newPassword);
+
+    if (!updateRes?.affectedRows) resutils.createError('updateFailed', 'Unable to update password');
+
+    await authMdl.expireOtp(payload.otpKey);
+
+    return { updated: true };
+}

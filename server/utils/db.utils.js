@@ -7,14 +7,18 @@ const getConnection = async () => {
     return await pool.getConnection();
 };
 
+// converts a raw mysql error into a typed 'DatabaseError' carrying the friendly message
 const formatDbError = (error) => {
     console.error('Database Error:', error);
-    message = dberrors.getDatabaseError(error.code)
-    return message;
+    const dbError = dberrors.getDatabaseError(error.code);
+    const formattedError = new Error(dbError.message);
+    formattedError.name = 'DatabaseError';
+    formattedError.code = error.code;
+    return formattedError;
 }
 /**********************************************
 *name : executeQuery
-*description : executes multiple queries 
+*description : executes multiple queries
 * input : ('server', 'SELECT * FROM dymmy where id = ?', [2])
 ************************************************/
 const executeQuery = async (query, params = [], fname) => {
@@ -24,7 +28,7 @@ const executeQuery = async (query, params = [], fname) => {
         const [rows] = await pool.execute(query, params);
         return rows;
     } catch (error) {
-        return formatDbError(error);
+        throw formatDbError(error);
     } finally {
         console.log('Execution completed!');
     }
@@ -32,7 +36,7 @@ const executeQuery = async (query, params = [], fname) => {
 
 /**********************************************
 *name : executeMultipleQueries
-*description : executes multiple queries 
+*description : executes multiple queries
 * input : ('server', [{ query: 'SELECT * FROM dymmy where id = ?', params: [2] }, { query: 'SELECT * FROM dymmy where id = ?', params: [1] }])
 ************************************************/
 const executeMultipleQueries = async (queries = [], fname) => {
@@ -51,7 +55,7 @@ const executeMultipleQueries = async (queries = [], fname) => {
 
         return results;
     } catch (error) {
-        return formatDbError(error)
+        throw formatDbError(error);
     } finally {
         connection && connection.release();
     }
@@ -59,10 +63,10 @@ const executeMultipleQueries = async (queries = [], fname) => {
 
 /**********************************************
 *name : executeTransaction
-*description : executes multiple queries 
+*description : executes multiple queries
 * input : ('server', async (connection) => {await connection.execute(`INSERT INTO users_lst_t (user_name) VALUES(?)`,['Syam']); await connection.execute(`INSERT INTO audit_logs_t(activity) VALUES(?)`,['User Created']);});)
 ************************************************/
-const executeTransaction = async (callback) => {
+const executeTransaction = async (callback, fname) => {
     console.log('in executeTransaction and quries received from ' + fname);
 
     let connection = null;
@@ -75,7 +79,8 @@ const executeTransaction = async (callback) => {
         return result;
 
     } catch (error) {
-        return formatDbError(error)
+        connection && await connection.rollback();
+        throw formatDbError(error);
     } finally {
         connection && connection.release();
     }
@@ -102,7 +107,8 @@ const executeTransactionQueries = async (queries = [], fname) => {
         await connection.commit();
         return results;
     } catch (error) {
-        return formatDbError(error);
+        connection && await connection.rollback();
+        throw formatDbError(error);
     } finally {
         connection && connection.release();
     }
