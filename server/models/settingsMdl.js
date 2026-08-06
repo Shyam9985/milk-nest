@@ -346,3 +346,131 @@ exports.softDeleteRoleMdl = (role_id) => {
     const qry = 'update roles_lst_t set is_active = 0 where is_active = 1 and role_id = ?';
     return dbutils.executeQuery(qry, [role_id], 'soft delete role model');
 }
+
+// ===================== GENDER MASTER =====================
+
+// fetches all active genders
+exports.getGendersMdl = () => {
+    const qry = `select gender_id, gender_nm, gender_code, is_active,
+        DATE_FORMAT(created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from gender_mstr_lst_t where is_active = 1 order by gender_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get genders model');
+}
+
+// finds genders matching the given name or code (active and inactive), optionally excluding one record
+exports.getDuplicateGendersMdl = (gender_nm, gender_code, excludeId = null) => {
+    let qry = `select gender_id, gender_nm, gender_code, is_active from gender_mstr_lst_t
+        where (lower(gender_nm) = lower(?) or lower(gender_code) = lower(?))`;
+    const params = [gender_nm, gender_code];
+
+    if (excludeId) {
+        qry += ' and gender_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate genders model');
+}
+
+// inserts a new gender
+exports.insertGenderMdl = (data) => {
+    const qry = 'insert into gender_mstr_lst_t (gender_nm, gender_code) values (?, ?)';
+    return dbutils.executeQuery(qry, [data.gender_nm, data.gender_code], 'insert gender model');
+}
+
+// updates an active gender
+exports.updateGenderMdl = (gender_id, data) => {
+    const qry = 'update gender_mstr_lst_t set gender_nm = ?, gender_code = ? where is_active = 1 and gender_id = ?';
+    return dbutils.executeQuery(qry, [data.gender_nm, data.gender_code, gender_id], 'update gender model');
+}
+
+// brings back a soft deleted gender with the latest details
+exports.reactivateGenderMdl = (gender_id, data) => {
+    const qry = 'update gender_mstr_lst_t set gender_nm = ?, gender_code = ?, is_active = 1 where gender_id = ?';
+    return dbutils.executeQuery(qry, [data.gender_nm, data.gender_code, gender_id], 'reactivate gender model');
+}
+
+// fetches an active gender by id
+exports.getActiveGenderByIdMdl = (gender_id) => {
+    const qry = 'select gender_id, gender_nm from gender_mstr_lst_t where is_active = 1 and gender_id = ?';
+    return dbutils.executeQuery(qry, [gender_id], 'get active gender by id model');
+}
+
+// soft deletes a gender
+exports.softDeleteGenderMdl = (gender_id) => {
+    const qry = 'update gender_mstr_lst_t set is_active = 0 where is_active = 1 and gender_id = ?';
+    return dbutils.executeQuery(qry, [gender_id], 'soft delete gender model');
+}
+
+// ===================== HIERARCHY MASTER =====================
+
+// fetches all active hierarchies along with their parent hierarchy name
+exports.getHierarchyListMdl = () => {
+    const qry = `select h.hirrarchy_id as hierarchy_id, h.hierarchy_nm, h.level_type, h.parent_hirrarchy_id,
+        p.hierarchy_nm as parent_hierarchy_nm, h.is_active,
+        DATE_FORMAT(h.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(h.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from hierarchy_lst_t h
+        left join hierarchy_lst_t p on p.hirrarchy_id = h.parent_hirrarchy_id
+        where h.is_active = 1 order by h.hierarchy_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get hierarchy list model');
+}
+
+// finds hierarchies matching the given name (active and inactive), optionally excluding one record
+exports.getDuplicateHierarchiesMdl = (hierarchy_nm, excludeId = null) => {
+    let qry = 'select hirrarchy_id as hierarchy_id, hierarchy_nm, is_active from hierarchy_lst_t where lower(hierarchy_nm) = lower(?)';
+    const params = [hierarchy_nm];
+
+    if (excludeId) {
+        qry += ' and hirrarchy_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate hierarchies model');
+}
+
+// inserts a new hierarchy
+exports.insertHierarchyMdl = (data) => {
+    const qry = 'insert into hierarchy_lst_t (hierarchy_nm, level_type, parent_hirrarchy_id) values (?, ?, ?)';
+    return dbutils.executeQuery(qry, [data.hierarchy_nm, data.level_type, data.parent_hirrarchy_id], 'insert hierarchy model');
+}
+
+// updates an active hierarchy
+exports.updateHierarchyMdl = (hierarchy_id, data) => {
+    const qry = 'update hierarchy_lst_t set hierarchy_nm = ?, level_type = ?, parent_hirrarchy_id = ? where is_active = 1 and hirrarchy_id = ?';
+    return dbutils.executeQuery(qry, [data.hierarchy_nm, data.level_type, data.parent_hirrarchy_id, hierarchy_id], 'update hierarchy model');
+}
+
+// brings back a soft deleted hierarchy with the latest details
+exports.reactivateHierarchyMdl = (hierarchy_id, data) => {
+    const qry = 'update hierarchy_lst_t set hierarchy_nm = ?, level_type = ?, parent_hirrarchy_id = ?, is_active = 1 where hirrarchy_id = ?';
+    return dbutils.executeQuery(qry, [data.hierarchy_nm, data.level_type, data.parent_hirrarchy_id, hierarchy_id], 'reactivate hierarchy model');
+}
+
+// fetches the parent pointer of a hierarchy, used to walk the chain for cycle detection
+exports.getHierarchyParentMdl = (hierarchy_id) => {
+    const qry = 'select hirrarchy_id as hierarchy_id, parent_hirrarchy_id from hierarchy_lst_t where hirrarchy_id = ?';
+    return dbutils.executeQuery(qry, [hierarchy_id], 'get hierarchy parent model');
+}
+
+// counts active child hierarchies, used to block deleting a hierarchy that is a parent
+exports.countActiveChildHierarchiesMdl = (hierarchy_id) => {
+    const qry = 'select count(*) as cnt from hierarchy_lst_t where is_active = 1 and parent_hirrarchy_id = ?';
+    return dbutils.executeQuery(qry, [hierarchy_id], 'count active child hierarchies model');
+}
+
+// counts active roles mapped to a hierarchy, used to block deleting a hierarchy that is in use
+exports.countActiveRolesByHierarchyMdl = (hierarchy_id) => {
+    const qry = 'select count(*) as cnt from roles_lst_t where is_active = 1 and hierarchy_id = ?';
+    return dbutils.executeQuery(qry, [hierarchy_id], 'count active roles by hierarchy model');
+}
+
+// counts active positions mapped to a hierarchy, used to block deleting a hierarchy that is in use
+exports.countActivePositionsByHierarchyMdl = (hierarchy_id) => {
+    const qry = 'select count(*) as cnt from position_lst_t where is_active = 1 and hierarchy_id = ?';
+    return dbutils.executeQuery(qry, [hierarchy_id], 'count active positions by hierarchy model');
+}
+
+// soft deletes a hierarchy
+exports.softDeleteHierarchyMdl = (hierarchy_id) => {
+    const qry = 'update hierarchy_lst_t set is_active = 0 where is_active = 1 and hirrarchy_id = ?';
+    return dbutils.executeQuery(qry, [hierarchy_id], 'soft delete hierarchy model');
+}

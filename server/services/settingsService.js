@@ -428,3 +428,178 @@ exports.deleteRoleSrvc = async (role_id) => {
     }
     return { role_id: Number(role_id), role_nm: record.role_nm };
 }
+
+// ===================== GENDER MASTER =====================
+
+// fetches all active genders
+exports.getGendersSrvc = async () => {
+    return settingsMdl.getGendersMdl();
+}
+
+// creates a gender, reusing a soft deleted record when the same name/code comes back
+exports.createGenderSrvc = async (payload) => {
+    const gender_nm = normalizeName(payload.gender_nm);
+    const gender_code = normalizeCode(payload.gender_code);
+
+    const duplicates = await settingsMdl.getDuplicateGendersMdl(gender_nm, gender_code);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Gender already exists with the same name or code (${activeDuplicate.gender_nm} - ${activeDuplicate.gender_code}).`);
+    }
+
+    // a soft deleted duplicate is reactivated instead of inserting a new row
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateGenderMdl(inactiveDuplicate.gender_id, { gender_nm, gender_code });
+        return { gender_id: inactiveDuplicate.gender_id, reactivated: true, gender_nm };
+    }
+
+    const result = await settingsMdl.insertGenderMdl({ gender_nm, gender_code });
+    return { gender_id: result.insertId, reactivated: false, gender_nm };
+}
+
+// updates a gender after making sure the new name/code is not taken by another record
+exports.updateGenderSrvc = async (gender_id, payload) => {
+    const gender_nm = normalizeName(payload.gender_nm);
+    const gender_code = normalizeCode(payload.gender_code);
+
+    const duplicates = await settingsMdl.getDuplicateGendersMdl(gender_nm, gender_code, gender_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another gender already exists with the same name or code (${duplicates[0].gender_nm} - ${duplicates[0].gender_code}).`);
+    }
+
+    const result = await settingsMdl.updateGenderMdl(gender_id, { gender_nm, gender_code });
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Gender not found or already deleted.');
+    }
+    return { gender_id: Number(gender_id), gender_nm };
+}
+
+// soft deletes a gender
+exports.deleteGenderSrvc = async (gender_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveGenderByIdMdl(gender_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Gender not found or already deleted.');
+    }
+
+    const result = await settingsMdl.softDeleteGenderMdl(gender_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Gender not found or already deleted.');
+    }
+    return { gender_id: Number(gender_id), gender_nm: record.gender_nm };
+}
+
+// ===================== HIERARCHY MASTER =====================
+
+// fetches all active hierarchies with their parent names
+exports.getHierarchyListSrvc = async () => {
+    return settingsMdl.getHierarchyListMdl();
+}
+
+// pulls the normalized hierarchy fields out of a request payload
+// level types are stored lowercase with underscores and default to 'OTHER'
+const normalizeHierarchyPayload = (payload) => ({
+    hierarchy_nm: normalizeName(payload.hierarchy_nm),
+    level_type: normalizeHandler(payload.level_type || '') || 'OTHER',
+    parent_hirrarchy_id: payload.parent_hirrarchy_id ? Number(payload.parent_hirrarchy_id) : null
+});
+
+// makes sure the chosen parent exists, is not the record itself and does not create a cycle
+const assertValidHierarchyParent = async (parent_hirrarchy_id, selfId = null) => {
+    if (!parent_hirrarchy_id) return;
+
+    if (selfId && Number(parent_hirrarchy_id) === Number(selfId)) {
+        resutils.createError('invalidParent', 'A hierarchy cannot be its own parent.');
+    }
+
+    const parent = await settingsMdl.getActiveHierarchyByIdMdl(parent_hirrarchy_id);
+    if (!parent.length) {
+        resutils.createError('invalidParent', 'Selected parent hierarchy does not exist or is inactive.');
+    }
+
+    // walk up from the chosen parent; reaching the edited record means a circle
+    if (selfId) {
+        let currentId = Number(parent_hirrarchy_id);
+        for (let depth = 0; currentId && depth < 20; depth++) {
+            const [row] = await settingsMdl.getHierarchyParentMdl(currentId);
+            currentId = row?.parent_hirrarchy_id ? Number(row.parent_hirrarchy_id) : null;
+
+            if (currentId === Number(selfId)) {
+                resutils.createError('invalidParent', 'Selected parent would create a circular hierarchy.');
+            }
+        }
+    }
+}
+
+// creates a hierarchy, reusing a soft deleted record when the same name comes back
+exports.createHierarchySrvc = async (payload) => {
+    const data = normalizeHierarchyPayload(payload);
+
+    await assertValidHierarchyParent(data.parent_hirrarchy_id);
+
+    const duplicates = await settingsMdl.getDuplicateHierarchiesMdl(data.hierarchy_nm);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Hierarchy already exists with the same name (${activeDuplicate.hierarchy_nm}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateHierarchyMdl(inactiveDuplicate.hierarchy_id, data);
+        return { hierarchy_id: inactiveDuplicate.hierarchy_id, reactivated: true, hierarchy_nm: data.hierarchy_nm };
+    }
+
+    const result = await settingsMdl.insertHierarchyMdl(data);
+    return { hierarchy_id: result.insertId, reactivated: false, hierarchy_nm: data.hierarchy_nm };
+}
+
+// updates a hierarchy after re-validating the parent chain and duplicate rules
+exports.updateHierarchySrvc = async (hierarchy_id, payload) => {
+    const data = normalizeHierarchyPayload(payload);
+
+    await assertValidHierarchyParent(data.parent_hirrarchy_id, hierarchy_id);
+
+    const duplicates = await settingsMdl.getDuplicateHierarchiesMdl(data.hierarchy_nm, hierarchy_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another hierarchy already exists with the same name (${duplicates[0].hierarchy_nm}).`);
+    }
+
+    const result = await settingsMdl.updateHierarchyMdl(hierarchy_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Hierarchy not found or already deleted.');
+    }
+    return { hierarchy_id: Number(hierarchy_id), hierarchy_nm: data.hierarchy_nm };
+}
+
+// soft deletes a hierarchy after making sure nothing depends on it
+exports.deleteHierarchySrvc = async (hierarchy_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveHierarchyByIdMdl(hierarchy_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Hierarchy not found or already deleted.');
+    }
+
+    const [{ cnt: childCount }] = await settingsMdl.countActiveChildHierarchiesMdl(hierarchy_id);
+    if (childCount) {
+        resutils.createError('recordInUse', `Hierarchy cannot be deleted. ${childCount} active child hierarchy(ies) are under it. Delete or re-parent those first.`);
+    }
+
+    const [{ cnt: roleCount }] = await settingsMdl.countActiveRolesByHierarchyMdl(hierarchy_id);
+    if (roleCount) {
+        resutils.createError('recordInUse', `Hierarchy cannot be deleted. ${roleCount} active role(s) are mapped to it. Reassign those roles first.`);
+    }
+
+    const [{ cnt: positionCount }] = await settingsMdl.countActivePositionsByHierarchyMdl(hierarchy_id);
+    if (positionCount) {
+        resutils.createError('recordInUse', `Hierarchy cannot be deleted. ${positionCount} active position(s) are mapped to it. Reassign those positions first.`);
+    }
+
+    const result = await settingsMdl.softDeleteHierarchyMdl(hierarchy_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Hierarchy not found or already deleted.');
+    }
+    return { hierarchy_id: Number(hierarchy_id), hierarchy_nm: record.hierarchy_nm };
+}

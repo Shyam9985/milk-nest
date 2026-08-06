@@ -734,3 +734,231 @@ exports.deleteRoleCtrl = async (req, res) => {
     return sendSettingsError(req, res, error, "delete role controller");
   }
 };
+
+// ===================== GENDER MASTER =====================
+
+const GENDER_PAYLOAD_SCHEMA = {
+  gender_nm: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 50,
+    label: "Gender Name",
+  },
+  gender_code: {
+    required: true,
+    type: "string",
+    minLength: 1,
+    maxLength: 20,
+    label: "Gender Code",
+  },
+};
+
+exports.getGendersCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getGendersSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get genders", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get genders controller");
+  }
+};
+
+exports.createGenderCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      GENDER_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createGenderSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Gender '${result.gender_nm}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create gender" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create gender controller");
+  }
+};
+
+exports.updateGenderCtrl = async (req, res) => {
+  try {
+    const genderId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      GENDER_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateGenderSrvc(genderId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Gender '${result.gender_nm}' updated successfully.`,
+      },
+      { function: "update gender" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update gender controller");
+  }
+};
+
+exports.deleteGenderCtrl = async (req, res) => {
+  try {
+    const genderId = parseRecordId(req);
+
+    const result = await settingsService.deleteGenderSrvc(genderId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Gender '${result.gender_nm}' deleted successfully.`,
+      },
+      { function: "delete gender" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete gender controller");
+  }
+};
+
+// ===================== HIERARCHY MASTER =====================
+
+const HIERARCHY_PAYLOAD_SCHEMA = {
+  hierarchy_nm: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 250,
+    label: "Hierarchy Name",
+  },
+  level_type: {
+    required: false,
+    type: "string",
+    maxLength: 50,
+    label: "Level Type",
+  },
+  parent_hirrarchy_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Parent Hierarchy",
+  },
+};
+
+exports.getHierarchyListCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getHierarchyListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get hierarchy list", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get hierarchy list controller");
+  }
+};
+
+exports.createHierarchyCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      HIERARCHY_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createHierarchySrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Hierarchy '${result.hierarchy_nm}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create hierarchy" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create hierarchy controller");
+  }
+};
+
+exports.updateHierarchyCtrl = async (req, res) => {
+  try {
+    const hierarchyId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      HIERARCHY_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateHierarchySrvc(
+      hierarchyId,
+      req.body,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Hierarchy '${result.hierarchy_nm}' updated successfully.`,
+      },
+      { function: "update hierarchy" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update hierarchy controller");
+  }
+};
+
+exports.deleteHierarchyCtrl = async (req, res) => {
+  try {
+    const hierarchyId = parseRecordId(req);
+
+    const result = await settingsService.deleteHierarchySrvc(hierarchyId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Hierarchy '${result.hierarchy_nm}' deleted successfully.`,
+      },
+      { function: "delete hierarchy" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete hierarchy controller");
+  }
+};

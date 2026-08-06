@@ -4,6 +4,8 @@ import District from "./district/District";
 import Mandal from "./mandal/Mandal";
 import Village from "./village/Village";
 import Position from "./position/Position";
+import Gender from "./gender/Gender";
+import Hierarchy from "./hierarchy/Hierarchy";
 import Users from "./users/Users";
 import Roles from "./roles/Roles";
 import RolePermissions from "./role-permissions/RolePermissions";
@@ -20,6 +22,8 @@ export default [
     { path: '/settings/master/mandal', component: Mandal, lazy: true },
     { path: '/settings/master/village', component: Village, lazy: true },
     { path: '/settings/master/position', component: Position, lazy: true },
+    { path: '/settings/master/gender', component: Gender, lazy: true },
+    { path: '/settings/master/hierarchy', component: Hierarchy, lazy: true },
 
     // ===================== SECURITY =====================
     { path: '/settings/security/users', component: Users, lazy: true },

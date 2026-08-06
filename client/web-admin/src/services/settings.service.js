@@ -167,3 +167,67 @@ export async function deleteRole(roleId) {
         return error;
     }
 }
+
+export async function getGenders() {
+    try {
+        return await get('settings/master/gender');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createGender(payload) {
+    try {
+        return await post('settings/master/gender', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateGender(genderId, payload) {
+    try {
+        return await put(`settings/master/gender/${genderId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteGender(genderId) {
+    try {
+        return await remove(`settings/master/gender/${genderId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getHierarchies() {
+    try {
+        return await get('settings/master/hierarchy');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createHierarchy(payload) {
+    try {
+        return await post('settings/master/hierarchy', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateHierarchy(hierarchyId, payload) {
+    try {
+        return await put(`settings/master/hierarchy/${hierarchyId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteHierarchy(hierarchyId) {
+    try {
+        return await remove(`settings/master/hierarchy/${hierarchyId}`);
+    } catch (error) {
+        return error;
+    }
+}

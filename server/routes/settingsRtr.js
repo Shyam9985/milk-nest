@@ -34,4 +34,16 @@ router.post('/master/village', authmdlwre.isAuthenticated, authmdlwre.isAuthoriz
 router.put('/master/village/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('village', 'update'), settingsCtrl.updateVillageCtrl);
 router.delete('/master/village/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('village', 'delete'), settingsCtrl.deleteVillageCtrl);
 
+// gender master routes
+router.get('/master/gender', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('gender', 'read'), settingsCtrl.getGendersCtrl);
+router.post('/master/gender', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('gender', 'create'), settingsCtrl.createGenderCtrl);
+router.put('/master/gender/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('gender', 'update'), settingsCtrl.updateGenderCtrl);
+router.delete('/master/gender/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('gender', 'delete'), settingsCtrl.deleteGenderCtrl);
+
+// hierarchy master routes
+router.get('/master/hierarchy', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('hierarchy', 'read'), settingsCtrl.getHierarchyListCtrl);
+router.post('/master/hierarchy', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('hierarchy', 'create'), settingsCtrl.createHierarchyCtrl);
+router.put('/master/hierarchy/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('hierarchy', 'update'), settingsCtrl.updateHierarchyCtrl);
+router.delete('/master/hierarchy/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('hierarchy', 'delete'), settingsCtrl.deleteHierarchyCtrl);
+
 module.exports = router;
