@@ -1,5 +1,12 @@
+import UnderDevelopment from "../utils/UnderDevelopment";
+
 function Dashboard() {
-    return <div>Dashboard is being displayed</div>
+  return (
+    <UnderDevelopment
+      title="Dashboard"
+      subtitle="Dashboard is under development !"
+    />
+  );
 }
 
 export default Dashboard;
