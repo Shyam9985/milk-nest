@@ -21,6 +21,13 @@ router.post('/master/mandal', authmdlwre.isAuthenticated, authmdlwre.isAuthorize
 router.put('/master/mandal/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('mandal', 'update'), settingsCtrl.updateMandalCtrl);
 router.delete('/master/mandal/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('mandal', 'delete'), settingsCtrl.deleteMandalCtrl);
 
+// role master routes (hierarchy list feeds the role form dropdown)
+router.get('/master/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role', 'read'), settingsCtrl.getRolesCtrl);
+router.get('/master/role/hierarchy', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role', 'read'), settingsCtrl.getRoleHierarchiesCtrl);
+router.post('/master/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role', 'create'), settingsCtrl.createRoleCtrl);
+router.put('/master/role/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role', 'update'), settingsCtrl.updateRoleCtrl);
+router.delete('/master/role/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role', 'delete'), settingsCtrl.deleteRoleCtrl);
+
 // village/sachivalayam master routes
 router.get('/master/village', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('village', 'read'), settingsCtrl.getVillagesCtrl);
 router.post('/master/village', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('village', 'create'), settingsCtrl.createVillageCtrl);

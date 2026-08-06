@@ -2,7 +2,8 @@ const settingsMdl = require('../models/settingsMdl');
 const resutils = require('../utils/response.utils');
 
 // normalizes names and codes before comparing and storing
-const normalizeName = (value = '') => value.trim().replace(/\s+/g, ' ');
+// names are stored in title case, e.g. ' guntur  DISTRICT ' -> 'Guntur District'
+const normalizeName = (value = '') => value.trim().replace(/\s+/g, ' ').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 const normalizeCode = (value = '') => value.trim().replace(/\s+/g, '').toUpperCase();
 
 // fetches all active states
@@ -72,9 +73,9 @@ exports.deleteStateSrvc = async (state_id) => {
 
 // ===================== DISTRICT MASTER =====================
 
-// fetches all active districts
-exports.getDistrictsSrvc = async () => {
-    return settingsMdl.getDistrictsMdl();
+// fetches active districts, optionally filtered by parent state
+exports.getDistrictsSrvc = async (state_id = null) => {
+    return settingsMdl.getDistrictsMdl(state_id);
 }
 
 // makes sure the parent state exists and is active
@@ -154,9 +155,9 @@ exports.deleteDistrictSrvc = async (district_id) => {
 
 // ===================== MANDAL / ULB MASTER =====================
 
-// fetches all active mandals/ULBs
-exports.getMandalsSrvc = async () => {
-    return settingsMdl.getMandalsMdl();
+// fetches active mandals/ULBs, optionally filtered by parent district
+exports.getMandalsSrvc = async (district_id = null) => {
+    return settingsMdl.getMandalsMdl(district_id);
 }
 
 // makes sure the parent district exists and is active, returns it for further checks
@@ -319,4 +320,111 @@ const assertActiveVillageParents = async (district_id, mandal_ulb_id) => {
             resutils.createError('invalidParent', 'Selected mandal/ULB does not belong to the selected district.');
         }
     }
+}
+
+// ===================== ROLE MASTER =====================
+
+// handlers are stored lowercase with underscores, e.g. ' Form  Manager ' -> 'form_manager'
+const normalizeHandler = (value = '') => value.trim().replace(/\s+/g, '_').toLowerCase();
+
+// empty optional inputs are stored as null instead of empty strings
+const emptyToNull = (value) => {
+    const trimmed = typeof value === 'string' ? value.trim() : value;
+    return trimmed === '' || trimmed === undefined ? null : trimmed;
+};
+
+// fetches all active roles
+exports.getRolesSrvc = async () => {
+    return settingsMdl.getRolesMdl();
+}
+
+// fetches active hierarchies for the role form dropdown
+exports.getHierarchiesSrvc = async () => {
+    return settingsMdl.getHierarchiesMdl();
+}
+
+// makes sure the optional parent hierarchy exists and is active
+const assertActiveHierarchy = async (hierarchy_id) => {
+    if (!hierarchy_id) return;
+
+    const parentHierarchy = await settingsMdl.getActiveHierarchyByIdMdl(hierarchy_id);
+    if (!parentHierarchy.length) {
+        resutils.createError('invalidParent', 'Selected hierarchy does not exist or is inactive.');
+    }
+}
+
+// pulls the normalized role fields out of a request payload
+const normalizeRolePayload = (payload) => ({
+    role_nm: normalizeName(payload.role_nm),
+    role_hndlr: normalizeHandler(payload.role_hndlr),
+    description: emptyToNull(payload.description),
+    landing_url: emptyToNull(payload.landing_url),
+    hierarchy_id: payload.hierarchy_id ? Number(payload.hierarchy_id) : null
+});
+
+// creates a role, reusing a soft deleted record when the same name/handler comes back
+exports.createRoleSrvc = async (payload) => {
+    const data = normalizeRolePayload(payload);
+
+    await assertActiveHierarchy(data.hierarchy_id);
+
+    const duplicates = await settingsMdl.getDuplicateRolesMdl(data.role_nm, data.role_hndlr);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Role already exists with the same name or handler (${activeDuplicate.role_nm} - ${activeDuplicate.role_hndlr}).`);
+    }
+
+    // a soft deleted duplicate is reactivated instead of inserting a new row
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateRoleMdl(inactiveDuplicate.role_id, data);
+        return { role_id: inactiveDuplicate.role_id, reactivated: true, role_nm: data.role_nm };
+    }
+
+    const result = await settingsMdl.insertRoleMdl(data);
+    return { role_id: result.insertId, reactivated: false, role_nm: data.role_nm };
+}
+
+// updates a role after making sure the new name/handler is not taken by another record
+exports.updateRoleSrvc = async (role_id, payload) => {
+    const data = normalizeRolePayload(payload);
+
+    await assertActiveHierarchy(data.hierarchy_id);
+
+    const duplicates = await settingsMdl.getDuplicateRolesMdl(data.role_nm, data.role_hndlr, role_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another role already exists with the same name or handler (${duplicates[0].role_nm} - ${duplicates[0].role_hndlr}).`);
+    }
+
+    const result = await settingsMdl.updateRoleMdl(role_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Role not found or already deleted.');
+    }
+    return { role_id: Number(role_id), role_nm: data.role_nm };
+}
+
+// soft deletes a role after making sure it is not the super admin role and no active user depends on it
+exports.deleteRoleSrvc = async (role_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveRoleByIdMdl(role_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Role not found or already deleted.');
+    }
+
+    // deleting the super admin role would lock every administrator out of the system
+    if (record.role_hndlr === 'super_admin') {
+        resutils.createError('recordInUse', 'The Super Admin role is protected and cannot be deleted.');
+    }
+
+    const [{ cnt: userCount }] = await settingsMdl.countActiveUsersByRoleMdl(role_id);
+    if (userCount) {
+        resutils.createError('recordInUse', `Role cannot be deleted. ${userCount} active user(s) are mapped to it. Reassign those users first.`);
+    }
+
+    const result = await settingsMdl.softDeleteRoleMdl(role_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Role not found or already deleted.');
+    }
+    return { role_id: Number(role_id), role_nm: record.role_nm };
 }

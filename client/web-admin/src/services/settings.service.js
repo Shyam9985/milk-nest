@@ -32,9 +32,9 @@ export async function deleteState(stateId) {
     }
 }
 
-export async function getDistricts() {
+export async function getDistricts(queryParams = {}) {
     try {
-        return await get('settings/master/district');
+        return await get('settings/master/district', queryParams);
     } catch (error) {
         return error;
     }
@@ -64,9 +64,9 @@ export async function deleteDistrict(districtId) {
     }
 }
 
-export async function getMandals() {
+export async function getMandals(queryParams = {}) {
     try {
-        return await get('settings/master/mandal');
+        return await get('settings/master/mandal', queryParams);
     } catch (error) {
         return error;
     }
@@ -123,6 +123,46 @@ export async function updateVillage(villageId, payload) {
 export async function deleteVillage(villageId) {
     try {
         return await remove(`settings/master/village/${villageId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getRoles() {
+    try {
+        return await get('settings/master/role');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getRoleHierarchies() {
+    try {
+        return await get('settings/master/role/hierarchy');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createRole(payload) {
+    try {
+        return await post('settings/master/role', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateRole(roleId, payload) {
+    try {
+        return await put(`settings/master/role/${roleId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteRole(roleId) {
+    try {
+        return await remove(`settings/master/role/${roleId}`);
     } catch (error) {
         return error;
     }

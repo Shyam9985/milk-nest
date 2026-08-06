@@ -299,9 +299,20 @@ exports.deleteStateCtrl = async (req, res) => {
 
 // ===================== DISTRICT MASTER =====================
 
+// reads an optional positive-integer query param (e.g. ?state_id=2 for dependent dropdowns)
+const parseOptionalQueryId = (req, key) => {
+  if (req.query[key] === undefined || req.query[key] === "") return null;
+
+  const id = Number(req.query[key]);
+  if (!Number.isInteger(id) || id <= 0)
+    resutils.createError("invalidRecordId", `Please provide a valid ${key}.`);
+  return id;
+};
+
 exports.getDistrictsCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getDistrictsSrvc();
+    const stateId = parseOptionalQueryId(req, "state_id");
+    const records = await settingsService.getDistrictsSrvc(stateId);
 
     return resutils.sendSuccessResponse(
       req,
@@ -397,7 +408,8 @@ exports.deleteDistrictCtrl = async (req, res) => {
 
 exports.getMandalsCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getMandalsSrvc();
+    const districtId = parseOptionalQueryId(req, "district_id");
+    const records = await settingsService.getMandalsSrvc(districtId);
 
     return resutils.sendSuccessResponse(
       req,
@@ -576,5 +588,149 @@ exports.deleteVillageCtrl = async (req, res) => {
     );
   } catch (error) {
     return sendSettingsError(req, res, error, "delete village controller");
+  }
+};
+
+// ===================== ROLE MASTER =====================
+
+const ROLE_PAYLOAD_SCHEMA = {
+  role_nm: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 150,
+    label: "Role Name",
+  },
+  role_hndlr: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 50,
+    label: "Role Handler",
+  },
+  description: {
+    required: false,
+    type: "string",
+    maxLength: 500,
+    label: "Description",
+  },
+  landing_url: {
+    required: false,
+    type: "string",
+    maxLength: 200,
+    label: "Landing URL",
+  },
+  hierarchy_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Hierarchy",
+  },
+};
+
+exports.getRolesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getRolesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get roles", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get roles controller");
+  }
+};
+
+exports.getRoleHierarchiesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getHierarchiesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get role hierarchies", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get role hierarchies controller");
+  }
+};
+
+exports.createRoleCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      ROLE_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createRoleSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Role '${result.role_nm}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create role" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create role controller");
+  }
+};
+
+exports.updateRoleCtrl = async (req, res) => {
+  try {
+    const roleId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      ROLE_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateRoleSrvc(roleId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Role '${result.role_nm}' updated successfully.`,
+      },
+      { function: "update role" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update role controller");
+  }
+};
+
+exports.deleteRoleCtrl = async (req, res) => {
+  try {
+    const roleId = parseRecordId(req);
+
+    const result = await settingsService.deleteRoleSrvc(roleId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Role '${result.role_nm}' deleted successfully.`,
+      },
+      { function: "delete role" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete role controller");
   }
 };

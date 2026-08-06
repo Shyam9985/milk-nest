@@ -60,15 +60,23 @@ exports.countActiveDistrictsByStateMdl = (state_id) => {
 
 // ===================== DISTRICT MASTER =====================
 
-// fetches all active districts along with their parent state
-exports.getDistrictsMdl = () => {
-    const qry = `select d.district_id, d.district_name, d.district_code, d.state_id, s.state_name, d.is_active,
+// fetches active districts along with their parent state, optionally only those under one state
+exports.getDistrictsMdl = (state_id = null) => {
+    let qry = `select d.district_id, d.district_name, d.district_code, d.state_id, s.state_name, d.is_active,
         DATE_FORMAT(d.created_at, '%d-%m-%Y %h:%i %p') as created_at,
         DATE_FORMAT(d.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
         from district_mstr_lst_t d
         join state_mstr_lst_t s on s.state_id = d.state_id
-        where d.is_active = 1 order by s.state_name asc, d.district_name asc`;
-    return dbutils.executeQuery(qry, [], 'get districts model');
+        where d.is_active = 1`;
+    const params = [];
+
+    if (state_id) {
+        qry += ' and d.state_id = ?';
+        params.push(state_id);
+    }
+
+    qry += ' order by s.state_name asc, d.district_name asc';
+    return dbutils.executeQuery(qry, params, 'get districts model');
 }
 
 // finds districts clashing on name (within the same state) or code (across all states), optionally excluding one record
@@ -128,17 +136,25 @@ exports.countActiveVillagesByDistrictMdl = (district_id) => {
 
 // ===================== MANDAL / ULB MASTER =====================
 
-// fetches all active mandals/ULBs along with their parent district and state
-exports.getMandalsMdl = () => {
-    const qry = `select m.mandal_ulb_id, m.mandal_ulb_nm, m.mandal_ulb_code, m.district_id, m.is_ulb, m.is_active,
-        d.district_name, s.state_name,
+// fetches active mandals/ULBs along with their parent district and state, optionally only those under one district
+exports.getMandalsMdl = (district_id = null) => {
+    let qry = `select m.mandal_ulb_id, m.mandal_ulb_nm, m.mandal_ulb_code, m.district_id, m.is_ulb, m.is_active,
+        d.district_name, s.state_id, s.state_name,
         DATE_FORMAT(m.created_at, '%d-%m-%Y %h:%i %p') as created_at,
         DATE_FORMAT(m.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
         from mandal_ulb_mstr_lst_t m
         join district_mstr_lst_t d on d.district_id = m.district_id
         join state_mstr_lst_t s on s.state_id = d.state_id
-        where m.is_active = 1 order by d.district_name asc, m.mandal_ulb_nm asc`;
-    return dbutils.executeQuery(qry, [], 'get mandals model');
+        where m.is_active = 1`;
+    const params = [];
+
+    if (district_id) {
+        qry += ' and m.district_id = ?';
+        params.push(district_id);
+    }
+
+    qry += ' order by d.district_name asc, m.mandal_ulb_nm asc';
+    return dbutils.executeQuery(qry, params, 'get mandals model');
 }
 
 // finds mandals/ULBs clashing on name (within the same district) or code (across all districts), optionally excluding one record
@@ -196,7 +212,7 @@ exports.countActiveVillagesByMandalMdl = (mandal_ulb_id) => {
 exports.getVillagesMdl = () => {
     const qry = `select v.village_sachivalayam_id, v.village_sachivalayam_nm, v.village_sachivalayam_code,
         v.district_id, v.mandal_ulb_id, v.is_sachivalayam, v.is_active,
-        d.district_name, m.mandal_ulb_nm,
+        d.state_id, d.district_name, m.mandal_ulb_nm,
         DATE_FORMAT(v.created_at, '%d-%m-%Y %h:%i %p') as created_at,
         DATE_FORMAT(v.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
         from village_sachivalayam_mst_lst_t v
@@ -251,4 +267,82 @@ exports.getActiveVillageByIdMdl = (village_sachivalayam_id) => {
 exports.softDeleteVillageMdl = (village_sachivalayam_id) => {
     const qry = 'update village_sachivalayam_mst_lst_t set is_active = 0 where is_active = 1 and village_sachivalayam_id = ?';
     return dbutils.executeQuery(qry, [village_sachivalayam_id], 'soft delete village model');
+}
+
+// ===================== ROLE MASTER =====================
+
+// fetches all active roles along with their hierarchy name
+exports.getRolesMdl = () => {
+    const qry = `select r.role_id, r.role_nm, r.role_hndlr, r.description, r.landing_url, r.hierarchy_id,
+        h.hierarchy_nm, r.is_active,
+        DATE_FORMAT(r.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(r.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from roles_lst_t r
+        left join hierarchy_lst_t h on h.hirrarchy_id = r.hierarchy_id and h.is_active = 1
+        where r.is_active = 1 order by r.role_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get roles model');
+}
+
+// fetches active hierarchies for the role form dropdown
+exports.getHierarchiesMdl = () => {
+    const qry = `select hirrarchy_id as hierarchy_id, hierarchy_nm, level_type
+        from hierarchy_lst_t where is_active = 1 order by hierarchy_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get hierarchies model');
+}
+
+// fetches an active hierarchy by id, used to validate the parent before saving a role
+exports.getActiveHierarchyByIdMdl = (hierarchy_id) => {
+    const qry = 'select hirrarchy_id as hierarchy_id, hierarchy_nm from hierarchy_lst_t where is_active = 1 and hirrarchy_id = ?';
+    return dbutils.executeQuery(qry, [hierarchy_id], 'get active hierarchy by id model');
+}
+
+// finds roles matching the given name or handler (active and inactive), optionally excluding one record
+exports.getDuplicateRolesMdl = (role_nm, role_hndlr, excludeId = null) => {
+    let qry = `select role_id, role_nm, role_hndlr, is_active from roles_lst_t
+        where (lower(role_nm) = lower(?) or lower(role_hndlr) = lower(?))`;
+    const params = [role_nm, role_hndlr];
+
+    if (excludeId) {
+        qry += ' and role_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate roles model');
+}
+
+// inserts a new role
+exports.insertRoleMdl = (data) => {
+    const qry = 'insert into roles_lst_t (role_nm, role_hndlr, description, landing_url, hierarchy_id) values (?, ?, ?, ?, ?)';
+    return dbutils.executeQuery(qry, [data.role_nm, data.role_hndlr, data.description, data.landing_url, data.hierarchy_id], 'insert role model');
+}
+
+// updates an active role
+exports.updateRoleMdl = (role_id, data) => {
+    const qry = `update roles_lst_t set role_nm = ?, role_hndlr = ?, description = ?, landing_url = ?, hierarchy_id = ?
+        where is_active = 1 and role_id = ?`;
+    return dbutils.executeQuery(qry, [data.role_nm, data.role_hndlr, data.description, data.landing_url, data.hierarchy_id, role_id], 'update role model');
+}
+
+// brings back a soft deleted role with the latest details
+exports.reactivateRoleMdl = (role_id, data) => {
+    const qry = `update roles_lst_t set role_nm = ?, role_hndlr = ?, description = ?, landing_url = ?, hierarchy_id = ?, is_active = 1
+        where role_id = ?`;
+    return dbutils.executeQuery(qry, [data.role_nm, data.role_hndlr, data.description, data.landing_url, data.hierarchy_id, role_id], 'reactivate role model');
+}
+
+// fetches an active role by id
+exports.getActiveRoleByIdMdl = (role_id) => {
+    const qry = 'select role_id, role_nm, role_hndlr from roles_lst_t where is_active = 1 and role_id = ?';
+    return dbutils.executeQuery(qry, [role_id], 'get active role by id model');
+}
+
+// counts active users mapped to a role, used to block deleting a role that is in use
+exports.countActiveUsersByRoleMdl = (role_id) => {
+    const qry = 'select count(*) as cnt from users_lst_t where is_active = 1 and role_id = ?';
+    return dbutils.executeQuery(qry, [role_id], 'count active users by role model');
+}
+
+// soft deletes a role
+exports.softDeleteRoleMdl = (role_id) => {
+    const qry = 'update roles_lst_t set is_active = 0 where is_active = 1 and role_id = ?';
+    return dbutils.executeQuery(qry, [role_id], 'soft delete role model');
 }
