@@ -27,6 +27,57 @@ const destroySession = (req) => {
     });
 };
 
+// maps known auth error names to standard error responses, mirroring the settings controller.
+// unknown/db errors get the endpoint's friendly fallback so internals never reach the user
+const sendAuthError = (req, res, error, fname, fallbackMessage) => {
+    console.log('Error in ' + fname + ' : ', error);
+
+    switch (error.name) {
+        case 'validationFailed':
+        case 'noEmail':
+        case 'noValidEmail':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.VALIDATION_ERROR, { function: fname });
+
+        case 'duplicateUser':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.DUPLICATE_RECORD, { function: fname });
+
+        case 'invalidCredentials':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.INVALID_CREDENTIALS, { function: fname });
+
+        case 'temporarlyLocked':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.TEMPORARLY_LOCKED, { function: fname });
+
+        case 'sessionError':
+        case 'destroyError':
+            return resutils.sendErrorResponse(req, res, 'We could not set up your session. Please try logging in again.', RESPONSE_STATUS.SESSION_ERR, { function: fname });
+
+        case 'noSessionId':
+            return resutils.sendErrorResponse(req, res, 'You are not signed in. Please log in to continue.', RESPONSE_STATUS.INVALID_TOKEN, { function: fname });
+
+        case 'invalidOtp':
+        case 'otpExpired':
+        case 'otpNotVerified':
+        case 'otpMismatch':
+        case 'noOtpRes':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.INVALID_OTP, { function: fname });
+
+        case 'emailNotSent':
+        case 'EmailError':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: fname });
+
+        case 'noDataInserted':
+        case 'updateFailed':
+            return resutils.sendErrorResponse(req, res, error.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: fname });
+
+        case 'DatabaseError':
+            // db level details never reach the user on auth endpoints
+            return resutils.sendErrorResponse(req, res, fallbackMessage, RESPONSE_STATUS.DB_ERROR, { function: fname });
+
+        default:
+            return resutils.sendErrorResponse(req, res, fallbackMessage, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: fname });
+    }
+};
+
 //Sing up controller
 exports.signUp = async (req, res) => {
     const body = req.body;
@@ -49,19 +100,8 @@ exports.signUp = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, { id: result.user_id }, RESPONSE_STATUS.CREATED, { function: 'signup-controller' });
 
     } catch (error) {
-        console.log('Error occured at sign-up controller', error);
-
-        switch (error.name) {
-            case 'validationFailed':
-            case 'noDataInserted':
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA, { function: 'signup-controller' });
-
-            case 'duplicateUser':
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.DUPLICATE_RECORD, { function: 'signup-controller' });
-
-            default:
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'signup-controller' });
-        }
+        return sendAuthError(req, res, error, 'signup controller',
+            'We could not create your account right now. Please try again in a moment.');
     }
 }
 
@@ -85,6 +125,14 @@ exports.logIn = async (req, res) => {
         // authenticate the user against the business rules
         const userRow = await authService.authenticateUserSrvc(body, context);
 
+        // every login gets a brand-new session id
+        await new Promise((resolve, reject) => {
+            req.session.regenerate(err => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
         // bind the user to the express session
         const sessionId = req.sessionID;
         req.session.user_id = userRow.user_id;
@@ -106,18 +154,8 @@ exports.logIn = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, { user: sessionRes.user }, RESPONSE_STATUS.DATA_FOUND, { function: 'login-controller' });
 
     } catch (error) {
-        console.log('Error occured at login controller', error);
-
-        let loginError = null;
-        switch (error.name) {
-            case 'validationFailed': loginError = RESPONSE_STATUS.INVALID_DATA; break;
-            case 'invalidCredentials': loginError = RESPONSE_STATUS.INVALID_CREDENTIALS; break;
-            case 'temporarlyLocked': loginError = RESPONSE_STATUS.TEMPORARLY_LOCKED; break;
-            case 'sessionError': loginError = RESPONSE_STATUS.INTERNAL_SERVER_ERROR; break;
-            default: loginError = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
-        }
-
-        return resutils.sendErrorResponse(req, res, error?.message, loginError, { function: 'login-controller' });
+        return sendAuthError(req, res, error, 'login controller',
+            'We could not sign you in right now. Please try again in a moment.');
     }
 }
 
@@ -141,14 +179,8 @@ exports.logOut = async (req, res) => {
             resutils.createError('destroyError', 'Unable to destroy the session');
         }
     } catch (error) {
-
-        let errorName = null;
-        switch (error.name) {
-            case 'noSessionId': errorName = RESPONSE_STATUS.INVALID_TOKEN; break;
-            case 'destroyError': errorName = RESPONSE_STATUS.INTERNAL_SERVER_ERROR; break;
-            default: errorName = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
-        }
-        resutils.sendErrorResponse(req, res, error?.message, errorName, { function: 'log out' });
+        return sendAuthError(req, res, error, 'logout controller',
+            'We could not log you out cleanly. Please close the browser tab or try again.');
     }
 }
 
@@ -169,18 +201,8 @@ exports.forgotPassword = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, result, RESPONSE_STATUS.EMAIL_SENT, { function: 'forgotEmail' });
 
     } catch (error) {
-
-        switch (error.name) {
-            case 'noEmail':
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA_FORMAT, { function: 'forgot password' });
-
-            case 'emailNotSent':
-            case 'EmailError':
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'forgot password' });
-
-            default:
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'forgot password' });
-        }
+        return sendAuthError(req, res, error, 'forgot password controller',
+            'We could not process your password reset request. Please try again in a moment.');
     }
 }
 
@@ -203,18 +225,8 @@ exports.updatePassword = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, [{ message: 'Password updated successfully.' }], RESPONSE_STATUS.PASSWORD_UPDATED, { function: 'update password' });
 
     } catch (error) {
-
-        let status = null;
-        switch (error.name) {
-            case 'invalidOtp':
-            case 'otpExpired':
-            case 'otpNotVerified':
-                status = RESPONSE_STATUS.INVALID_OTP; break;
-
-            case 'validationFailed': status = RESPONSE_STATUS.VALIDATION_ERROR; break;
-            default: status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
-        }
-        return resutils.sendErrorResponse(req, res, error.message, status, { function: 'update password' });
+        return sendAuthError(req, res, error, 'update password controller',
+            'We could not update your password right now. Please try again in a moment.');
     }
 }
 
@@ -230,18 +242,8 @@ exports.sendResetPasswordEmail = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, result, RESPONSE_STATUS.EMAIL_SENT, { function: 'reset password' });
 
     } catch (error) {
-
-        switch (error.name) {
-            case 'noValidEmail':
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.INVALID_DATA_FORMAT, { function: 'reset password' });
-
-            case 'emailNotSent':
-            case 'EmailError':
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_SEND_EMAIL, { function: 'reset password' });
-
-            default:
-                return resutils.sendErrorResponse(req, res, error?.message, RESPONSE_STATUS.UNABLE_TO_PROCESS, { function: 'reset password' });
-        }
+        return sendAuthError(req, res, error, 'reset password controller',
+            'We could not send the reset email right now. Please try again in a moment.');
     }
 }
 
@@ -264,18 +266,7 @@ exports.verifyEmailOtp = async (req, res) => {
         return resutils.sendSuccessResponse(req, res, [{ ...result, message: 'OTP verified successfully.' }], RESPONSE_STATUS.VALID_OTP, { function: 'verify-email otp' });
 
     } catch (error) {
-        console.log(error);
-
-        let status = null;
-        switch (error.name) {
-            case 'otpExpired':
-            case 'otpMismatch':
-            case 'noOtpRes':
-                status = RESPONSE_STATUS.INVALID_OTP; break;
-
-            case 'validationFailed': status = RESPONSE_STATUS.VALIDATION_ERROR; break;
-            default: status = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
-        }
-        return resutils.sendErrorResponse(req, res, error.message, status, { function: 'verify-email otp' });
+        return sendAuthError(req, res, error, 'verify email otp controller',
+            'We could not verify your OTP right now. Please try again in a moment.');
     }
 }

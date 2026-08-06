@@ -34,17 +34,17 @@ exports.isAuthenticated = async (req, res, next) => {
                 console.log('Token expired checking session...', decoded);
                 const sessionId = decoded?.session_id;
 
-                if (!sessionId) resutils.createError('sessionExpired', 'Session expired/invalid');
+                if (!sessionId) resutils.createError('sessionExpired', 'Your session has expired. Please log in again.');
 
-                // check if session is still alive or not 
+                // check if session is still alive or not
                 const isAlive = await authMdl.checkIfSessionAlive(sessionId);
 
-                // expired throw error 
-                if (!isAlive || !isAlive?.length || isAlive?.[0]?.destroyed_at != null) resutils.createError('sessionExpired', 'Session expred.');
+                // expired throw error
+                if (!isAlive || !isAlive?.length || isAlive?.[0]?.destroyed_at != null) resutils.createError('sessionExpired', 'Your session has expired. Please log in again.');
 
-                if (isAlive && isAlive?.[0]?.is_expired) resutils.createError('sessionExpired', 'Session expred.');
+                if (isAlive && isAlive?.[0]?.is_expired) resutils.createError('sessionExpired', 'Your session has expired. Please log in again.');
 
-                if (isAlive?.[0]?.is_locked) resutils.createError('TemporarilyLocked', 'Logged in user is temporarily locked. Please try after ' + isAlive?.[0]?.locked_until);
+                if (isAlive?.[0]?.is_locked) resutils.createError('TemporarilyLocked', `Your account is temporarily locked. Please try again after ${isAlive?.[0]?.locked_until}.`);
 
                 // console.log('Session still alive but jwt token has expired.');
 
@@ -52,8 +52,8 @@ exports.isAuthenticated = async (req, res, next) => {
 
                 // alive - regenereate token and sent it to the client
 
-                // fetch user data 
-                if (!userData?.length) resutils.createError('userNotFound', 'User details not found.');
+                // fetch user data
+                if (!userData?.length) resutils.createError('userNotFound', 'We could not find your account. Please log in again.');
 
                 const userObj = userData?.[0];
 
@@ -79,11 +79,11 @@ exports.isAuthenticated = async (req, res, next) => {
         console.log('Error in auth middleware: ', error);
         switch (error.name) {
             case 'TokenExpiredError':
-                resutils.sendErrorResponse(req, res, 'Access token expired. please login again.', RESPONSE_STATUS.TOKEN_EXPIRED, { function: 'is authenticated middleware' });
+                resutils.sendErrorResponse(req, res, 'Your session token has expired. Please log in again.', RESPONSE_STATUS.TOKEN_EXPIRED, { function: 'is authenticated middleware' });
                 break;
 
             case 'JsonWebTokenError':
-                resutils.sendErrorResponse(req, res, 'Invalid access token.Please try to login again.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
+                resutils.sendErrorResponse(req, res, 'Your session token is invalid. Please log in again.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
                 break;
 
             case 'TemporarilyLocked':
@@ -103,11 +103,16 @@ exports.isAuthenticated = async (req, res, next) => {
                 break;
 
             case 'unauthorizedToken':
-                resutils.sendErrorResponse(req, res, 'Please provide valid access token to proceed.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
+                resutils.sendErrorResponse(req, res, 'You are not signed in. Please log in to continue.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
+                break;
+
+            case 'DatabaseError':
+                // session lookups can fail without the token being at fault - do not blame the user
+                resutils.sendErrorResponse(req, res, 'We could not verify your session right now. Please try again in a moment.', RESPONSE_STATUS.SESSION_ERR, { function: 'is authenticated middleware' });
                 break;
 
             default:
-                resutils.sendErrorResponse(req, res, 'Please provide valid access token to proceed.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
+                resutils.sendErrorResponse(req, res, 'We could not verify your sign-in right now. Please log in and try again.', RESPONSE_STATUS.INVALID_TOKEN, { function: 'is authenticated middleware' });
                 break;
         }
     }
@@ -179,7 +184,7 @@ exports.isAuthorized = (permission_key, action) => {
             // console.log('error in authorization middleware:', error);
 
             let resStatus = RESPONSE_STATUS.UNABLE_TO_PROCESS;
-            let message = error?.message || 'Unable to process request right now. pleasetry after some time';
+            let message = error?.message || 'Unable to process request right now. Please try again after some time.';
 
             switch (error.name) {
                 case 'noPermissions': resStatus = RESPONSE_STATUS.UNAUTHORIZED; break;
@@ -187,7 +192,17 @@ exports.isAuthorized = (permission_key, action) => {
                 case 'noSelectPermission': resStatus = RESPONSE_STATUS.NO_SELECT_PERMISSION; break;
                 case 'noUpdatePermission': resStatus = RESPONSE_STATUS.NO_UPDATE_PERMISSION; break;
                 case 'noDeletePermission': resStatus = RESPONSE_STATUS.NO_DELETE_PERMISSION; break;
-                default: resStatus = RESPONSE_STATUS.UNABLE_TO_PROCESS; break;
+
+                case 'DatabaseError':
+                    // permission lookups can fail without the user being at fault
+                    resStatus = RESPONSE_STATUS.DB_ERROR;
+                    message = 'We could not verify your permissions right now. Please try again in a moment.';
+                    break;
+
+                default:
+                    resStatus = RESPONSE_STATUS.UNABLE_TO_PROCESS;
+                    message = 'We could not verify your permissions right now. Please try again in a moment.';
+                    break;
             }
             return resutils.sendErrorResponse(req, res, message, resStatus, { function: 'authorization middleware' })
         }

@@ -16,5 +16,5 @@ exports.getSetupMenusMdl = async (user, menuItemCategory = 'SETUP') => {
         JOIN role_menu_map_t rm ON rm.menu_item_id = m.menu_item_id AND rm.is_active = 1
         WHERE m.is_quick_menu = 1 AND m.is_active = 1 AND rm.role_id = ? AND m.menu_item_category = ?
         ORDER BY c.display_order, m.menu_name;`;
-    return dbutils.executeQuery(qry, [user.role?.role_id, menuItemCategory]);
+    return dbutils.executeQuery(qry, [user.role?.role_id, menuItemCategory], 'get setup menus model');
 }
