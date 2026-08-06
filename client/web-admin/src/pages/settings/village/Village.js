@@ -3,7 +3,7 @@ import DataGrid from '../../../components/table/DataGrid';
 import SideDrawer from '../../../utils/SideDrawer';
 import Modal from '../../../utils/ModelComponent';
 import VillageForm from './VillageForm';
-import { getVillages, getDistricts, getMandals, createVillage, updateVillage, deleteVillage } from '../../../services/settings.service';
+import { getVillages, getDistricts, getMandals, getStates, createVillage, updateVillage, deleteVillage } from '../../../services/settings.service';
 import { useToast } from '../../../contexts/MessageContext';
 
 const VILLAGE_COLUMNS = [
@@ -20,8 +20,7 @@ function Village() {
 
     const toast = useToast();
     const [records, setRecords] = useState([]);
-    const [districtOptions, setDistrictOptions] = useState([]);
-    const [mandalOptions, setMandalOptions] = useState([]);
+    const [stateOptions, setStateOptions] = useState([]);
     const [permissions, setPermissions] = useState({});
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -44,43 +43,67 @@ function Village() {
         setLoading(false);
     };
 
-    // districts and mandals feed the cascading parent dropdowns in the form
-    const fetchParentOptions = async () => {
+    // states are fetched once, the first time the drawer opens - not on page load
+    const ensureStateOptions = async () => {
 
-        const [districtRes, mandalRes] = await Promise.all([getDistricts(), getMandals()]);
+        if (stateOptions.length) return;
 
-        if (districtRes?.success) {
-            setDistrictOptions((districtRes?.data?.records || []).map((district) => ({
+        const result = await getStates();
+
+        if (result?.success) {
+            setStateOptions((result?.data?.records || []).map((state) => ({
+                value: state.state_id,
+                label: `${state.state_name} (${state.state_code})`
+            })));
+        } else {
+            toast.error(result?.error || result?.message || 'Unable to load states for the form.');
+        }
+    };
+
+    // called by the form whenever a state is picked; fetches only that state's districts
+    const loadDistrictOptions = async (stateId) => {
+
+        const result = await getDistricts({ state_id: stateId });
+
+        if (result?.success) {
+            return (result?.data?.records || []).map((district) => ({
                 value: district.district_id,
-                label: `${district.district_name} (${district.state_name})`
-            })));
-        } else {
-            toast.error(districtRes?.error || districtRes?.message || 'Unable to load districts for the form.');
+                label: district.district_name
+            }));
         }
 
-        if (mandalRes?.success) {
-            // parentValue ties each mandal to its district so the form can cascade
-            setMandalOptions((mandalRes?.data?.records || []).map((mandal) => ({
+        toast.error(result?.error || result?.message || 'Unable to load districts for the form.');
+        return [];
+    };
+
+    // called by the form whenever a district is picked; fetches only that district's mandals
+    const loadMandalOptions = async (districtId) => {
+
+        const result = await getMandals({ district_id: districtId });
+
+        if (result?.success) {
+            return (result?.data?.records || []).map((mandal) => ({
                 value: mandal.mandal_ulb_id,
-                label: mandal.mandal_ulb_nm,
-                parentValue: mandal.district_id
-            })));
-        } else {
-            toast.error(mandalRes?.error || mandalRes?.message || 'Unable to load mandals for the form.');
+                label: mandal.mandal_ulb_nm
+            }));
         }
+
+        toast.error(result?.error || result?.message || 'Unable to load mandals for the form.');
+        return [];
     };
 
     useEffect(() => {
         fetchVillages();
-        fetchParentOptions();
     }, []);
 
     const openAddDrawer = () => {
+        ensureStateOptions();
         setEditingRecord(null);
         setIsDrawerOpen(true);
     };
 
     const openEditDrawer = (record) => {
+        ensureStateOptions();
         setEditingRecord(record);
         setIsDrawerOpen(true);
     };
@@ -149,8 +172,9 @@ function Village() {
                 title={editingRecord ? 'Update Village/Sachivalayam' : 'Add Village/Sachivalayam'} drawerSize="xs">
 
                 <VillageForm
-                    districtOptions={districtOptions}
-                    mandalOptions={mandalOptions}
+                    stateOptions={stateOptions}
+                    loadDistrictOptions={loadDistrictOptions}
+                    loadMandalOptions={loadMandalOptions}
                     initialValues={editingRecord}
                     submitting={submitting}
                     onSubmit={handleSubmit}

@@ -1,10 +1,54 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AuthInput from '../../../components/AuthInput';
+import SearchDropdown from '../../../components/SearchDropdown';
 
 function MasterForm({ fields = [], initialValues = null, submitting = false, submitLabel = 'Save', onSubmit, onCancel }) {
 
     const [values, setValues] = useState({});
     const [errors, setErrors] = useState({});
+
+    // options fetched on demand for dependent dropdowns, keyed by field name
+    const [dynamicOptions, setDynamicOptions] = useState({});
+    const [loadingOptions, setLoadingOptions] = useState({});
+
+    // latest values, readable inside async callbacks without re-subscribing
+    const valuesRef = useRef(values);
+    valuesRef.current = values;
+
+    // a change in any parent value triggers the dependent field's loader
+    const parentKey = fields
+        .filter((field) => field.dependsOn)
+        .map((field) => `${field.dependsOn}:${values[field.dependsOn] ?? ''}`)
+        .join('|');
+
+    useEffect(() => {
+
+        fields.forEach((field) => {
+
+            if (typeof field.loadOptions !== 'function' || !field.dependsOn) return;
+
+            const parentValue = values[field.dependsOn];
+
+            // no parent chosen -> nothing to offer
+            if (!parentValue) {
+                setDynamicOptions((prev) => ({ ...prev, [field.name]: [] }));
+                return;
+            }
+
+            setLoadingOptions((prev) => ({ ...prev, [field.name]: true }));
+
+            Promise.resolve(field.loadOptions(parentValue))
+                .then((options) => {
+                    // ignore the response when the parent changed again while this request was running
+                    if (String(valuesRef.current[field.dependsOn]) !== String(parentValue)) return;
+                    setDynamicOptions((prev) => ({ ...prev, [field.name]: options || [] }));
+                })
+                .finally(() => {
+                    setLoadingOptions((prev) => ({ ...prev, [field.name]: false }));
+                });
+        });
+
+    }, [parentKey]);
 
     // loads fresh values whenever the record being edited changes
     useEffect(() => {
@@ -22,17 +66,22 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
     }, [initialValues]);
 
+    // clears every field depending on the changed one, walking the whole chain (state -> district -> mandal)
+    const clearDependents = (changedName, next) => {
+        fields.forEach((field) => {
+            if (field.dependsOn === changedName) {
+                next[field.name] = '';
+                clearDependents(field.name, next);
+            }
+        });
+    };
+
     const handleChange = (e) => {
         const { name, type, value, checked } = e.target;
 
         setValues((prev) => {
             const next = { ...prev, [name]: type === 'checkbox' ? checked : value };
-
-            // changing a parent field resets every field that depends on it (e.g. district -> mandal)
-            fields.forEach((field) => {
-                if (field.dependsOn === name) next[field.name] = '';
-            });
-
+            clearDependents(name, next);
             return next;
         });
         setErrors((prev) => ({ ...prev, [name]: '' }));
@@ -67,6 +116,8 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
         const payload = {};
         fields.forEach((field) => {
+            // ui-only helper fields (e.g. the state filter above district) never reach the backend
+            if (field.uiOnly) return;
             payload[field.name] = typeof values[field.name] === 'string' ? values[field.name].trim() : values[field.name];
         });
 
@@ -83,43 +134,27 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
                     if (field.type === 'select') {
 
-                        // a dependent select only offers options belonging to the chosen parent value
-                        const options = field.dependsOn
-                            ? (field.options || []).filter((option) => String(option.parentValue) === String(values[field.dependsOn]))
-                            : (field.options || []);
+                        const isDynamic = typeof field.loadOptions === 'function';
+                        const isLoading = !!loadingOptions[field.name];
 
-                        const isLocked = submitting || (!!field.dependsOn && !values[field.dependsOn]);
+                        // dynamic fields fetch their options when the parent is picked;
+                        // static dependent fields filter the provided list by the chosen parent value
+                        let options;
+                        if (isDynamic) {
+                            options = dynamicOptions[field.name] || [];
+                        } else if (field.dependsOn) {
+                            options = (field.options || []).filter((option) => String(option.parentValue) === String(values[field.dependsOn]));
+                        } else {
+                            options = field.options || [];
+                        }
+
+                        const isLocked = submitting || isLoading || (!!field.dependsOn && !values[field.dependsOn]);
 
                         return (
-
-                            <div className="mb-3" key={field.name}>
-
-                                <label className="block mb-2 text-sm font-medium text-[var(--text-primary)]">
-                                    {field.required ? `${field.label} *` : field.label}
-                                </label>
-
-                                <select name={field.name} value={values[field.name] ?? ''} onChange={handleChange} disabled={isLocked}
-                                    className={`w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-4 py-3
-                                        text-[var(--input-text)] outline-none transition-colors
-                                        ${isLocked ? 'cursor-not-allowed opacity-60' : 'focus:border-[var(--brand-primary)]'}`}>
-
-                                    <option value="">{field.placeholder || `Select ${field.label}`}</option>
-
-                                    {options.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-
-                                </select>
-
-                                {errors[field.name] && (
-                                    <p className="mt-1 text-sm text-[var(--danger)]">
-                                        {errors[field.name]}
-                                    </p>
-                                )}
-
-                            </div>
+                            <SearchDropdown key={field.name} name={field.name} label={field.label}
+                                value={values[field.name] ?? ''} options={options} onChange={handleChange}
+                                placeholder={isLoading ? 'Loading...' : (field.placeholder || `Select ${field.label}`)}
+                                disabled={isLocked} required={!!field.required} error={errors[field.name]} />
                         );
                     }
 

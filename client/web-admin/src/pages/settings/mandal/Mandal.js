@@ -3,7 +3,7 @@ import DataGrid from '../../../components/table/DataGrid';
 import SideDrawer from '../../../utils/SideDrawer';
 import Modal from '../../../utils/ModelComponent';
 import MandalForm from './MandalForm';
-import { getMandals, getDistricts, createMandal, updateMandal, deleteMandal } from '../../../services/settings.service';
+import { getMandals, getDistricts, getStates, createMandal, updateMandal, deleteMandal } from '../../../services/settings.service';
 import { useToast } from '../../../contexts/MessageContext';
 
 const MANDAL_COLUMNS = [
@@ -20,7 +20,7 @@ function Mandal() {
 
     const toast = useToast();
     const [records, setRecords] = useState([]);
-    const [districtOptions, setDistrictOptions] = useState([]);
+    const [stateOptions, setStateOptions] = useState([]);
     const [permissions, setPermissions] = useState({});
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -43,33 +43,51 @@ function Mandal() {
         setLoading(false);
     };
 
-    // districts feed the parent dropdown in the form
-    const fetchDistrictOptions = async () => {
+    // states are fetched once, the first time the drawer opens - not on page load
+    const ensureStateOptions = async () => {
 
-        const result = await getDistricts();
+        if (stateOptions.length) return;
+
+        const result = await getStates();
 
         if (result?.success) {
-            const options = (result?.data?.records || []).map((district) => ({
-                value: district.district_id,
-                label: `${district.district_name} (${district.state_name})`
-            }));
-            setDistrictOptions(options);
+            setStateOptions((result?.data?.records || []).map((state) => ({
+                value: state.state_id,
+                label: `${state.state_name} (${state.state_code})`
+            })));
         } else {
-            toast.error(result?.error || result?.message || 'Unable to load districts for the form.');
+            toast.error(result?.error || result?.message || 'Unable to load states for the form.');
         }
+    };
+
+    // called by the form whenever a state is picked; fetches only that state's districts
+    const loadDistrictOptions = async (stateId) => {
+
+        const result = await getDistricts({ state_id: stateId });
+
+        if (result?.success) {
+            return (result?.data?.records || []).map((district) => ({
+                value: district.district_id,
+                label: district.district_name
+            }));
+        }
+
+        toast.error(result?.error || result?.message || 'Unable to load districts for the form.');
+        return [];
     };
 
     useEffect(() => {
         fetchMandals();
-        fetchDistrictOptions();
     }, []);
 
     const openAddDrawer = () => {
+        ensureStateOptions();
         setEditingRecord(null);
         setIsDrawerOpen(true);
     };
 
     const openEditDrawer = (record) => {
+        ensureStateOptions();
         setEditingRecord(record);
         setIsDrawerOpen(true);
     };
@@ -138,7 +156,8 @@ function Mandal() {
                 title={editingRecord ? 'Update Mandal/ULB' : 'Add Mandal/ULB'} drawerSize="xs">
 
                 <MandalForm
-                    districtOptions={districtOptions}
+                    stateOptions={stateOptions}
+                    loadDistrictOptions={loadDistrictOptions}
                     initialValues={editingRecord}
                     submitting={submitting}
                     onSubmit={handleSubmit}

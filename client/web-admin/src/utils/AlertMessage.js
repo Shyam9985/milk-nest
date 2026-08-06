@@ -26,7 +26,7 @@ const styles = {
 };
 
 
-function AlertMessage({ id, show, message, type = "success", duration = 1000, onClose, showCloseIcon = true }) {
+function AlertMessage({ id, show, message, type = "success", duration = 1500, onClose, showCloseIcon = true }) {
 
     const [visible, setVisible] = useState(false);
     const [progress, setProgress] = useState(100);

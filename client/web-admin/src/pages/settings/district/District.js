@@ -41,8 +41,10 @@ function District() {
         setLoading(false);
     };
 
-    // states feed the parent dropdown in the form
-    const fetchStateOptions = async () => {
+    // states are fetched once, the first time the drawer opens - not on page load
+    const ensureStateOptions = async () => {
+
+        if (stateOptions.length) return;
 
         const result = await getStates();
 
@@ -59,15 +61,16 @@ function District() {
 
     useEffect(() => {
         fetchDistricts();
-        fetchStateOptions();
     }, []);
 
     const openAddDrawer = () => {
+        ensureStateOptions();
         setEditingRecord(null);
         setIsDrawerOpen(true);
     };
 
     const openEditDrawer = (record) => {
+        ensureStateOptions();
         setEditingRecord(record);
         setIsDrawerOpen(true);
     };
