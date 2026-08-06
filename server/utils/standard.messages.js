@@ -90,6 +90,12 @@ const RESPONSE_STATUS = {
         message: "Record already exists with the given details."
     },
 
+    RECORD_IN_USE: {
+        code: 409,
+        statusKey: "RECORD_IN_USE",
+        message: "Record is in use by other records and cannot be deleted."
+    },
+
     NOT_FOUND: {
         code: 404,
         statusKey: "NOT_FOUND",

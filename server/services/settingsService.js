@@ -26,11 +26,11 @@ exports.createStateSrvc = async (payload) => {
     const inactiveDuplicate = duplicates[0];
     if (inactiveDuplicate) {
         await settingsMdl.reactivateStateMdl(inactiveDuplicate.state_id, { state_name, state_code });
-        return { state_id: inactiveDuplicate.state_id, reactivated: true };
+        return { state_id: inactiveDuplicate.state_id, reactivated: true, state_name };
     }
 
     const result = await settingsMdl.insertStateMdl({ state_name, state_code });
-    return { state_id: result.insertId, reactivated: false };
+    return { state_id: result.insertId, reactivated: false, state_name };
 }
 
 // updates a state after making sure the new name/code is not taken by another record
@@ -47,14 +47,276 @@ exports.updateStateSrvc = async (state_id, payload) => {
     if (!result.affectedRows) {
         resutils.createError('recordNotFound', 'State not found or already deleted.');
     }
-    return { state_id: Number(state_id) };
+    return { state_id: Number(state_id), state_name };
 }
 
-// soft deletes a state
+// soft deletes a state after making sure no active district depends on it
 exports.deleteStateSrvc = async (state_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveStateByIdMdl(state_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'State not found or already deleted.');
+    }
+
+    const [{ cnt: districtCount }] = await settingsMdl.countActiveDistrictsByStateMdl(state_id);
+    if (districtCount) {
+        resutils.createError('recordInUse', `State cannot be deleted. ${districtCount} active district(s) are mapped to it. Delete those districts first.`);
+    }
+
     const result = await settingsMdl.softDeleteStateMdl(state_id);
     if (!result.affectedRows) {
         resutils.createError('recordNotFound', 'State not found or already deleted.');
     }
-    return { state_id: Number(state_id) };
+    return { state_id: Number(state_id), state_name: record.state_name };
+}
+
+// ===================== DISTRICT MASTER =====================
+
+// fetches all active districts
+exports.getDistrictsSrvc = async () => {
+    return settingsMdl.getDistrictsMdl();
+}
+
+// makes sure the parent state exists and is active
+const assertActiveState = async (state_id) => {
+    const parentState = await settingsMdl.getActiveStateByIdMdl(state_id);
+    if (!parentState.length) {
+        resutils.createError('invalidParent', 'Selected state does not exist or is inactive.');
+    }
+}
+
+// creates a district under a state, reusing a soft deleted record when the same name/code comes back
+exports.createDistrictSrvc = async (payload) => {
+    const district_name = normalizeName(payload.district_name);
+    const district_code = normalizeCode(payload.district_code);
+    const state_id = Number(payload.state_id);
+
+    await assertActiveState(state_id);
+
+    const duplicates = await settingsMdl.getDuplicateDistrictsMdl(district_name, district_code, state_id);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `District already exists with the same name or code (${activeDuplicate.district_name} - ${activeDuplicate.district_code}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateDistrictMdl(inactiveDuplicate.district_id, { district_name, district_code, state_id });
+        return { district_id: inactiveDuplicate.district_id, reactivated: true, district_name };
+    }
+
+    const result = await settingsMdl.insertDistrictMdl({ district_name, district_code, state_id });
+    return { district_id: result.insertId, reactivated: false, district_name };
+}
+
+// updates a district after re-validating the parent and duplicate rules
+exports.updateDistrictSrvc = async (district_id, payload) => {
+    const district_name = normalizeName(payload.district_name);
+    const district_code = normalizeCode(payload.district_code);
+    const state_id = Number(payload.state_id);
+
+    await assertActiveState(state_id);
+
+    const duplicates = await settingsMdl.getDuplicateDistrictsMdl(district_name, district_code, state_id, district_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another district already exists with the same name or code (${duplicates[0].district_name} - ${duplicates[0].district_code}).`);
+    }
+
+    const result = await settingsMdl.updateDistrictMdl(district_id, { district_name, district_code, state_id });
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'District not found or already deleted.');
+    }
+    return { district_id: Number(district_id), district_name };
+}
+
+// soft deletes a district after making sure no active mandal/village depends on it
+exports.deleteDistrictSrvc = async (district_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveDistrictByIdMdl(district_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'District not found or already deleted.');
+    }
+
+    const [{ cnt: mandalCount }] = await settingsMdl.countActiveMandalsByDistrictMdl(district_id);
+    const [{ cnt: villageCount }] = await settingsMdl.countActiveVillagesByDistrictMdl(district_id);
+
+    if (mandalCount || villageCount) {
+        resutils.createError('recordInUse', `District cannot be deleted. ${mandalCount} active mandal/ULB(s) and ${villageCount} active village(s) are mapped to it. Delete those records first.`);
+    }
+
+    const result = await settingsMdl.softDeleteDistrictMdl(district_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'District not found or already deleted.');
+    }
+    return { district_id: Number(district_id), district_name: record.district_name };
+}
+
+// ===================== MANDAL / ULB MASTER =====================
+
+// fetches all active mandals/ULBs
+exports.getMandalsSrvc = async () => {
+    return settingsMdl.getMandalsMdl();
+}
+
+// makes sure the parent district exists and is active, returns it for further checks
+const assertActiveDistrict = async (district_id) => {
+    const parentDistrict = await settingsMdl.getActiveDistrictByIdMdl(district_id);
+    if (!parentDistrict.length) {
+        resutils.createError('invalidParent', 'Selected district does not exist or is inactive.');
+    }
+    return parentDistrict[0];
+}
+
+// creates a mandal/ULB under a district, reusing a soft deleted record when the same name/code comes back
+exports.createMandalSrvc = async (payload) => {
+    const mandal_ulb_nm = normalizeName(payload.mandal_ulb_nm);
+    const mandal_ulb_code = normalizeCode(payload.mandal_ulb_code);
+    const district_id = Number(payload.district_id);
+    const is_ulb = payload.is_ulb ? 1 : 0;
+
+    await assertActiveDistrict(district_id);
+
+    const duplicates = await settingsMdl.getDuplicateMandalsMdl(mandal_ulb_nm, mandal_ulb_code, district_id);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Mandal/ULB already exists with the same name or code (${activeDuplicate.mandal_ulb_nm} - ${activeDuplicate.mandal_ulb_code}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateMandalMdl(inactiveDuplicate.mandal_ulb_id, { mandal_ulb_nm, mandal_ulb_code, district_id, is_ulb });
+        return { mandal_ulb_id: inactiveDuplicate.mandal_ulb_id, reactivated: true, mandal_ulb_nm };
+    }
+
+    const result = await settingsMdl.insertMandalMdl({ mandal_ulb_nm, mandal_ulb_code, district_id, is_ulb });
+    return { mandal_ulb_id: result.insertId, reactivated: false, mandal_ulb_nm };
+}
+
+// updates a mandal/ULB after re-validating the parent and duplicate rules
+exports.updateMandalSrvc = async (mandal_ulb_id, payload) => {
+    const mandal_ulb_nm = normalizeName(payload.mandal_ulb_nm);
+    const mandal_ulb_code = normalizeCode(payload.mandal_ulb_code);
+    const district_id = Number(payload.district_id);
+    const is_ulb = payload.is_ulb ? 1 : 0;
+
+    await assertActiveDistrict(district_id);
+
+    const duplicates = await settingsMdl.getDuplicateMandalsMdl(mandal_ulb_nm, mandal_ulb_code, district_id, mandal_ulb_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another mandal/ULB already exists with the same name or code (${duplicates[0].mandal_ulb_nm} - ${duplicates[0].mandal_ulb_code}).`);
+    }
+
+    const result = await settingsMdl.updateMandalMdl(mandal_ulb_id, { mandal_ulb_nm, mandal_ulb_code, district_id, is_ulb });
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Mandal/ULB not found or already deleted.');
+    }
+    return { mandal_ulb_id: Number(mandal_ulb_id), mandal_ulb_nm };
+}
+
+// soft deletes a mandal/ULB after making sure no active village depends on it
+exports.deleteMandalSrvc = async (mandal_ulb_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveMandalByIdMdl(mandal_ulb_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Mandal/ULB not found or already deleted.');
+    }
+
+    const [{ cnt: villageCount }] = await settingsMdl.countActiveVillagesByMandalMdl(mandal_ulb_id);
+    if (villageCount) {
+        resutils.createError('recordInUse', `Mandal/ULB cannot be deleted. ${villageCount} active village(s) are mapped to it. Delete those villages first.`);
+    }
+
+    const result = await settingsMdl.softDeleteMandalMdl(mandal_ulb_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Mandal/ULB not found or already deleted.');
+    }
+    return { mandal_ulb_id: Number(mandal_ulb_id), mandal_ulb_nm: record.mandal_ulb_nm };
+}
+
+// ===================== VILLAGE / SACHIVALAYAM MASTER =====================
+
+// fetches all active villages/sachivalayams
+exports.getVillagesSrvc = async () => {
+    return settingsMdl.getVillagesMdl();
+}
+
+// creates a village/sachivalayam, reusing a soft deleted record when the same name/code comes back
+exports.createVillageSrvc = async (payload) => {
+    const village_sachivalayam_nm = normalizeName(payload.village_sachivalayam_nm);
+    const village_sachivalayam_code = normalizeCode(payload.village_sachivalayam_code);
+    const district_id = Number(payload.district_id);
+    const mandal_ulb_id = payload.mandal_ulb_id ? Number(payload.mandal_ulb_id) : null;
+    const is_sachivalayam = payload.is_sachivalayam ? 1 : 0;
+
+    await assertActiveVillageParents(district_id, mandal_ulb_id);
+
+    const duplicates = await settingsMdl.getDuplicateVillagesMdl(village_sachivalayam_nm, village_sachivalayam_code, district_id, mandal_ulb_id);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Village/Sachivalayam already exists with the same name or code (${activeDuplicate.village_sachivalayam_nm} - ${activeDuplicate.village_sachivalayam_code}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateVillageMdl(inactiveDuplicate.village_sachivalayam_id, { village_sachivalayam_nm, village_sachivalayam_code, district_id, mandal_ulb_id, is_sachivalayam });
+        return { village_sachivalayam_id: inactiveDuplicate.village_sachivalayam_id, reactivated: true, village_sachivalayam_nm };
+    }
+
+    const result = await settingsMdl.insertVillageMdl({ village_sachivalayam_nm, village_sachivalayam_code, district_id, mandal_ulb_id, is_sachivalayam });
+    return { village_sachivalayam_id: result.insertId, reactivated: false, village_sachivalayam_nm };
+}
+
+// updates a village/sachivalayam after re-validating parents and duplicate rules
+exports.updateVillageSrvc = async (village_sachivalayam_id, payload) => {
+    const village_sachivalayam_nm = normalizeName(payload.village_sachivalayam_nm);
+    const village_sachivalayam_code = normalizeCode(payload.village_sachivalayam_code);
+    const district_id = Number(payload.district_id);
+    const mandal_ulb_id = payload.mandal_ulb_id ? Number(payload.mandal_ulb_id) : null;
+    const is_sachivalayam = payload.is_sachivalayam ? 1 : 0;
+
+    await assertActiveVillageParents(district_id, mandal_ulb_id);
+
+    const duplicates = await settingsMdl.getDuplicateVillagesMdl(village_sachivalayam_nm, village_sachivalayam_code, district_id, mandal_ulb_id, village_sachivalayam_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another village/sachivalayam already exists with the same name or code (${duplicates[0].village_sachivalayam_nm} - ${duplicates[0].village_sachivalayam_code}).`);
+    }
+
+    const result = await settingsMdl.updateVillageMdl(village_sachivalayam_id, { village_sachivalayam_nm, village_sachivalayam_code, district_id, mandal_ulb_id, is_sachivalayam });
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Village/Sachivalayam not found or already deleted.');
+    }
+    return { village_sachivalayam_id: Number(village_sachivalayam_id), village_sachivalayam_nm };
+}
+
+// soft deletes a village/sachivalayam
+exports.deleteVillageSrvc = async (village_sachivalayam_id) => {
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveVillageByIdMdl(village_sachivalayam_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Village/Sachivalayam not found or already deleted.');
+    }
+
+    const result = await settingsMdl.softDeleteVillageMdl(village_sachivalayam_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Village/Sachivalayam not found or already deleted.');
+    }
+    return { village_sachivalayam_id: Number(village_sachivalayam_id), village_sachivalayam_nm: record.village_sachivalayam_nm };
+}
+
+// villages hang off a district and optionally a mandal; the mandal must belong to the same district
+const assertActiveVillageParents = async (district_id, mandal_ulb_id) => {
+    await assertActiveDistrict(district_id);
+
+    if (mandal_ulb_id) {
+        const parentMandal = await settingsMdl.getActiveMandalByIdMdl(mandal_ulb_id);
+        if (!parentMandal.length) {
+            resutils.createError('invalidParent', 'Selected mandal/ULB does not exist or is inactive.');
+        }
+        if (parentMandal[0].district_id != district_id) {
+            resutils.createError('invalidParent', 'Selected mandal/ULB does not belong to the selected district.');
+        }
+    }
 }

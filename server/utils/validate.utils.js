@@ -151,8 +151,9 @@ const isValidDate = (date) => {
         && !isNaN(parsed);
 };
 
+// returns the { status, message } shape expected by validateNode's boolean type check
 const isValidBoolean = (value) => {
-    return typeof value === 'boolean';
+    return { status: typeof value === 'boolean', message: null };
 };
 
 const isValidPersonName = (name) => {

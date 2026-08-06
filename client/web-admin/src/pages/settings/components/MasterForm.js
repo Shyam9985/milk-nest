@@ -24,7 +24,17 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
     const handleChange = (e) => {
         const { name, type, value, checked } = e.target;
-        setValues((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+
+        setValues((prev) => {
+            const next = { ...prev, [name]: type === 'checkbox' ? checked : value };
+
+            // changing a parent field resets every field that depends on it (e.g. district -> mandal)
+            fields.forEach((field) => {
+                if (field.dependsOn === name) next[field.name] = '';
+            });
+
+            return next;
+        });
         setErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
@@ -72,6 +82,14 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                 {fields.map((field) => {
 
                     if (field.type === 'select') {
+
+                        // a dependent select only offers options belonging to the chosen parent value
+                        const options = field.dependsOn
+                            ? (field.options || []).filter((option) => String(option.parentValue) === String(values[field.dependsOn]))
+                            : (field.options || []);
+
+                        const isLocked = submitting || (!!field.dependsOn && !values[field.dependsOn]);
+
                         return (
 
                             <div className="mb-3" key={field.name}>
@@ -80,13 +98,14 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                                     {field.required ? `${field.label} *` : field.label}
                                 </label>
 
-                                <select name={field.name} value={values[field.name] ?? ''} onChange={handleChange} disabled={submitting}
-                                    className="w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-4 py-3
-                                        text-[var(--input-text)] outline-none transition-colors focus:border-[var(--brand-primary)]">
+                                <select name={field.name} value={values[field.name] ?? ''} onChange={handleChange} disabled={isLocked}
+                                    className={`w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-4 py-3
+                                        text-[var(--input-text)] outline-none transition-colors
+                                        ${isLocked ? 'cursor-not-allowed opacity-60' : 'focus:border-[var(--brand-primary)]'}`}>
 
                                     <option value="">{field.placeholder || `Select ${field.label}`}</option>
 
-                                    {(field.options || []).map((option) => (
+                                    {options.map((option) => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>
