@@ -31,6 +31,18 @@ function handleLogout() {
     }
 }
 
+// Reads the issued-at claim of a JWT. Returns 0 for missing/malformed tokens
+// so any valid token always wins against "no token".
+function tokenIat(token) {
+    try {
+        // JWT payloads are base64url encoded; atob only understands base64
+        const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        return JSON.parse(atob(payload)).iat || 0;
+    } catch (error) {
+        return 0;
+    }
+}
+
 axiosInstance.interceptors.request.use((config) => {
     // add authentication token to headers
     const token = localStorage.getItem("access-token");
@@ -53,7 +65,8 @@ axiosInstance.interceptors.response.use(
 
         const localToken = localStorage.getItem("access-token");
 
-        if (jwtToken && localToken !== jwtToken) {
+        // Only ever replace the stored token with a strictly NEWER one.
+        if (jwtToken && tokenIat(jwtToken) > tokenIat(localToken)) {
             // console.log('setting new jwt token', jwtToken);
 
             localStorage.setItem("access-token", jwtToken);
@@ -64,7 +77,7 @@ axiosInstance.interceptors.response.use(
 
         // console.log(refreshToken);
 
-        if (refreshToken && refreshToken !== localToken) {
+        if (refreshToken && tokenIat(refreshToken) > tokenIat(localToken)) {
             // console.log('setting refresh token', refreshToken);
 
             localStorage.setItem("access-token", refreshToken);
