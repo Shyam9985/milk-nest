@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { NavLink } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Construction } from "lucide-react";
 import AuthContext from "../contexts/AuthContext";
 
@@ -13,10 +13,19 @@ function UnderDevelopment({
 }) {
 
     const authCtx = useContext(AuthContext);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const landingUrl = localStorage.getItem("landing-url");
-    const resolvedBackRoute = backRoute || redirectTo || (authCtx.isLoggedIn ? landingUrl : "/login");
-    const resolvedButtonLabel = buttonLabel || (backRoute ? "Back to Settings" : (authCtx.isLoggedIn ? "Back to Dashboard" : "Back to Login"));
+    const fallbackRoute = backRoute || redirectTo || (authCtx.isLoggedIn ? (landingUrl || "/dashboard") : "/login");
+    const resolvedButtonLabel = buttonLabel || "Go Back";
+
+    // location.key is "default" only on the first entry of the session (deep link / fresh tab),
+    // where navigate(-1) would leave the app
+    const handleBack = () => {
+        if (location.key !== "default") navigate(-1);
+        else navigate(fallbackRoute, { replace: true });
+    };
 
     return (
 
@@ -72,16 +81,17 @@ function UnderDevelopment({
 
                 {/* Button */}
 
-                <NavLink
-                    to={resolvedBackRoute}
-                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--btn-primary-bg)] 
+                <button
+                    type="button"
+                    onClick={handleBack}
+                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--btn-primary-bg)]
                     px-5 py-3 text-[var(--btn-primary-text)] transition hover:opacity-90">
 
                     <ArrowLeft size={18} />
 
                     {resolvedButtonLabel}
 
-                </NavLink>
+                </button>
 
             </div>
 

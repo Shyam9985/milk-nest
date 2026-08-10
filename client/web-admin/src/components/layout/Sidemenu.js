@@ -8,8 +8,8 @@ const getNavLinkClass = ({ isActive }) => `
     w-full flex items-center gap-3 rounded-xl px-3 py-3
     transition-all duration-200
     ${isActive
-        ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]"
-        : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+        ? "bg-[var(--brand-primary)] text-[var(--text-primary)]"
+        : "text-[var(--text-secondary)] hover:bg-[var(--brand-primary)]"
     }
 `;
 
@@ -83,7 +83,7 @@ function SideMenu({ collapsed, onToggle }) {
                         <NavLink key={menu.menu_item_id} to={menu.menu_url}
                             className={({ isActive }) =>
                                 `relative group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ${isActive
-                                    ? "bg-[var(--brand-tertiary)] text-[var(--text-primary)]"
+                                    ? "bg-[var(--brand-primary)] text-[var(--text-primary)]"
                                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
                                 }`
                             }
