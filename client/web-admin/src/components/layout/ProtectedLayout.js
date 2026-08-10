@@ -14,7 +14,9 @@ export function ProtectedLayout(props) {
     const themeCtx = useContext(ThemeContext);
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(
-        JSON.parse(localStorage.getItem("sidebarCollapsed")) ?? false
+        window.innerWidth < 1024
+            ? true
+            : (JSON.parse(localStorage.getItem("sidebar-collapsed")) ?? false)
     );
 
 
@@ -35,9 +37,19 @@ export function ProtectedLayout(props) {
 
     }, []);
 
+    // entering tablet range resets to collapsed; leaving it restores the saved desktop preference
     useEffect(() => {
-        localStorage.setItem("sidebar-collapsed", JSON.stringify(sidebarCollapsed));
-    }, [sidebarCollapsed]);
+        if (isTablet) {
+            setSidebarCollapsed(true);
+        } else {
+            setSidebarCollapsed(JSON.parse(localStorage.getItem("sidebar-collapsed")) ?? false);
+        }
+    }, [isTablet]);
+
+    // persist only the desktop preference, so tablet auto-collapse never overwrites it
+    useEffect(() => {
+        if (!isTablet) localStorage.setItem("sidebar-collapsed", JSON.stringify(sidebarCollapsed));
+    }, [sidebarCollapsed, isTablet]);
 
     return (
         <div className="w-screen h-screen flex flex-col overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
@@ -46,7 +58,7 @@ export function ProtectedLayout(props) {
             <div className="flex-1 flex overflow-hidden">
 
                 <Sidemenu
-                    collapsed={isTablet ? true : sidebarCollapsed}
+                    collapsed={sidebarCollapsed}
                     onToggle={() =>
                         setSidebarCollapsed(prev => !prev)
                     }

@@ -1,4 +1,5 @@
 const dbutils = require('../utils/db.utils');
+const dateFns = require('date-fns');
 
 // sign up controller
 exports.signUp = async (data, user) => {
@@ -130,12 +131,12 @@ exports.expireExpressSession = (sessionId) => {
 // slide the express session time 
 exports.slideExpressSession = (sessionId) => {
     const qry = 'update user_sessions set expires_at = DATE_ADD(NOW(), INTERVAL 30 MINUTE) where is_active = 1 and session_id = ? ';
-    return dbutils.executeQuery(qry, [sessionId], 'expire express session');
+    return dbutils.executeQuery(qry, [sessionId], 'slide express session');
 }
 
 // unlock locked users 
 exports.unlockUsers = () => {
-    console.log('Unlocking the users at :', new Date());
+    console.log('Unlocking the users at :', dateFns.format(new Date(), 'dd-MM-yyyy hh:mm:ss a'));
     const query = 'update users_lst_t set is_locked = 0 , login_attempts = 0 , locked_until = null where is_active = 1 and locked_until < current_timestamp();';
     return dbutils.executeQuery(query, [], 'unlock users');
 }
