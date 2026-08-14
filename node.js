@@ -118,4 +118,31 @@ app.use((error, req, res, next) => {
     console.log('In Global error handler : ', error);
     response.sendErrorResponse(req, res, 'Unable to process request. please try after some time !', RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Global error' })
 });
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received");
+
+  app.close(() => {
+    console.log("HTTP server closed");
+
+    // Close DB connections here
+    dbConfig.pool.close(() => {
+      console.log("Database connections closed");
+      process.exit(0);
+    });
+  });
+});
+process.on("SIGINT", () => {
+  console.log("SIGINT received");
+
+  app.close(() => {
+    console.log("HTTP server closed");
+
+    // Close DB connections here
+    dbConfig.pool.close(() => {
+      console.log("Database connections closed");
+      process.exit(0);
+    });
+  });
+});
 module.exports = { app };

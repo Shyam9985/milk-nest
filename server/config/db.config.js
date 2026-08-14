@@ -1,9 +1,6 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 
-// DB_HOST=mysql-1894a330-dairy-form.l.aivencloud.com
-// DB_PORT=19628
-// DB_NAME=dairy_form
 const baseConfig = {
     connectionLimit: 7,
     host: process.env.DB_HOST,
@@ -55,4 +52,4 @@ const logPoolEvents = function (pool) {
     });
 }
 
-module.exports = { pool: adminPool, logPoolEvents, escapeValue: mysql.escape }
+module.exports = { pool: adminPool, operatorPool, viewerPool, logPoolEvents, escapeValue: mysql.escape }
