@@ -23,7 +23,8 @@ function registerJobs() {
     // unlocking the lockedusers (guarded so a db failure never crashes the server)
     const unlockJob = scheduler.scheduleJob('0 */60 * * * *', async () => {
         try {
-            await authMdl.unlockUsers();
+            const response = await authMdl.unlockUsers();
+            console.log('Unlock users job completed successfully:', response?.affectedRows);
         } catch (error) {
             console.error('Unlock users job failed:', error.message);
         }

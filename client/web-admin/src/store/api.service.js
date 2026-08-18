@@ -29,13 +29,15 @@ export async function remove(relativeUrl, queryParams = {}) {
     return response;
 }
 
-export async function upload(url, formData) {
+// raw-body upload: the payload rides as-is (e.g. a File/Blob), with per-request headers.
+// uploads can honestly outlive the instance's 30s default, so they get their own timeout
+export async function upload(relativeUrl, payload, headers = {}, onUploadProgress) {
+    const response = await axios.post(relativeUrl, payload, { headers, onUploadProgress, timeout: 120000 });
+    return response;
+}
 
-    const response = await axiosInstance.post(url, formData, {
-        headers: {
-            "Content-Type": "multipart/form-data", "Accept": "application/json"
-        }
-    });
-
-    return response.data;
+// binary download: resolves to a Blob instead of parsed JSON (interceptor unwraps .data)
+export async function download(relativeUrl) {
+    const response = await axios.get(relativeUrl, { responseType: "blob" });
+    return response;
 }

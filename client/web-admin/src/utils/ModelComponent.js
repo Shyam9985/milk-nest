@@ -76,7 +76,7 @@ function Modal({ isOpen, onClose, onSubmit, children, title = "Alert", primaryBu
 
                 onClick={(e) => e.stopPropagation()}
 
-                className={`w-[92%] max-w-lg md:max-w-2xl overflow-hidden rounded-2xl border border-[var(--border-primary)]
+                className={`max-w-lg md:max-w-2xl overflow-hidden rounded-2xl border border-[var(--border-primary)]
                     bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-2xl transform-gpu transition-all duration-300
                     ${isOpen ? "translate-y-0 scale-100 opacity-100" : "translate-y-6 scale-95 opacity-0"}`}
             >

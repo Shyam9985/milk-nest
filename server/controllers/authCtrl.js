@@ -104,7 +104,6 @@ exports.signUp = async (req, res) => {
             'We could not create your account right now. Please try again in a moment.');
     }
 }
-
 // login controller
 exports.logIn = async (req, res) => {
     const body = req.body;

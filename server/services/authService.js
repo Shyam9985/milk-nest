@@ -143,6 +143,9 @@ exports.logoutSrvc = async (sessionId) => {
     return authMdl.expireExpressSession(sessionId);
 }
 
+// shared with profileService so both login and profile return the same shape
+exports.buildUserObj = buildUserObj;
+
 // sends the forgot password OTP mail
 exports.sendForgotPasswordOtpSrvc = async (email, fullName, user = null) => {
     const otp = emailutils.get6DigitOtp();

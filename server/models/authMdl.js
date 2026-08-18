@@ -134,7 +134,7 @@ exports.slideExpressSession = (sessionId) => {
     return dbutils.executeQuery(qry, [sessionId], 'slide express session');
 }
 
-// unlock locked users 
+// unlock locked users
 exports.unlockUsers = () => {
     console.log('Unlocking the users at :', dateFns.format(new Date(), 'dd-MM-yyyy hh:mm:ss a'));
     const query = 'update users_lst_t set is_locked = 0 , login_attempts = 0 , locked_until = null where is_active = 1 and locked_until < current_timestamp();';
