@@ -12,6 +12,13 @@ function Profile() {
   const toast = useToast();
 
   const [user, setUser] = useState({});
+  const [step, setStep] = useState("send");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [messageKey, setMessageKey] = useState("");
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showPhotoView, setShowPhotoView] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
+
 
   // fresh profile from the server — localStorage only reflects the last login
   useEffect(() => {
@@ -31,12 +38,6 @@ function Profile() {
       }
     })();
   }, []);
-
-  const [step, setStep] = useState("send");
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [messageKey, setMessageKey] = useState("");
-  const [showFileUpload, setShowFileUpload] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState(null);
 
   // the uploaded File is still in the browser — preview it locally, no re-fetch needed
   const handlePhotoUploaded = (record, file) => {
@@ -97,7 +98,9 @@ function Profile() {
           {/* Profile Avatar */}
           <button
             type="button"
-            onClick={() => setShowFileUpload((prev) => !prev)}
+            onClick={() =>
+              photoUrl ? setShowPhotoView(true) : setShowFileUpload(true)
+            }
             className="group relative h-28 w-28 overflow-hidden rounded-full bg-[var(--brand-primary)] text-white shadow-sm
             focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)]"
           >
@@ -227,6 +230,28 @@ function Profile() {
           maxSize="10 MB"
           onUploaded={handlePhotoUploaded}
         />
+      </Modal>
+
+      {/* ---------------- Photo View Modal ---------------- */}
+
+      <Modal
+        isOpen={showPhotoView}
+        onClose={() => setShowPhotoView(false)}
+        onSubmit={() => {
+          setShowPhotoView(false);
+          setShowFileUpload(true);
+        }}
+        title="Profile Photo"
+        primaryButtonName="Change Photo"
+        showSecondaryButton={false}
+      >
+        {photoUrl && (
+          <img
+            src={photoUrl}
+            alt="Profile"
+            className="mx-auto max-h-[60vh] w-auto max-w-full rounded-xl object-contain"
+          />
+        )}
       </Modal>
     </div>
   );
