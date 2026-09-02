@@ -53,6 +53,11 @@
     --danger: #dc2626;
     --info: #0ea5e9;
 
+    /* Status - soft surfaces (alerts, banners) */
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --danger-text: #dc2626;
+
     /* Inputs */
     --input-bg: #ffffff;
     --input-border: #d1d5db;
@@ -149,6 +154,11 @@
     --warning: #fbbf24;
     --danger: #ef4444;
     --info: #38bdf8;
+
+    /* Status - soft surfaces (alerts, banners) */
+    --danger-bg: rgba(69, 10, 10, .4);
+    --danger-border: #991b1b;
+    --danger-text: #fca5a5;
 
     /* Inputs */
     --input-bg: #1f2937;

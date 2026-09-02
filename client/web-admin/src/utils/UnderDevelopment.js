@@ -33,7 +33,7 @@ function UnderDevelopment({
 
             {/* Background */}
 
-            <div className="absolute inset-0 from-slate-100 via-blue-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--bg-secondary)] via-[var(--bg-primary)] to-[var(--bg-tertiary)]"></div>
 
             {/* Blur Overlay */}
 

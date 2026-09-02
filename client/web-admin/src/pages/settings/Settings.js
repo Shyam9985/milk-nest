@@ -1,14 +1,11 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSetupMenus } from '../../services/auth.service';
-import ThemeContext from '../../contexts/ThemeContext';
 import * as Icons from "lucide-react";
 import DataGrid from '../../components/table/DataGrid';
 import Skeleton from '../../utils/Skeleton';
 
 function Settings() {
-    const themeCtx = useContext(ThemeContext);
-    const isDarkTheme = themeCtx?.theme === 'dark';
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -100,7 +97,7 @@ function Settings() {
     if (error) {
         return (
             <div className="p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
-                <div className={`rounded-xl border p-6 text-sm shadow-sm ${isDarkTheme ? 'border-red-800 bg-red-950/40 text-red-300' : 'border-red-200 bg-red-50 text-red-600'}`}>
+                <div className="rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-sm text-[var(--danger-text)] shadow-sm">
                     {error}
                 </div>
             </div>
@@ -112,27 +109,27 @@ function Settings() {
            {/* <div className='p-6'> <DataGrid /></div> */}
             <br />
             <div className="space-y-4 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
-                <div className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-end sm:justify-between ${isDarkTheme ? 'border-slate-700 bg-slate-800/70 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>
+                <div className="flex flex-col gap-3 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-4 text-[var(--text-primary)] sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold">Setup menus</h1>
-                        <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-slate-600'}`}>Browse the available setup actions grouped by category.</p>
+                        <p className="text-sm text-[var(--text-secondary)]">Browse the available setup actions grouped by category.</p>
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">
-                        <div className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${isDarkTheme ? 'border-slate-700 bg-slate-700/60 text-slate-200' : 'border-slate-200 bg-slate-100 text-slate-700'}`}>
+                        <div className="flex items-center gap-2 rounded-full border border-[var(--border-secondary)] bg-[var(--bg-tertiary)] px-3 py-2 text-sm text-[var(--text-secondary)]">
                             <Icons.Search size={16} />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search setup items"
-                                className={`w-48 bg-transparent text-sm outline-none ${isDarkTheme ? 'text-slate-100 placeholder:text-slate-400' : 'text-slate-700 placeholder:text-slate-400'}`}
+                                className="w-48 bg-transparent text-sm text-[var(--input-text)] outline-none placeholder:text-[var(--input-placeholder)]"
                             />
                         </div>
                     </div>
                 </div>
 
                 {filteredCategories.length === 0 ? (
-                    <div className={`rounded-xl border border-dashed p-6 text-sm ${isDarkTheme ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-300 bg-slate-50 text-slate-600'}`}>
+                    <div className="rounded-xl border border-dashed border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6 text-sm text-[var(--text-secondary)]">
                         {searchTerm.trim() ? 'No setup items match your search.' : 'No setup menus are available right now.'}
                     </div>
                 ) : (
