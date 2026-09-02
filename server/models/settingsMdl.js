@@ -208,9 +208,9 @@ exports.countActiveVillagesByMandalMdl = (mandal_ulb_id) => {
 
 // ===================== VILLAGE / SACHIVALAYAM MASTER =====================
 
-// fetches all active villages/sachivalayams along with their parent district and mandal
-exports.getVillagesMdl = () => {
-    const qry = `select v.village_sachivalayam_id, v.village_sachivalayam_nm, v.village_sachivalayam_code,
+// fetches active villages/sachivalayams along with their parent district and mandal, optionally only those under one district
+exports.getVillagesMdl = (district_id = null) => {
+    let qry = `select v.village_sachivalayam_id, v.village_sachivalayam_nm, v.village_sachivalayam_code,
         v.district_id, v.mandal_ulb_id, v.is_sachivalayam, v.is_active,
         d.state_id, d.district_name, m.mandal_ulb_nm,
         DATE_FORMAT(v.created_at, '%d-%m-%Y %h:%i %p') as created_at,
@@ -218,8 +218,16 @@ exports.getVillagesMdl = () => {
         from village_sachivalayam_mst_lst_t v
         join district_mstr_lst_t d on d.district_id = v.district_id
         left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = v.mandal_ulb_id
-        where v.is_active = 1 order by d.district_name asc, v.village_sachivalayam_nm asc`;
-    return dbutils.executeQuery(qry, [], 'get villages model');
+        where v.is_active = 1`;
+    const params = [];
+
+    if (district_id) {
+        qry += ' and v.district_id = ?';
+        params.push(district_id);
+    }
+
+    qry += ' order by d.district_name asc, v.village_sachivalayam_nm asc';
+    return dbutils.executeQuery(qry, params, 'get villages model');
 }
 
 // finds villages clashing on name (within the same district and mandal) or code (across all), optionally excluding one record
@@ -257,9 +265,9 @@ exports.reactivateVillageMdl = (village_sachivalayam_id, data) => {
     return dbutils.executeQuery(qry, [data.village_sachivalayam_nm, data.village_sachivalayam_code, data.district_id, data.mandal_ulb_id, data.is_sachivalayam, village_sachivalayam_id], 'reactivate village model');
 }
 
-// fetches an active village/sachivalayam by id
+// fetches an active village/sachivalayam by id along with its parents, used for validation before saving
 exports.getActiveVillageByIdMdl = (village_sachivalayam_id) => {
-    const qry = 'select village_sachivalayam_id, village_sachivalayam_nm from village_sachivalayam_mst_lst_t where is_active = 1 and village_sachivalayam_id = ?';
+    const qry = 'select village_sachivalayam_id, village_sachivalayam_nm, district_id, mandal_ulb_id from village_sachivalayam_mst_lst_t where is_active = 1 and village_sachivalayam_id = ?';
     return dbutils.executeQuery(qry, [village_sachivalayam_id], 'get active village by id model');
 }
 
@@ -473,4 +481,619 @@ exports.countActivePositionsByHierarchyMdl = (hierarchy_id) => {
 exports.softDeleteHierarchyMdl = (hierarchy_id) => {
     const qry = 'update hierarchy_lst_t set is_active = 0 where is_active = 1 and hirrarchy_id = ?';
     return dbutils.executeQuery(qry, [hierarchy_id], 'soft delete hierarchy model');
+}
+
+// ===================== POSITION MASTER =====================
+
+// fetches all active positions with their role, hierarchy, assigned user and location names
+// unset location ids (stored as 0) come back as null so the edit form treats them as empty;
+// start/end dates come back as YYYY-MM-DD so the edit form's date inputs can load them
+exports.getPositionsMdl = () => {
+    const qry = `select p.position_id, p.position_nm, p.role_id, p.hierarchy_id, p.user_id, p.is_active,
+        nullif(p.district_id, 0) as district_id, nullif(p.mandal_ulb_id, 0) as mandal_ulb_id,
+        nullif(p.village_sachivalayam_id, 0) as village_sachivalayam_id, p.location_ref_id,
+        r.role_nm, h.hierarchy_nm,
+        s.state_id, s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm, df.dairy_farm_name,
+        ifnull(nullif(trim(concat(ifnull(u.first_nm, ''), ' ', ifnull(u.last_nm, ''))), ''), u.user_nm) as assigned_user,
+        DATE_FORMAT(p.start_date, '%Y-%m-%d') as start_date,
+        DATE_FORMAT(p.end_date, '%Y-%m-%d') as end_date,
+        DATE_FORMAT(p.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(p.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from position_lst_t p
+        join roles_lst_t r on r.role_id = p.role_id
+        join hierarchy_lst_t h on h.hirrarchy_id = p.hierarchy_id
+        left join users_lst_t u on u.user_id = p.user_id
+        left join district_mstr_lst_t d on d.district_id = p.district_id
+        left join state_mstr_lst_t s on s.state_id = d.state_id
+        left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = p.mandal_ulb_id
+        left join village_sachivalayam_mst_lst_t v on v.village_sachivalayam_id = p.village_sachivalayam_id
+        left join dairy_farm_lst_t df on df.dairy_farm_id = p.location_ref_id
+        where p.is_active = 1 order by p.position_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get positions model');
+}
+
+// fetches active roles for the position form dropdown
+exports.getPositionRolesMdl = () => {
+    const qry = 'select role_id, role_nm from roles_lst_t where is_active = 1 order by role_nm asc';
+    return dbutils.executeQuery(qry, [], 'get position roles model');
+}
+
+// fetches active users for the position form dropdown
+exports.getPositionUsersMdl = () => {
+    const qry = `select user_id, user_nm, first_nm, last_nm from users_lst_t
+        where is_active = 1 order by first_nm asc, user_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get position users model');
+}
+
+// fetches an active user by id, used to validate the assignment before saving a position
+exports.getActiveUserByIdMdl = (user_id) => {
+    const qry = 'select user_id, user_nm from users_lst_t where is_active = 1 and user_id = ?';
+    return dbutils.executeQuery(qry, [user_id], 'get active user by id model');
+}
+
+// counts other active, unexpired positions held by a user - login expects at most one
+exports.countActivePositionsByUserMdl = (user_id, excludePositionId = null) => {
+    let qry = `select count(*) as cnt from position_lst_t
+        where is_active = 1 and user_id = ? and (end_date is null or end_date >= curdate())`;
+    const params = [user_id];
+
+    if (excludePositionId) {
+        qry += ' and position_id <> ?';
+        params.push(excludePositionId);
+    }
+    return dbutils.executeQuery(qry, params, 'count active positions by user model');
+}
+
+// finds positions clashing on name within the same role, hierarchy and location, optionally excluding one record
+// unset district/mandal/village are stored as 0 and location_ref_id as null, so plain equality works after normalization
+exports.getDuplicatePositionsMdl = (data, excludeId = null) => {
+    let qry = `select position_id, position_nm, is_active from position_lst_t
+        where lower(position_nm) = lower(?) and role_id = ? and hierarchy_id = ?
+        and district_id = ? and mandal_ulb_id = ? and village_sachivalayam_id = ?
+        and ifnull(location_ref_id, 0) = ifnull(?, 0)`;
+    const params = [data.position_nm, data.role_id, data.hierarchy_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id];
+
+    if (excludeId) {
+        qry += ' and position_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate positions model');
+}
+
+// inserts a new position
+exports.insertPositionMdl = (data) => {
+    const qry = `insert into position_lst_t (position_nm, role_id, hierarchy_id, user_id, district_id, mandal_ulb_id, village_sachivalayam_id, location_ref_id, start_date, end_date)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id, data.start_date, data.end_date], 'insert position model');
+}
+
+// updates an active position
+exports.updatePositionMdl = (position_id, data) => {
+    const qry = `update position_lst_t set position_nm = ?, role_id = ?, hierarchy_id = ?, user_id = ?,
+        district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?, location_ref_id = ?, start_date = ?, end_date = ?
+        where is_active = 1 and position_id = ?`;
+    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id, data.start_date, data.end_date, position_id], 'update position model');
+}
+
+// brings back a soft deleted position with the latest details
+exports.reactivatePositionMdl = (position_id, data) => {
+    const qry = `update position_lst_t set position_nm = ?, role_id = ?, hierarchy_id = ?, user_id = ?,
+        district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?, location_ref_id = ?, start_date = ?, end_date = ?, is_active = 1
+        where position_id = ?`;
+    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id, data.start_date, data.end_date, position_id], 'reactivate position model');
+}
+
+// fetches an active position by id
+exports.getActivePositionByIdMdl = (position_id) => {
+    const qry = 'select position_id, position_nm, user_id from position_lst_t where is_active = 1 and position_id = ?';
+    return dbutils.executeQuery(qry, [position_id], 'get active position by id model');
+}
+
+// soft deletes a position
+exports.softDeletePositionMdl = (position_id) => {
+    const qry = 'update position_lst_t set is_active = 0 where is_active = 1 and position_id = ?';
+    return dbutils.executeQuery(qry, [position_id], 'soft delete position model');
+}
+
+// ===================== DAIRY FARM MASTER =====================
+// dairy_farm_lst_t uses created_time/updated_time columns; they are aliased to
+// created_at/updated_at so the client renders every master the same way
+
+// fetches all active dairy farms along with their main branch and its location names
+exports.getDairyFarmsMdl = () => {
+    const qry = `select df.dairy_farm_id, df.dairy_farm_name, df.dairy_farm_code, df.contact_number, df.email, df.address, df.is_active,
+        b.branch_id as main_branch_id, b.branch_code as main_branch_code, b.branch_name as main_branch_name,
+        b.state_id, b.district_id, b.mandal_ulb_id, b.village_sachivalayam_id,
+        s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm,
+        DATE_FORMAT(df.created_time, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(df.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        from dairy_farm_lst_t df
+        left join branches_lst_t b on b.dairy_farm_id = df.dairy_farm_id and b.is_main_branch = 1 and b.is_active = 1
+        left join state_mstr_lst_t s on s.state_id = b.state_id
+        left join district_mstr_lst_t d on d.district_id = b.district_id
+        left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = b.mandal_ulb_id
+        left join village_sachivalayam_mst_lst_t v on v.village_sachivalayam_id = b.village_sachivalayam_id
+        where df.is_active = 1 order by df.dairy_farm_name asc`;
+    return dbutils.executeQuery(qry, [], 'get dairy farms model');
+}
+
+// finds records matching the given name (active and inactive), optionally excluding one record
+// codes are generated server-side, so duplicates are detected by name alone
+exports.getDuplicateDairyFarmsMdl = (dairy_farm_name, excludeId = null) => {
+    let qry = `select dairy_farm_id, dairy_farm_name, dairy_farm_code, is_active from dairy_farm_lst_t
+        where lower(dairy_farm_name) = lower(?)`;
+    const params = [dairy_farm_name];
+
+    if (excludeId) {
+        qry += ' and dairy_farm_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate dairy farms model');
+}
+
+// checks whether a generated code is already taken (active or inactive - the column is unique)
+exports.getDairyFarmByCodeMdl = (dairy_farm_code) => {
+    const qry = 'select dairy_farm_id from dairy_farm_lst_t where dairy_farm_code = ?';
+    return dbutils.executeQuery(qry, [dairy_farm_code], 'get dairy farm by code model');
+}
+
+// inserts a new dairy farm
+exports.insertDairyFarmMdl = (data, user_id) => {
+    const qry = `insert into dairy_farm_lst_t (dairy_farm_name, dairy_farm_code, contact_number, email, address, created_by)
+        values (?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.dairy_farm_name, data.dairy_farm_code, data.contact_number, data.email, data.address, user_id], 'insert dairy farm model');
+}
+
+// updates an active dairy farm; the generated code never changes once assigned
+exports.updateDairyFarmMdl = (dairy_farm_id, data, user_id) => {
+    const qry = `update dairy_farm_lst_t set dairy_farm_name = ?, contact_number = ?, email = ?, address = ?, updated_by = ?
+        where is_active = 1 and dairy_farm_id = ?`;
+    return dbutils.executeQuery(qry, [data.dairy_farm_name, data.contact_number, data.email, data.address, user_id, dairy_farm_id], 'update dairy farm model');
+}
+
+// brings back a soft deleted dairy farm with the latest details, keeping its original code
+exports.reactivateDairyFarmMdl = (dairy_farm_id, data, user_id) => {
+    const qry = `update dairy_farm_lst_t set dairy_farm_name = ?, contact_number = ?, email = ?, address = ?,
+        updated_by = ?, deleted_by = null, deleted_time = null, is_active = 1 where dairy_farm_id = ?`;
+    return dbutils.executeQuery(qry, [data.dairy_farm_name, data.contact_number, data.email, data.address, user_id, dairy_farm_id], 'reactivate dairy farm model');
+}
+
+// fetches an active dairy farm by id
+exports.getActiveDairyFarmByIdMdl = (dairy_farm_id) => {
+    const qry = 'select dairy_farm_id, dairy_farm_name, dairy_farm_code from dairy_farm_lst_t where is_active = 1 and dairy_farm_id = ?';
+    return dbutils.executeQuery(qry, [dairy_farm_id], 'get active dairy farm by id model');
+}
+
+// counts active sub branches (main excluded) - only these block deleting a farm,
+// because the main branch is deactivated together with the farm itself
+exports.countActiveSubBranchesByDairyFarmMdl = (dairy_farm_id) => {
+    const qry = 'select count(*) as cnt from branches_lst_t where is_active = 1 and is_main_branch = 0 and dairy_farm_id = ?';
+    return dbutils.executeQuery(qry, [dairy_farm_id], 'count active sub branches by dairy farm model');
+}
+
+// checks whether a generated branch code is already taken (the column is unique)
+exports.getBranchByCodeMdl = (branch_code) => {
+    const qry = 'select branch_id from branches_lst_t where branch_code = ?';
+    return dbutils.executeQuery(qry, [branch_code], 'get branch by code model');
+}
+
+// fetches a farm's main branch regardless of active state, active row first -
+// the caller decides whether to update, reactivate or create it
+exports.getMainBranchByFarmMdl = (dairy_farm_id) => {
+    const qry = `select branch_id, branch_code, branch_name, is_active from branches_lst_t
+        where is_main_branch = 1 and dairy_farm_id = ? order by is_active desc limit 1`;
+    return dbutils.executeQuery(qry, [dairy_farm_id], 'get main branch by farm model');
+}
+
+// creates a dairy farm and its main branch atomically - a farm must never exist without one
+exports.createDairyFarmWithMainBranchMdl = (farm, branch, user_id) => {
+    return dbutils.executeTransaction(async (connection) => {
+        const [farmResult] = await connection.execute(
+            `insert into dairy_farm_lst_t (dairy_farm_name, dairy_farm_code, contact_number, email, address, created_by)
+                values (?, ?, ?, ?, ?, ?)`,
+            [farm.dairy_farm_name, farm.dairy_farm_code, farm.contact_number, farm.email, farm.address, user_id]
+        );
+
+        // the main branch shares the farm's contact details
+        await connection.execute(
+            `insert into branches_lst_t (dairy_farm_id, branch_code, branch_name, is_main_branch,
+                state_id, district_id, mandal_ulb_id, village_sachivalayam_id, contact_number, email, address, created_by)
+                values (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [farmResult.insertId, branch.branch_code, branch.branch_name,
+                branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
+                farm.contact_number, farm.email, farm.address, user_id]
+        );
+
+        return { insertId: farmResult.insertId };
+    }, 'create dairy farm with main branch model');
+}
+
+// inserts a main branch for an existing farm (used when a legacy farm is edited or restored)
+exports.insertMainBranchMdl = (dairy_farm_id, branch, farm, user_id) => {
+    const qry = `insert into branches_lst_t (dairy_farm_id, branch_code, branch_name, is_main_branch,
+        state_id, district_id, mandal_ulb_id, village_sachivalayam_id, contact_number, email, address, created_by)
+        values (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [dairy_farm_id, branch.branch_code, branch.branch_name,
+        branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
+        farm.contact_number, farm.email, farm.address, user_id], 'insert main branch model');
+}
+
+// updates a farm's active main branch, keeping its contact details in sync with the farm
+exports.updateMainBranchMdl = (branch_id, branch, farm, user_id) => {
+    const qry = `update branches_lst_t set branch_name = ?, state_id = ?, district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?,
+        contact_number = ?, email = ?, address = ?, updated_by = ?
+        where is_active = 1 and branch_id = ?`;
+    return dbutils.executeQuery(qry, [branch.branch_name, branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
+        farm.contact_number, farm.email, farm.address, user_id, branch_id], 'update main branch model');
+}
+
+// brings back a soft deleted main branch with fresh details
+exports.reactivateMainBranchMdl = (branch_id, branch, farm, user_id) => {
+    const qry = `update branches_lst_t set branch_name = ?, state_id = ?, district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?,
+        contact_number = ?, email = ?, address = ?, updated_by = ?, deleted_by = null, deleted_time = null, is_active = 1
+        where branch_id = ?`;
+    return dbutils.executeQuery(qry, [branch.branch_name, branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
+        farm.contact_number, farm.email, farm.address, user_id, branch_id], 'reactivate main branch model');
+}
+
+// soft deletes a dairy farm together with its main branch, atomically
+exports.softDeleteDairyFarmWithMainBranchMdl = (dairy_farm_id, user_id) => {
+    return dbutils.executeTransactionQueries([
+        {
+            query: `update branches_lst_t set is_active = 0, deleted_by = ?, deleted_time = current_timestamp
+                where is_active = 1 and is_main_branch = 1 and dairy_farm_id = ?`,
+            params: [user_id, dairy_farm_id]
+        },
+        {
+            query: `update dairy_farm_lst_t set is_active = 0, deleted_by = ?, deleted_time = current_timestamp
+                where is_active = 1 and dairy_farm_id = ?`,
+            params: [user_id, dairy_farm_id]
+        }
+    ], 'soft delete dairy farm with main branch model');
+}
+
+// ===================== ROLE PERMISSIONS =====================
+
+// fetches all active role permissions with their role names
+exports.getRolePermissionListMdl = () => {
+    const qry = `select p.role_permission_id, p.role_id, p.permission_key,
+        p.can_view, p.can_insert, p.can_update, p.can_delete, p.is_active,
+        r.role_nm, r.role_hndlr,
+        DATE_FORMAT(p.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(p.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from role_permissions_t p
+        join roles_lst_t r on r.role_id = p.role_id
+        where p.is_active = 1 order by r.role_nm asc, p.permission_key asc`;
+    return dbutils.executeQuery(qry, [], 'get role permission list model');
+}
+
+// finds permission rows for the same role and key (active and inactive), optionally excluding one record
+exports.getDuplicateRolePermissionsMdl = (role_id, permission_key, excludeId = null) => {
+    let qry = `select role_permission_id, role_id, permission_key, is_active from role_permissions_t
+        where role_id = ? and lower(permission_key) = lower(?)`;
+    const params = [role_id, permission_key];
+
+    if (excludeId) {
+        qry += ' and role_permission_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate role permissions model');
+}
+
+// inserts a new role permission
+exports.insertRolePermissionMdl = (data) => {
+    const qry = `insert into role_permissions_t (role_id, permission_key, can_view, can_insert, can_update, can_delete)
+        values (?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.role_id, data.permission_key, data.can_view, data.can_insert, data.can_update, data.can_delete], 'insert role permission model');
+}
+
+// updates an active role permission
+exports.updateRolePermissionMdl = (role_permission_id, data) => {
+    const qry = `update role_permissions_t set role_id = ?, permission_key = ?, can_view = ?, can_insert = ?, can_update = ?, can_delete = ?
+        where is_active = 1 and role_permission_id = ?`;
+    return dbutils.executeQuery(qry, [data.role_id, data.permission_key, data.can_view, data.can_insert, data.can_update, data.can_delete, role_permission_id], 'update role permission model');
+}
+
+// brings back a soft deleted role permission with the latest flags
+exports.reactivateRolePermissionMdl = (role_permission_id, data) => {
+    const qry = `update role_permissions_t set role_id = ?, permission_key = ?, can_view = ?, can_insert = ?, can_update = ?, can_delete = ?, is_active = 1
+        where role_permission_id = ?`;
+    return dbutils.executeQuery(qry, [data.role_id, data.permission_key, data.can_view, data.can_insert, data.can_update, data.can_delete, role_permission_id], 'reactivate role permission model');
+}
+
+// fetches an active role permission by id along with its role handler for protection checks
+exports.getActiveRolePermissionByIdMdl = (role_permission_id) => {
+    const qry = `select p.role_permission_id, p.role_id, p.permission_key, r.role_hndlr
+        from role_permissions_t p
+        join roles_lst_t r on r.role_id = p.role_id
+        where p.is_active = 1 and p.role_permission_id = ?`;
+    return dbutils.executeQuery(qry, [role_permission_id], 'get active role permission by id model');
+}
+
+// soft deletes a role permission
+exports.softDeleteRolePermissionMdl = (role_permission_id) => {
+    const qry = 'update role_permissions_t set is_active = 0 where is_active = 1 and role_permission_id = ?';
+    return dbutils.executeQuery(qry, [role_permission_id], 'soft delete role permission model');
+}
+
+// ===================== MENU ITEMS =====================
+
+// fetches all active menu items with their parent and quick menu category names
+exports.getMenuItemListMdl = () => {
+    const qry = `select m.menu_item_id, m.menu_name, m.menu_url, m.icon, m.is_main_item, m.is_quick_menu,
+        m.parent_item_id, m.quick_menu_ctgry_id, m.menu_item_category, m.is_active,
+        pm.menu_name as parent_menu_name, c.ctgry_nm,
+        DATE_FORMAT(m.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(m.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from menu_items_t m
+        left join menu_items_t pm on pm.menu_item_id = m.parent_item_id
+        left join quick_menu_category_lst_t c on c.quick_menu_ctgry_id = m.quick_menu_ctgry_id
+        where m.is_active = 1 order by m.menu_name asc`;
+    return dbutils.executeQuery(qry, [], 'get menu item list model');
+}
+
+// fetches active main menu items for the parent dropdown
+exports.getMenuParentItemsMdl = () => {
+    const qry = `select menu_item_id, menu_name from menu_items_t
+        where is_active = 1 and is_main_item = 1 order by menu_name asc`;
+    return dbutils.executeQuery(qry, [], 'get menu parent items model');
+}
+
+// finds menu items clashing on name within the same parent and quick menu flag, optionally excluding one record
+exports.getDuplicateMenuItemsMdl = (menu_name, parent_item_id, is_quick_menu, excludeId = null) => {
+    let qry = `select menu_item_id, menu_name, is_active from menu_items_t
+        where lower(menu_name) = lower(?) and ifnull(parent_item_id, 0) = ifnull(?, 0) and is_quick_menu = ?`;
+    const params = [menu_name, parent_item_id, is_quick_menu];
+
+    if (excludeId) {
+        qry += ' and menu_item_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate menu items model');
+}
+
+// inserts a new menu item
+exports.insertMenuItemMdl = (data) => {
+    const qry = `insert into menu_items_t (menu_name, menu_url, icon, is_main_item, is_quick_menu, parent_item_id, quick_menu_ctgry_id, menu_item_category)
+        values (?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.menu_name, data.menu_url, data.icon, data.is_main_item, data.is_quick_menu, data.parent_item_id, data.quick_menu_ctgry_id, data.menu_item_category], 'insert menu item model');
+}
+
+// updates an active menu item
+exports.updateMenuItemMdl = (menu_item_id, data) => {
+    const qry = `update menu_items_t set menu_name = ?, menu_url = ?, icon = ?, is_main_item = ?, is_quick_menu = ?,
+        parent_item_id = ?, quick_menu_ctgry_id = ?, menu_item_category = ?
+        where is_active = 1 and menu_item_id = ?`;
+    return dbutils.executeQuery(qry, [data.menu_name, data.menu_url, data.icon, data.is_main_item, data.is_quick_menu, data.parent_item_id, data.quick_menu_ctgry_id, data.menu_item_category, menu_item_id], 'update menu item model');
+}
+
+// brings back a soft deleted menu item with the latest details
+exports.reactivateMenuItemMdl = (menu_item_id, data) => {
+    const qry = `update menu_items_t set menu_name = ?, menu_url = ?, icon = ?, is_main_item = ?, is_quick_menu = ?,
+        parent_item_id = ?, quick_menu_ctgry_id = ?, menu_item_category = ?, is_active = 1
+        where menu_item_id = ?`;
+    return dbutils.executeQuery(qry, [data.menu_name, data.menu_url, data.icon, data.is_main_item, data.is_quick_menu, data.parent_item_id, data.quick_menu_ctgry_id, data.menu_item_category, menu_item_id], 'reactivate menu item model');
+}
+
+// fetches an active menu item by id
+exports.getActiveMenuItemByIdMdl = (menu_item_id) => {
+    const qry = 'select menu_item_id, menu_name, is_main_item from menu_items_t where is_active = 1 and menu_item_id = ?';
+    return dbutils.executeQuery(qry, [menu_item_id], 'get active menu item by id model');
+}
+
+// counts active child items under a menu item, used to block deleting a parent that is in use
+exports.countActiveChildMenuItemsMdl = (menu_item_id) => {
+    const qry = 'select count(*) as cnt from menu_items_t where is_active = 1 and parent_item_id = ?';
+    return dbutils.executeQuery(qry, [menu_item_id], 'count active child menu items model');
+}
+
+// counts active role mappings for a menu item, used to block deleting a mapped menu
+exports.countActiveRoleMapsByMenuItemMdl = (menu_item_id) => {
+    const qry = 'select count(*) as cnt from role_menu_map_t where is_active = 1 and menu_item_id = ?';
+    return dbutils.executeQuery(qry, [menu_item_id], 'count active role maps by menu item model');
+}
+
+// soft deletes a menu item
+exports.softDeleteMenuItemMdl = (menu_item_id) => {
+    const qry = 'update menu_items_t set is_active = 0 where is_active = 1 and menu_item_id = ?';
+    return dbutils.executeQuery(qry, [menu_item_id], 'soft delete menu item model');
+}
+
+// ===================== QUICK MENU CATEGORIES =====================
+
+// fetches all active quick menu categories
+exports.getMenuCategoryListMdl = () => {
+    const qry = `select quick_menu_ctgry_id, ctgry_nm, ctgry_cd, description, display_order, icon, is_active,
+        DATE_FORMAT(created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from quick_menu_category_lst_t where is_active = 1 order by display_order asc, ctgry_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get menu category list model');
+}
+
+// finds categories matching the given name or code (active and inactive), optionally excluding one record
+exports.getDuplicateMenuCategoriesMdl = (ctgry_nm, ctgry_cd, excludeId = null) => {
+    let qry = `select quick_menu_ctgry_id, ctgry_nm, ctgry_cd, is_active from quick_menu_category_lst_t
+        where (lower(ctgry_nm) = lower(?) or lower(ctgry_cd) = lower(?))`;
+    const params = [ctgry_nm, ctgry_cd];
+
+    if (excludeId) {
+        qry += ' and quick_menu_ctgry_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate menu categories model');
+}
+
+// inserts a new quick menu category
+exports.insertMenuCategoryMdl = (data) => {
+    const qry = `insert into quick_menu_category_lst_t (ctgry_nm, ctgry_cd, description, display_order, icon)
+        values (?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.ctgry_nm, data.ctgry_cd, data.description, data.display_order, data.icon], 'insert menu category model');
+}
+
+// updates an active quick menu category
+exports.updateMenuCategoryMdl = (quick_menu_ctgry_id, data) => {
+    const qry = `update quick_menu_category_lst_t set ctgry_nm = ?, ctgry_cd = ?, description = ?, display_order = ?, icon = ?
+        where is_active = 1 and quick_menu_ctgry_id = ?`;
+    return dbutils.executeQuery(qry, [data.ctgry_nm, data.ctgry_cd, data.description, data.display_order, data.icon, quick_menu_ctgry_id], 'update menu category model');
+}
+
+// brings back a soft deleted quick menu category with the latest details
+exports.reactivateMenuCategoryMdl = (quick_menu_ctgry_id, data) => {
+    const qry = `update quick_menu_category_lst_t set ctgry_nm = ?, ctgry_cd = ?, description = ?, display_order = ?, icon = ?, is_active = 1
+        where quick_menu_ctgry_id = ?`;
+    return dbutils.executeQuery(qry, [data.ctgry_nm, data.ctgry_cd, data.description, data.display_order, data.icon, quick_menu_ctgry_id], 'reactivate menu category model');
+}
+
+// fetches an active quick menu category by id
+exports.getActiveMenuCategoryByIdMdl = (quick_menu_ctgry_id) => {
+    const qry = 'select quick_menu_ctgry_id, ctgry_nm from quick_menu_category_lst_t where is_active = 1 and quick_menu_ctgry_id = ?';
+    return dbutils.executeQuery(qry, [quick_menu_ctgry_id], 'get active menu category by id model');
+}
+
+// counts active menu items mapped to a category, used to block deleting a category that is in use
+exports.countActiveMenuItemsByCategoryMdl = (quick_menu_ctgry_id) => {
+    const qry = 'select count(*) as cnt from menu_items_t where is_active = 1 and quick_menu_ctgry_id = ?';
+    return dbutils.executeQuery(qry, [quick_menu_ctgry_id], 'count active menu items by category model');
+}
+
+// soft deletes a quick menu category
+exports.softDeleteMenuCategoryMdl = (quick_menu_ctgry_id) => {
+    const qry = 'update quick_menu_category_lst_t set is_active = 0 where is_active = 1 and quick_menu_ctgry_id = ?';
+    return dbutils.executeQuery(qry, [quick_menu_ctgry_id], 'soft delete menu category model');
+}
+
+// ===================== ROLE MENU MAPPING =====================
+
+// fetches all active role menu mappings with their role and menu names
+exports.getRoleMenuMapListMdl = () => {
+    const qry = `select rm.role_menu_id, rm.role_id, rm.menu_item_id, rm.display_order, rm.is_active,
+        r.role_nm, m.menu_name, m.menu_url, m.is_quick_menu,
+        DATE_FORMAT(rm.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(rm.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from role_menu_map_t rm
+        join roles_lst_t r on r.role_id = rm.role_id
+        join menu_items_t m on m.menu_item_id = rm.menu_item_id
+        where rm.is_active = 1 order by r.role_nm asc, rm.display_order asc`;
+    return dbutils.executeQuery(qry, [], 'get role menu map list model');
+}
+
+// fetches active menu items for the mapping form dropdown
+exports.getRoleMenuMapMenuItemsMdl = () => {
+    const qry = `select menu_item_id, menu_name, menu_url, is_quick_menu from menu_items_t
+        where is_active = 1 order by menu_name asc`;
+    return dbutils.executeQuery(qry, [], 'get role menu map menu items model');
+}
+
+// finds mappings for the same role and menu (active and inactive), optionally excluding one record
+// the table has a unique key on (role_id, menu_item_id), so soft deleted rows MUST be reactivated
+exports.getDuplicateRoleMenuMapsMdl = (role_id, menu_item_id, excludeId = null) => {
+    let qry = `select role_menu_id, role_id, menu_item_id, is_active from role_menu_map_t
+        where role_id = ? and menu_item_id = ?`;
+    const params = [role_id, menu_item_id];
+
+    if (excludeId) {
+        qry += ' and role_menu_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate role menu maps model');
+}
+
+// inserts a new role menu mapping
+exports.insertRoleMenuMapMdl = (data) => {
+    const qry = 'insert into role_menu_map_t (role_id, menu_item_id, display_order) values (?, ?, ?)';
+    return dbutils.executeQuery(qry, [data.role_id, data.menu_item_id, data.display_order], 'insert role menu map model');
+}
+
+// updates an active role menu mapping
+exports.updateRoleMenuMapMdl = (role_menu_id, data) => {
+    const qry = `update role_menu_map_t set role_id = ?, menu_item_id = ?, display_order = ?
+        where is_active = 1 and role_menu_id = ?`;
+    return dbutils.executeQuery(qry, [data.role_id, data.menu_item_id, data.display_order, role_menu_id], 'update role menu map model');
+}
+
+// brings back a soft deleted role menu mapping with the latest display order
+exports.reactivateRoleMenuMapMdl = (role_menu_id, data) => {
+    const qry = 'update role_menu_map_t set display_order = ?, is_active = 1 where role_menu_id = ?';
+    return dbutils.executeQuery(qry, [data.display_order, role_menu_id], 'reactivate role menu map model');
+}
+
+// fetches an active role menu mapping by id
+exports.getActiveRoleMenuMapByIdMdl = (role_menu_id) => {
+    const qry = `select rm.role_menu_id, rm.role_id, rm.menu_item_id, r.role_nm, m.menu_name
+        from role_menu_map_t rm
+        join roles_lst_t r on r.role_id = rm.role_id
+        join menu_items_t m on m.menu_item_id = rm.menu_item_id
+        where rm.is_active = 1 and rm.role_menu_id = ?`;
+    return dbutils.executeQuery(qry, [role_menu_id], 'get active role menu map by id model');
+}
+
+// soft deletes a role menu mapping
+exports.softDeleteRoleMenuMapMdl = (role_menu_id) => {
+    const qry = 'update role_menu_map_t set is_active = 0 where is_active = 1 and role_menu_id = ?';
+    return dbutils.executeQuery(qry, [role_menu_id], 'soft delete role menu map model');
+}
+
+// ===================== USERS =====================
+
+// fetches all active users with their role names (password columns are never selected)
+exports.getUserListMdl = () => {
+    const qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, u.mobile_no, u.email, u.role_id, u.is_locked, u.is_active,
+        r.role_nm,
+        DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login,
+        DATE_FORMAT(u.created_at, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(u.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        from users_lst_t u
+        left join roles_lst_t r on r.role_id = u.role_id
+        where u.is_active = 1 order by u.first_nm asc, u.user_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get user list model');
+}
+
+// finds users matching the given login name/email (active and inactive), optionally excluding one record
+exports.getDuplicateUsersMdl = (user_nm, excludeId = null) => {
+    let qry = `select user_id, user_nm, first_nm, last_nm, is_active from users_lst_t
+        where lower(user_nm) = lower(?)`;
+    const params = [user_nm];
+
+    if (excludeId) {
+        qry += ' and user_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate users model');
+}
+
+// inserts a new user with a hashed password (the plaintext is never stored)
+exports.insertUserMdl = (data) => {
+    const qry = `insert into users_lst_t (user_nm, first_nm, last_nm, mobile_no, email, role_id, password_hash, password_salt)
+        values (?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.role_id, data.password_hash, data.password_salt], 'insert user model');
+}
+
+// updates an active user's profile and role (never the password - that flows through forgot password)
+exports.updateUserMdl = (user_id, data) => {
+    const qry = `update users_lst_t set user_nm = ?, first_nm = ?, last_nm = ?, mobile_no = ?, email = ?, role_id = ?
+        where is_active = 1 and user_id = ?`;
+    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.role_id, user_id], 'update user model');
+}
+
+// brings back a soft deleted user with fresh details, credentials and a clean lock state
+exports.reactivateUserMdl = (user_id, data) => {
+    const qry = `update users_lst_t set user_nm = ?, first_nm = ?, last_nm = ?, mobile_no = ?, email = ?, role_id = ?,
+        password_hash = ?, password_salt = ?, is_locked = 0, locked_until = null, login_attempts = 0, is_active = 1
+        where user_id = ?`;
+    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.role_id, data.password_hash, data.password_salt, user_id], 'reactivate user model');
+}
+
+// fetches an active user by id along with the role handler for protection checks
+exports.getActiveUserForAdminByIdMdl = (user_id) => {
+    const qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, r.role_hndlr
+        from users_lst_t u
+        left join roles_lst_t r on r.role_id = u.role_id
+        where u.is_active = 1 and u.user_id = ?`;
+    return dbutils.executeQuery(qry, [user_id], 'get active user for admin by id model');
+}
+
+// soft deletes a user
+exports.softDeleteUserMdl = (user_id) => {
+    const qry = 'update users_lst_t set is_active = 0 where is_active = 1 and user_id = ?';
+    return dbutils.executeQuery(qry, [user_id], 'soft delete user model');
 }

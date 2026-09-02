@@ -1,4 +1,4 @@
-function AuthInput({ label, name, type = "text", value, error, placeholder, onChange, disabled = false }) {
+function AuthInput({ label, name, type = "text", value, error, placeholder, onChange, disabled = false, readOnly = false }) {
 
     return (
 
@@ -17,9 +17,11 @@ function AuthInput({ label, name, type = "text", value, error, placeholder, onCh
                 placeholder={placeholder}
                 onChange={onChange}
                 disabled={disabled}
-                className={`w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-4 py-3 text-[var(--input-text)]
-                    placeholder:text-[var(--input-placeholder)] outline-none transition-colors 
-                    ${disabled ? "cursor-not-allowed opacity-60" : "focus:border-[var(--brand-primary)]"}`}
+                readOnly={readOnly}
+                className={`w-full rounded-lg border border-[var(--input-border)] px-4 py-3 text-[var(--input-text)]
+                    placeholder:text-[var(--input-placeholder)] outline-none transition-colors
+                    ${readOnly ? "bg-[var(--bg-secondary)]" : "bg-[var(--input-bg)]"}
+                    ${disabled ? "cursor-not-allowed opacity-60" : readOnly ? "cursor-default" : "focus:border-[var(--brand-primary)]"}`}
             />
 
             {error && (

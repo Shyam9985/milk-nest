@@ -502,7 +502,8 @@ exports.deleteMandalCtrl = async (req, res) => {
 
 exports.getVillagesCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getVillagesSrvc();
+    const districtId = parseOptionalQueryId(req, "district_id");
+    const records = await settingsService.getVillagesSrvc(districtId);
 
     return resutils.sendSuccessResponse(
       req,
@@ -960,5 +961,994 @@ exports.deleteHierarchyCtrl = async (req, res) => {
     );
   } catch (error) {
     return sendSettingsError(req, res, error, "delete hierarchy controller");
+  }
+};
+
+// ===================== POSITION MASTER =====================
+
+const POSITION_PAYLOAD_SCHEMA = {
+  position_nm: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 250,
+    label: "Position Name",
+  },
+  role_id: {
+    required: true,
+    type: "number",
+    min: 1,
+    label: "Role",
+  },
+  hierarchy_id: {
+    required: true,
+    type: "number",
+    min: 1,
+    label: "Hierarchy",
+  },
+  user_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Assigned User",
+  },
+  district_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "District",
+  },
+  mandal_ulb_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Mandal/ULB",
+  },
+  village_sachivalayam_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Village/Sachivalayam",
+  },
+  location_ref_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Dairy Farm",
+  },
+  start_date: {
+    required: false,
+    type: "string",
+    maxLength: 10,
+    label: "Start Date",
+  },
+  end_date: {
+    required: false,
+    type: "string",
+    maxLength: 10,
+    label: "End Date",
+  },
+};
+
+exports.getPositionsCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getPositionsSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get positions", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get positions controller");
+  }
+};
+
+exports.getPositionRolesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getPositionRolesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get position roles", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get position roles controller");
+  }
+};
+
+exports.getPositionHierarchiesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getHierarchiesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get position hierarchies", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get position hierarchies controller");
+  }
+};
+
+exports.getPositionUsersCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getPositionUsersSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get position users", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get position users controller");
+  }
+};
+
+exports.createPositionCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      POSITION_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createPositionSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Position '${result.position_nm}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create position" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create position controller");
+  }
+};
+
+exports.updatePositionCtrl = async (req, res) => {
+  try {
+    const positionId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      POSITION_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updatePositionSrvc(
+      positionId,
+      req.body,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Position '${result.position_nm}' updated successfully.`,
+      },
+      { function: "update position" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update position controller");
+  }
+};
+
+exports.deletePositionCtrl = async (req, res) => {
+  try {
+    const positionId = parseRecordId(req);
+
+    const result = await settingsService.deletePositionSrvc(positionId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Position '${result.position_nm}' deleted successfully.`,
+      },
+      { function: "delete position" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete position controller");
+  }
+};
+
+// ===================== DAIRY FARM MASTER =====================
+
+const DAIRY_FARM_PAYLOAD_SCHEMA = {
+  dairy_farm_name: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 255,
+    label: "Dairy Farm Name",
+  },
+  contact_number: {
+    required: false,
+    type: "mobile-no",
+    label: "Contact Number",
+  },
+  email: {
+    required: false,
+    type: "email",
+    label: "Email",
+  },
+  address: {
+    required: false,
+    type: "string",
+    maxLength: 1000,
+    label: "Address",
+  },
+  main_branch_name: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 255,
+    label: "Main Branch Name",
+  },
+  state_id: { required: true, type: "number", min: 1, label: "State" },
+  district_id: { required: true, type: "number", min: 1, label: "District" },
+  mandal_ulb_id: { required: true, type: "number", min: 1, label: "Mandal/ULB" },
+  village_sachivalayam_id: { required: true, type: "number", min: 1, label: "Village/Sachivalayam" },
+};
+
+exports.getDairyFarmsCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getDairyFarmsSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get dairy farms", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get dairy farms controller");
+  }
+};
+
+exports.createDairyFarmCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      DAIRY_FARM_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    // dairy_farm_lst_t carries created_by/updated_by audit columns
+    const result = await settingsService.createDairyFarmSrvc(
+      req.body,
+      req.user?.user_id,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Dairy farm '${result.dairy_farm_name}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create dairy farm" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create dairy farm controller");
+  }
+};
+
+exports.updateDairyFarmCtrl = async (req, res) => {
+  try {
+    const dairyFarmId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      DAIRY_FARM_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateDairyFarmSrvc(
+      dairyFarmId,
+      req.body,
+      req.user?.user_id,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Dairy farm '${result.dairy_farm_name}' updated successfully.`,
+      },
+      { function: "update dairy farm" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update dairy farm controller");
+  }
+};
+
+exports.deleteDairyFarmCtrl = async (req, res) => {
+  try {
+    const dairyFarmId = parseRecordId(req);
+
+    const result = await settingsService.deleteDairyFarmSrvc(
+      dairyFarmId,
+      req.user?.user_id,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Dairy farm '${result.dairy_farm_name}' deleted successfully.`,
+      },
+      { function: "delete dairy farm" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete dairy farm controller");
+  }
+};
+
+// ===================== ROLE PERMISSIONS =====================
+
+const ROLE_PERMISSION_PAYLOAD_SCHEMA = {
+  role_id: { required: true, type: "number", min: 1, label: "Role" },
+  permission_key: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 200,
+    label: "Permission Key",
+  },
+  can_view: { required: false, type: "boolean", label: "Can View" },
+  can_insert: { required: false, type: "boolean", label: "Can Insert" },
+  can_update: { required: false, type: "boolean", label: "Can Update" },
+  can_delete: { required: false, type: "boolean", label: "Can Delete" },
+};
+
+exports.getRolePermissionListCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getRolePermissionListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get role permissions", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get role permissions controller");
+  }
+};
+
+exports.getRolePermissionRolesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getPositionRolesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get role permission roles", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get role permission roles controller");
+  }
+};
+
+exports.createRolePermissionCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      ROLE_PERMISSION_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createRolePermissionSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Permission '${result.permission_key}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create role permission" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create role permission controller");
+  }
+};
+
+exports.updateRolePermissionCtrl = async (req, res) => {
+  try {
+    const rolePermissionId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      ROLE_PERMISSION_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateRolePermissionSrvc(
+      rolePermissionId,
+      req.body,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Permission '${result.permission_key}' updated successfully.`,
+      },
+      { function: "update role permission" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update role permission controller");
+  }
+};
+
+exports.deleteRolePermissionCtrl = async (req, res) => {
+  try {
+    const rolePermissionId = parseRecordId(req);
+
+    const result = await settingsService.deleteRolePermissionSrvc(rolePermissionId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Permission '${result.permission_key}' deleted successfully.`,
+      },
+      { function: "delete role permission" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete role permission controller");
+  }
+};
+
+// ===================== MENU ITEMS =====================
+
+const MENU_ITEM_PAYLOAD_SCHEMA = {
+  menu_name: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 250,
+    label: "Menu Name",
+  },
+  menu_url: { required: false, type: "string", maxLength: 1000, label: "Menu URL" },
+  icon: { required: false, type: "string", maxLength: 200, label: "Icon" },
+  is_main_item: { required: false, type: "boolean", label: "Is Main Item" },
+  is_quick_menu: { required: false, type: "boolean", label: "Is Quick Menu" },
+  parent_item_id: { required: false, type: "number", min: 1, label: "Parent Menu" },
+  quick_menu_ctgry_id: { required: false, type: "number", min: 1, label: "Quick Menu Category" },
+  menu_item_category: {
+    required: true,
+    type: "string",
+    enum: ["mnu", "stp", "rpt"],
+    label: "Menu Item Category",
+  },
+};
+
+exports.getMenuItemListCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getMenuItemListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get menu items", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get menu items controller");
+  }
+};
+
+exports.getMenuParentItemsCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getMenuParentItemsSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get menu parent items", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get menu parent items controller");
+  }
+};
+
+exports.getMenuCategoryOptionsCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getMenuCategoryListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get menu category options", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get menu category options controller");
+  }
+};
+
+exports.createMenuItemCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      MENU_ITEM_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createMenuItemSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Menu item '${result.menu_name}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create menu item" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create menu item controller");
+  }
+};
+
+exports.updateMenuItemCtrl = async (req, res) => {
+  try {
+    const menuItemId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      MENU_ITEM_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateMenuItemSrvc(menuItemId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Menu item '${result.menu_name}' updated successfully.`,
+      },
+      { function: "update menu item" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update menu item controller");
+  }
+};
+
+exports.deleteMenuItemCtrl = async (req, res) => {
+  try {
+    const menuItemId = parseRecordId(req);
+
+    const result = await settingsService.deleteMenuItemSrvc(menuItemId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Menu item '${result.menu_name}' deleted successfully.`,
+      },
+      { function: "delete menu item" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete menu item controller");
+  }
+};
+
+// ===================== QUICK MENU CATEGORIES =====================
+
+const MENU_CATEGORY_PAYLOAD_SCHEMA = {
+  ctgry_nm: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 100,
+    label: "Category Name",
+  },
+  ctgry_cd: {
+    required: true,
+    type: "string",
+    minLength: 1,
+    maxLength: 50,
+    label: "Category Code",
+  },
+  description: { required: false, type: "string", maxLength: 300, label: "Description" },
+  display_order: { required: false, type: "number", min: 0, label: "Display Order" },
+  icon: { required: false, type: "string", maxLength: 100, label: "Icon" },
+};
+
+exports.getMenuCategoryListCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getMenuCategoryListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get menu categories", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get menu categories controller");
+  }
+};
+
+exports.createMenuCategoryCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      MENU_CATEGORY_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createMenuCategorySrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Category '${result.ctgry_nm}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create menu category" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create menu category controller");
+  }
+};
+
+exports.updateMenuCategoryCtrl = async (req, res) => {
+  try {
+    const categoryId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      MENU_CATEGORY_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateMenuCategorySrvc(categoryId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Category '${result.ctgry_nm}' updated successfully.`,
+      },
+      { function: "update menu category" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update menu category controller");
+  }
+};
+
+exports.deleteMenuCategoryCtrl = async (req, res) => {
+  try {
+    const categoryId = parseRecordId(req);
+
+    const result = await settingsService.deleteMenuCategorySrvc(categoryId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Category '${result.ctgry_nm}' deleted successfully.`,
+      },
+      { function: "delete menu category" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete menu category controller");
+  }
+};
+
+// ===================== ROLE MENU MAPPING =====================
+
+const ROLE_MENU_MAP_PAYLOAD_SCHEMA = {
+  role_id: { required: true, type: "number", min: 1, label: "Role" },
+  menu_item_id: { required: true, type: "number", min: 1, label: "Menu Item" },
+  display_order: { required: false, type: "number", min: 0, label: "Display Order" },
+};
+
+exports.getRoleMenuMapListCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getRoleMenuMapListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get role menu maps", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get role menu maps controller");
+  }
+};
+
+exports.getRoleMenuMapRolesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getPositionRolesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get role menu map roles", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get role menu map roles controller");
+  }
+};
+
+exports.getRoleMenuMapMenuItemsCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getRoleMenuMapMenuItemsSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get role menu map menu items", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get role menu map menu items controller");
+  }
+};
+
+exports.createRoleMenuMapCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      ROLE_MENU_MAP_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createRoleMenuMapSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Mapping for '${result.menu_name}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create role menu map" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create role menu map controller");
+  }
+};
+
+exports.updateRoleMenuMapCtrl = async (req, res) => {
+  try {
+    const roleMenuId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      ROLE_MENU_MAP_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateRoleMenuMapSrvc(roleMenuId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Mapping for '${result.menu_name}' updated successfully.`,
+      },
+      { function: "update role menu map" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update role menu map controller");
+  }
+};
+
+exports.deleteRoleMenuMapCtrl = async (req, res) => {
+  try {
+    const roleMenuId = parseRecordId(req);
+
+    const result = await settingsService.deleteRoleMenuMapSrvc(roleMenuId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Mapping for '${result.menu_name}' deleted successfully.`,
+      },
+      { function: "delete role menu map" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete role menu map controller");
+  }
+};
+
+// ===================== USERS =====================
+
+const USER_BASE_PAYLOAD_SCHEMA = {
+  first_nm: { required: false, type: "string", maxLength: 200, label: "First Name" },
+  last_nm: { required: false, type: "string", maxLength: 150, label: "Last Name" },
+  email: { required: true, type: "email", label: "Email" },
+  mobile_no: { required: false, type: "mobile-no", label: "Mobile Number" },
+  role_id: { required: true, type: "number", min: 1, label: "Role" },
+};
+
+const USER_CREATE_PAYLOAD_SCHEMA = {
+  ...USER_BASE_PAYLOAD_SCHEMA,
+  password: { required: true, type: "password", label: "Password" },
+};
+
+exports.getUserListCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getUserListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get users", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get users controller");
+  }
+};
+
+exports.getUserRolesCtrl = async (req, res) => {
+  try {
+    const records = await settingsService.getPositionRolesSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get user roles", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get user roles controller");
+  }
+};
+
+exports.createUserCtrl = async (req, res) => {
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      USER_CREATE_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createUserSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `User '${result.user_nm}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create user" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create user controller");
+  }
+};
+
+exports.updateUserCtrl = async (req, res) => {
+  try {
+    const userId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      USER_BASE_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateUserSrvc(userId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `User '${result.user_nm}' updated successfully.`,
+      },
+      { function: "update user" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update user controller");
+  }
+};
+
+exports.deleteUserCtrl = async (req, res) => {
+  try {
+    const userId = parseRecordId(req);
+
+    const result = await settingsService.deleteUserSrvc(userId, req.user?.user_id);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `User '${result.user_nm}' deleted successfully.`,
+      },
+      { function: "delete user" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete user controller");
   }
 };

@@ -1,15 +1,87 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import AuthInput from '../../../components/AuthInput';
 import SearchDropdown from '../../../components/SearchDropdown';
 
+/*
+ * All form state lives in one reducer: field values, validation errors and the
+ * option lists fetched for dependent dropdowns change together, so a single
+ * dispatch per event keeps every transition in one predictable place.
+ */
+const initialFormState = { values: {}, errors: {}, dynamicOptions: {}, loadingOptions: {} };
+
+// clears every field depending on the changed one, walking the whole chain (state -> district -> mandal)
+const clearDependents = (fields, changedName, nextValues) => {
+    fields.forEach((field) => {
+        if (field.dependsOn === changedName) {
+            nextValues[field.name] = '';
+            clearDependents(fields, field.name, nextValues);
+        }
+    });
+};
+
+// finds the display label of a select field's current value (static or dynamically loaded options)
+const resolveOptionLabel = (field, value, dynamicOptions) => {
+    if (!field || value === '' || value === null || value === undefined) return '';
+    const options = typeof field.loadOptions === 'function' ? (dynamicOptions[field.name] || []) : (field.options || []);
+    return options.find((option) => String(option.value) === String(value))?.label ?? '';
+};
+
+// recomputes read-only derived fields (e.g. an address composed from the chosen location);
+// a field opts in with deriveValue(values, labelOf) in its definition
+const applyDerivedFields = (fields, values, dynamicOptions) => {
+    fields.forEach((field) => {
+        if (typeof field.deriveValue !== 'function') return;
+        const labelOf = (name) => resolveOptionLabel(fields.find((f) => f.name === name), values[name], dynamicOptions);
+        values[field.name] = field.deriveValue(values, labelOf);
+    });
+};
+
+function formReducer(state, action) {
+    switch (action.type) {
+
+        // fresh values whenever the record being edited changes; loaded options survive
+        case 'RESET_FORM':
+            return { ...state, values: action.values, errors: {} };
+
+        case 'FIELD_CHANGED': {
+            const values = { ...state.values, [action.name]: action.value };
+            clearDependents(action.fields, action.name, values);
+            applyDerivedFields(action.fields, values, state.dynamicOptions);
+            return { ...state, values, errors: { ...state.errors, [action.name]: '' } };
+        }
+
+        case 'VALIDATION_FAILED':
+            return { ...state, errors: action.errors };
+
+        case 'OPTIONS_LOADING':
+            return { ...state, loadingOptions: { ...state.loadingOptions, [action.name]: true } };
+
+        case 'OPTIONS_LOADED': {
+            // freshly arrived labels may complete a derived field (relevant when editing a record)
+            const dynamicOptions = { ...state.dynamicOptions, [action.name]: action.options };
+            const values = { ...state.values };
+            applyDerivedFields(action.fields, values, dynamicOptions);
+            return {
+                ...state,
+                values,
+                dynamicOptions,
+                loadingOptions: { ...state.loadingOptions, [action.name]: false }
+            };
+        }
+
+        // the response was stale (parent changed while loading) or failed - just stop the spinner
+        case 'OPTIONS_IDLE':
+            return { ...state, loadingOptions: { ...state.loadingOptions, [action.name]: false } };
+
+        default:
+            return state;
+    }
+}
+
 function MasterForm({ fields = [], initialValues = null, submitting = false, submitLabel = 'Save', onSubmit, onCancel }) {
 
-    const [values, setValues] = useState({});
-    const [errors, setErrors] = useState({});
-
-    // options fetched on demand for dependent dropdowns, keyed by field name
-    const [dynamicOptions, setDynamicOptions] = useState({});
-    const [loadingOptions, setLoadingOptions] = useState({});
+    const [formState, dispatch] = useReducer(formReducer, initialFormState);
+    const { values, errors, dynamicOptions, loadingOptions } = formState;
 
     // latest values, readable inside async callbacks without re-subscribing
     const valuesRef = useRef(values);
@@ -31,21 +103,22 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
             // no parent chosen -> nothing to offer
             if (!parentValue) {
-                setDynamicOptions((prev) => ({ ...prev, [field.name]: [] }));
+                dispatch({ type: 'OPTIONS_LOADED', name: field.name, options: [], fields });
                 return;
             }
 
-            setLoadingOptions((prev) => ({ ...prev, [field.name]: true }));
+            dispatch({ type: 'OPTIONS_LOADING', name: field.name });
 
             Promise.resolve(field.loadOptions(parentValue))
                 .then((options) => {
                     // ignore the response when the parent changed again while this request was running
-                    if (String(valuesRef.current[field.dependsOn]) !== String(parentValue)) return;
-                    setDynamicOptions((prev) => ({ ...prev, [field.name]: options || [] }));
+                    if (String(valuesRef.current[field.dependsOn]) !== String(parentValue)) {
+                        dispatch({ type: 'OPTIONS_IDLE', name: field.name });
+                        return;
+                    }
+                    dispatch({ type: 'OPTIONS_LOADED', name: field.name, options: options || [], fields });
                 })
-                .finally(() => {
-                    setLoadingOptions((prev) => ({ ...prev, [field.name]: false }));
-                });
+                .catch(() => dispatch({ type: 'OPTIONS_IDLE', name: field.name }));
         });
 
     }, [parentKey]);
@@ -61,30 +134,13 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                 : (initialValues?.[field.name] ?? '');
         });
 
-        setValues(initial);
-        setErrors({});
+        dispatch({ type: 'RESET_FORM', values: initial });
 
     }, [initialValues]);
 
-    // clears every field depending on the changed one, walking the whole chain (state -> district -> mandal)
-    const clearDependents = (changedName, next) => {
-        fields.forEach((field) => {
-            if (field.dependsOn === changedName) {
-                next[field.name] = '';
-                clearDependents(field.name, next);
-            }
-        });
-    };
-
     const handleChange = (e) => {
         const { name, type, value, checked } = e.target;
-
-        setValues((prev) => {
-            const next = { ...prev, [name]: type === 'checkbox' ? checked : value };
-            clearDependents(name, next);
-            return next;
-        });
-        setErrors((prev) => ({ ...prev, [name]: '' }));
+        dispatch({ type: 'FIELD_CHANGED', name, value: type === 'checkbox' ? checked : value, fields });
     };
 
     const validate = () => {
@@ -104,7 +160,7 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
             }
         });
 
-        setErrors(nextErrors);
+        dispatch({ type: 'VALIDATION_FAILED', errors: nextErrors });
         return !Object.keys(nextErrors).length;
     };
 
@@ -176,7 +232,8 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                         <AuthInput key={field.name} name={field.name} type={field.type || 'text'}
                             label={field.required ? `${field.label} *` : field.label}
                             value={values[field.name] ?? ''} error={errors[field.name]}
-                            placeholder={field.placeholder} onChange={handleChange} disabled={submitting} />
+                            placeholder={field.placeholder} onChange={handleChange}
+                            disabled={submitting} readOnly={!!field.readOnly} />
                     );
 
                 })}

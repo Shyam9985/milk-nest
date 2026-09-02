@@ -210,9 +210,10 @@ function DataTable({ data = [], columns = [], config = {} }) {
                                     onClick={() => handleSort(column.field)}
 
                                     className="!border-b !border-[var(--table-header-border)] !bg-[var(--table-header-bg)] !px-4
-                                    !py-3 !font-semibold !text-[var(--table-header-text)] !min-w-[5rem]"
+                                    !py-3 !font-semibold !text-[var(--table-header-text)] !whitespace-nowrap"
                                     sx={{
-                                        cursor: enableSorting && column.sortable ? "pointer" : "default"
+                                        cursor: enableSorting && column.sortable ? "pointer" : "default",
+                                        minWidth: column.minWidth || "5rem"
                                     }}
 
                                 >
@@ -271,7 +272,8 @@ function DataTable({ data = [], columns = [], config = {} }) {
                                         className="!border-b !border-[var(--table-header-border)] !bg-[var(--table-header-bg)] !px-4 !py-3
                                         !text-[var(--table-header-text)]"
                                         sx={{
-                                            textAlign: column.align || "left"
+                                            textAlign: column.align || "left",
+                                            minWidth: column.minWidth
                                         }}
 
                                         onClick={(e) => {

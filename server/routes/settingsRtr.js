@@ -46,4 +46,55 @@ router.post('/master/hierarchy', authmdlwre.isAuthenticated, authmdlwre.isAuthor
 router.put('/master/hierarchy/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('hierarchy', 'update'), settingsCtrl.updateHierarchyCtrl);
 router.delete('/master/hierarchy/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('hierarchy', 'delete'), settingsCtrl.deleteHierarchyCtrl);
 
+// position master routes (role/hierarchy/user lists feed the position form dropdowns)
+router.get('/master/position', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionsCtrl);
+router.get('/master/position/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionRolesCtrl);
+router.get('/master/position/hierarchy', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionHierarchiesCtrl);
+router.get('/master/position/user', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionUsersCtrl);
+router.post('/master/position', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'create'), settingsCtrl.createPositionCtrl);
+router.put('/master/position/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'update'), settingsCtrl.updatePositionCtrl);
+router.delete('/master/position/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'delete'), settingsCtrl.deletePositionCtrl);
+
+// dairy farm master routes
+router.get('/master/dairy-farm', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'read'), settingsCtrl.getDairyFarmsCtrl);
+router.post('/master/dairy-farm', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'create'), settingsCtrl.createDairyFarmCtrl);
+router.put('/master/dairy-farm/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'update'), settingsCtrl.updateDairyFarmCtrl);
+router.delete('/master/dairy-farm/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'delete'), settingsCtrl.deleteDairyFarmCtrl);
+
+// role permission routes (role list feeds the form dropdown)
+router.get('/security/role-permission', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionListCtrl);
+router.get('/security/role-permission/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionRolesCtrl);
+router.post('/security/role-permission', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'create'), settingsCtrl.createRolePermissionCtrl);
+router.put('/security/role-permission/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'update'), settingsCtrl.updateRolePermissionCtrl);
+router.delete('/security/role-permission/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'delete'), settingsCtrl.deleteRolePermissionCtrl);
+
+// menu item routes (parent/category lists feed the form dropdowns)
+router.get('/security/menu-item', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), settingsCtrl.getMenuItemListCtrl);
+router.get('/security/menu-item/parent', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), settingsCtrl.getMenuParentItemsCtrl);
+router.get('/security/menu-item/category', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), settingsCtrl.getMenuCategoryOptionsCtrl);
+router.post('/security/menu-item', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'create'), settingsCtrl.createMenuItemCtrl);
+router.put('/security/menu-item/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'update'), settingsCtrl.updateMenuItemCtrl);
+router.delete('/security/menu-item/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'delete'), settingsCtrl.deleteMenuItemCtrl);
+
+// quick menu category routes (managed with the same 'menu-items' permission)
+router.get('/security/menu-category', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'read'), settingsCtrl.getMenuCategoryListCtrl);
+router.post('/security/menu-category', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'create'), settingsCtrl.createMenuCategoryCtrl);
+router.put('/security/menu-category/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'update'), settingsCtrl.updateMenuCategoryCtrl);
+router.delete('/security/menu-category/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('menu-items', 'delete'), settingsCtrl.deleteMenuCategoryCtrl);
+
+// role menu mapping routes (role/menu lists feed the form dropdowns)
+router.get('/security/role-menu-map', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'read'), settingsCtrl.getRoleMenuMapListCtrl);
+router.get('/security/role-menu-map/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'read'), settingsCtrl.getRoleMenuMapRolesCtrl);
+router.get('/security/role-menu-map/menu-item', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'read'), settingsCtrl.getRoleMenuMapMenuItemsCtrl);
+router.post('/security/role-menu-map', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'create'), settingsCtrl.createRoleMenuMapCtrl);
+router.put('/security/role-menu-map/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'update'), settingsCtrl.updateRoleMenuMapCtrl);
+router.delete('/security/role-menu-map/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'delete'), settingsCtrl.deleteRoleMenuMapCtrl);
+
+// user routes (role list feeds the form dropdown)
+router.get('/security/user', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'read'), settingsCtrl.getUserListCtrl);
+router.get('/security/user/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'read'), settingsCtrl.getUserRolesCtrl);
+router.post('/security/user', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'create'), settingsCtrl.createUserCtrl);
+router.put('/security/user/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'update'), settingsCtrl.updateUserCtrl);
+router.delete('/security/user/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'delete'), settingsCtrl.deleteUserCtrl);
+
 module.exports = router;

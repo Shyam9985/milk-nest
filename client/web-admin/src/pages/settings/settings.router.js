@@ -6,6 +6,7 @@ import Village from "./village/Village";
 import Position from "./position/Position";
 import Gender from "./gender/Gender";
 import Hierarchy from "./hierarchy/Hierarchy";
+import DairyFarm from "./dairy-farm/DairyFarm";
 import Users from "./users/Users";
 import Roles from "./roles/Roles";
 import RolePermissions from "./role-permissions/RolePermissions";
@@ -24,6 +25,7 @@ export default [
     { path: '/settings/master/position', component: Position, lazy: true },
     { path: '/settings/master/gender', component: Gender, lazy: true },
     { path: '/settings/master/hierarchy', component: Hierarchy, lazy: true },
+    { path: '/settings/master/dairy-farm', component: DairyFarm, lazy: true },
 
     // ===================== SECURITY =====================
     { path: '/settings/security/users', component: Users, lazy: true },

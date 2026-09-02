@@ -84,7 +84,7 @@ function SideDrawer({ isOpen, onClose, children, title = "Drawer", drawerSize = 
             <div onClick={(e) => e.stopPropagation()}
 
                 className={`bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-2xl transition-all duration-300 ease-in-out 
-                    ${current.class} ${isHorizontal ? `w-full h-full ${drawerSizes[drawerSize] || drawerSizes.lg}` : "w-full"}
+                    ${current.class} ${isHorizontal ? `w-full h-full sm:min-w-[21.875rem] ${drawerSizes[drawerSize] || drawerSizes.lg}` : "w-full"}
                     ${direction === "left" || direction === "right" ? "w-full sm:w-auto h-full" : "w-full"}
                      ${direction === "right" ? "border-l border-[var(--border-primary)]" :
                         direction === "left" ? "border-r border-[var(--border-primary)]" :

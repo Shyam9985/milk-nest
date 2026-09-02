@@ -270,6 +270,12 @@ const validateNode = (payload, schema, errors, strictMode = true, path = '') => 
             continue;
         }
 
+        // allowed values validation (applies to any type)
+        if (rules?.enum?.length && !rules.enum.includes(value)) {
+            errors.push(`${rules?.label || currentPath} must be one of: ${rules.enum.join(', ')}.`);
+            break;
+        }
+
         // string validation
         if (rules?.type === 'string') {
 

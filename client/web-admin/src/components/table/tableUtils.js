@@ -11,6 +11,7 @@ export function normalizeColumns(columns = [], data = []) {
       headerStyle: column.headerStyle || {},
       cellStyle: column.cellStyle || {},
       align: column.align || 'left',
+      minWidth: column.minWidth,
       renderHeader: column.renderHeader,
       renderCell: column.renderCell,
       valueFormatter: column.valueFormatter,

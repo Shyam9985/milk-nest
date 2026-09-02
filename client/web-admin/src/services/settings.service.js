@@ -96,9 +96,9 @@ export async function deleteMandal(mandalId) {
     }
 }
 
-export async function getVillages() {
+export async function getVillages(queryParams = {}) {
     try {
-        return await get('settings/master/village');
+        return await get('settings/master/village', queryParams);
     } catch (error) {
         return error;
     }
@@ -227,6 +227,312 @@ export async function updateHierarchy(hierarchyId, payload) {
 export async function deleteHierarchy(hierarchyId) {
     try {
         return await remove(`settings/master/hierarchy/${hierarchyId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getPositions() {
+    try {
+        return await get('settings/master/position');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getPositionRoles() {
+    try {
+        return await get('settings/master/position/role');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getPositionHierarchies() {
+    try {
+        return await get('settings/master/position/hierarchy');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getPositionUsers() {
+    try {
+        return await get('settings/master/position/user');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createPosition(payload) {
+    try {
+        return await post('settings/master/position', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updatePosition(positionId, payload) {
+    try {
+        return await put(`settings/master/position/${positionId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deletePosition(positionId) {
+    try {
+        return await remove(`settings/master/position/${positionId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getDairyFarms() {
+    try {
+        return await get('settings/master/dairy-farm');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createDairyFarm(payload) {
+    try {
+        return await post('settings/master/dairy-farm', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateDairyFarm(dairyFarmId, payload) {
+    try {
+        return await put(`settings/master/dairy-farm/${dairyFarmId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteDairyFarm(dairyFarmId) {
+    try {
+        return await remove(`settings/master/dairy-farm/${dairyFarmId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== ROLE PERMISSIONS =====================
+
+export async function getRolePermissionList() {
+    try {
+        return await get('settings/security/role-permission');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getRolePermissionRoles() {
+    try {
+        return await get('settings/security/role-permission/role');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createRolePermission(payload) {
+    try {
+        return await post('settings/security/role-permission', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateRolePermission(rolePermissionId, payload) {
+    try {
+        return await put(`settings/security/role-permission/${rolePermissionId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteRolePermission(rolePermissionId) {
+    try {
+        return await remove(`settings/security/role-permission/${rolePermissionId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== MENU ITEMS =====================
+
+export async function getMenuItemList() {
+    try {
+        return await get('settings/security/menu-item');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getMenuParentItems() {
+    try {
+        return await get('settings/security/menu-item/parent');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getMenuCategoryOptions() {
+    try {
+        return await get('settings/security/menu-item/category');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createMenuItem(payload) {
+    try {
+        return await post('settings/security/menu-item', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateMenuItem(menuItemId, payload) {
+    try {
+        return await put(`settings/security/menu-item/${menuItemId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteMenuItem(menuItemId) {
+    try {
+        return await remove(`settings/security/menu-item/${menuItemId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== QUICK MENU CATEGORIES =====================
+
+export async function getMenuCategoryList() {
+    try {
+        return await get('settings/security/menu-category');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createMenuCategory(payload) {
+    try {
+        return await post('settings/security/menu-category', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateMenuCategory(categoryId, payload) {
+    try {
+        return await put(`settings/security/menu-category/${categoryId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteMenuCategory(categoryId) {
+    try {
+        return await remove(`settings/security/menu-category/${categoryId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== ROLE MENU MAPPING =====================
+
+export async function getRoleMenuMapList() {
+    try {
+        return await get('settings/security/role-menu-map');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getRoleMenuMapRoles() {
+    try {
+        return await get('settings/security/role-menu-map/role');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getRoleMenuMapMenuItems() {
+    try {
+        return await get('settings/security/role-menu-map/menu-item');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createRoleMenuMap(payload) {
+    try {
+        return await post('settings/security/role-menu-map', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateRoleMenuMap(roleMenuId, payload) {
+    try {
+        return await put(`settings/security/role-menu-map/${roleMenuId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteRoleMenuMap(roleMenuId) {
+    try {
+        return await remove(`settings/security/role-menu-map/${roleMenuId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== USERS =====================
+
+export async function getUserList() {
+    try {
+        return await get('settings/security/user');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getUserRoles() {
+    try {
+        return await get('settings/security/user/role');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createUser(payload) {
+    try {
+        return await post('settings/security/user', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateUser(userId, payload) {
+    try {
+        return await put(`settings/security/user/${userId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteUser(userId) {
+    try {
+        return await remove(`settings/security/user/${userId}`);
     } catch (error) {
         return error;
     }
