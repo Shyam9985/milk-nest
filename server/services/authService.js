@@ -4,7 +4,38 @@ const authMdl = require('../models/authMdl');
 const resutils = require('../utils/response.utils');
 const emailutils = require('../utils/email.utils');
 
-// builds the client facing user object from a user row
+// maps a hierarchy's declared level_type to the position column carrying that level's id.
+// available levels: super_admin, form_branch, dairy_form, state, district, mandal, village.
+// note: positions do not store a state id yet, so the 'state' level derives key 0 (no access)
+// until that column exists
+const SCOPE_KEY_COLUMNS = {
+    form_branch: 'location_ref_id',
+    dairy_form: 'dairy_farm_id',
+    village: 'village_sachivalayam_id',
+    mandal: 'mandal_ulb_id',
+    district: 'district_id'
+};
+
+// derives the flat scope pair carried at the top of the user object.
+// hierarchy_key 0 means "not applicable", NEVER "all access" - only the 'super_admin' level
+// (or role handler) bypasses data filters, so an accidental 0 key fails closed
+// (an equality filter on 0 matches nothing) instead of exposing everything
+const deriveHierarchyScope = (row) => {
+    const levelType = (row?.level_type || '').toLowerCase();
+
+    if (row?.role_hndlr === 'super_admin' || levelType === 'super_admin') {
+        return { hierarchy_level: 'super_admin', hierarchy_key: 0 };
+    }
+
+    const keyColumn = SCOPE_KEY_COLUMNS[levelType];
+    return {
+        hierarchy_level: levelType || 'none',
+        hierarchy_key: keyColumn ? (Number(row?.[keyColumn]) || 0) : 0
+    };
+};
+
+// builds the client facing user object from a user row; the same shape is used for the
+// jwt payload (login and refresh) and the profile response
 const buildUserObj = (row) => ({
     user_id: row?.user_id,
     user_nm: row?.user_nm,
@@ -13,11 +44,13 @@ const buildUserObj = (row) => ({
     mobile_no: row?.mobile_no,
     email: row?.email,
     last_login: row?.last_login,
+    landing_url: row?.landing_url ?? null,
+    ...deriveHierarchyScope(row),
     role: {
         role_id: row?.role_id, role_nm: row?.role_nm, role_hndlr: row?.role_hndlr,
     },
     hierarchy: {
-        hierarchy_id: row?.hierarchy_id,
+        hierarchy_id: row?.hierarchy_id, level_type: row?.level_type,
         position_id: row?.position_id, position_nm: row?.position_nm,
         hierarchy_nm: row?.hierarchy_nm, parent_hirrarchy_id: row?.parent_hirrarchy_id
     }
@@ -135,7 +168,7 @@ exports.establishSessionSrvc = async (userRow, sessionId, expiresAt, context = {
     await authMdl.insertLoginHistory({ user_id: userRow.user_id, ip_address: context.ipAddress, device_info: context.deviceInfo, remarks: 'logged in successfully.' });
     await authMdl.updateLastLoginTime(userRow.email);
 
-    return { token: tokenRes.token, user: { ...buildUserObj(userRow), landing_url: userRow.landing_url } };
+    return { token: tokenRes.token, user: buildUserObj(userRow) };
 }
 
 // expires the stored session record

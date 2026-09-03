@@ -860,6 +860,8 @@ const HIERARCHY_PAYLOAD_SCHEMA = {
     required: false,
     type: "string",
     maxLength: 50,
+    // these values drive scope derivation in authService (SCOPE_KEY_COLUMNS) - keep in sync
+    enum: ["super_admin", "form_branch", "dairy_form", "state", "district", "mandal", "village"],
     label: "Level Type",
   },
   parent_hirrarchy_id: {

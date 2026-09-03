@@ -13,9 +13,10 @@ exports.signUp = async (data, user) => {
 exports.getUserDetails = async (data, user) => {
     const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login, 
         u.is_locked, u.login_attempts, u.password_hash, u.password_salt, DATE_FORMAT(u.locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
-        r.role_id, r.role_nm, r.role_hndlr, r.description, r.hierarchy_id, h.hierarchy_nm , h.parent_hirrarchy_id , h.level_type, 
-        p.position_id, p.position_nm, p.end_date, r.landing_url
-        from users_lst_t u 
+        r.role_id, r.role_nm, r.role_hndlr, r.description, r.hierarchy_id, h.hierarchy_nm , h.parent_hirrarchy_id , h.level_type,
+        p.position_id, p.position_nm, p.end_date, r.landing_url,
+        p.dairy_farm_id, p.location_ref_id, p.district_id, p.mandal_ulb_id, p.village_sachivalayam_id
+        from users_lst_t u
         join roles_lst_t r on r.role_id = u.role_id and r.is_active = 1
         join hierarchy_lst_t h on h.hirrarchy_id = r.hierarchy_id and h.is_active = 1 
         join position_lst_t p on p.user_id = u.user_id and p.is_active = 1 and p.end_date >= CURDATE()
