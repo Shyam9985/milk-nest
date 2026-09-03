@@ -27,3 +27,8 @@ exports.getSetupMenusSrvc = async (user, menuItemCategory) => {
     const setupMenus = await admMdl.getSetupMenusMdl(user, menuItemCategory);
     return groupSetupMenusByCategory(setupMenus || []);
 }
+
+// fetches active genders for form dropdowns
+exports.getGendersSrvc = async () => {
+    return admMdl.getGendersMdl();
+}

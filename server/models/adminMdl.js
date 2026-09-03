@@ -9,6 +9,13 @@ exports.getMenuItemsMdl = async (user) => {
     return dbutils.executeQuery(qry, [user.role?.role_id], 'get menu items model');
 }
 
+// fetches active genders for form dropdowns (user management, future profile screens)
+exports.getGendersMdl = async () => {
+    const qry = `select gender_id, gender_nm, gender_code from gender_mstr_lst_t
+        where is_active = 1 order by gender_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get genders model');
+}
+
 exports.getSetupMenusMdl = async (user, menuItemCategory = 'SETUP') => {
     const qry = `SELECT c.ctgry_nm, m.menu_item_id, m.menu_name, m.menu_url, m.icon, rm.display_order
         FROM menu_items_t m

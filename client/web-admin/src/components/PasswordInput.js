@@ -7,7 +7,10 @@ function PasswordInput({
     value,
     error,
     placeholder = "Enter password",
-    onChange
+    onChange,
+    disabled = false,
+    // 'new-password' tells the browser this is a fresh credential, so it never auto-fills saved logins
+    autoComplete = "new-password"
 }) {
 
     const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +31,8 @@ function PasswordInput({
                     value={value}
                     placeholder={placeholder}
                     onChange={onChange}
+                    disabled={disabled}
+                    autoComplete={autoComplete}
                     className="
                         w-full
                         rounded-lg

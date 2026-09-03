@@ -30,6 +30,18 @@ exports.getMenuItemsCtrl = async (req, res) => {
 
 }
 
+exports.getGendersCtrl = async (req, res) => {
+    try {
+        const records = await adminService.getGendersSrvc();
+
+        return resutils.sendSuccessResponse(req, res, { records: records || [] }, RESPONSE_STATUS.SUCCESS, { function: 'get genders', cacheType: CACHE_TYPES.PRIVATE_1_MIN });
+
+    } catch (error) {
+        return sendAdminError(req, res, error, 'get genders controller',
+            'We could not load the genders right now. Please try again in a moment.');
+    }
+}
+
 exports.getSetupMenusCtrl = async (req, res) => {
     try {
         const menuItemCategory = req.query.category || 'stp';

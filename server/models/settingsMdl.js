@@ -485,15 +485,17 @@ exports.softDeleteHierarchyMdl = (hierarchy_id) => {
 
 // ===================== POSITION MASTER =====================
 
-// fetches all active positions with their role, hierarchy, assigned user and location names
+// fetches all active positions with their role, hierarchy, assigned user and location names.
+// location_ref_id points at a BRANCH; the dairy farm is derived through it for display and edit.
 // unset location ids (stored as 0) come back as null so the edit form treats them as empty;
 // start/end dates come back as YYYY-MM-DD so the edit form's date inputs can load them
 exports.getPositionsMdl = () => {
     const qry = `select p.position_id, p.position_nm, p.role_id, p.hierarchy_id, p.user_id, p.is_active,
         nullif(p.district_id, 0) as district_id, nullif(p.mandal_ulb_id, 0) as mandal_ulb_id,
-        nullif(p.village_sachivalayam_id, 0) as village_sachivalayam_id, p.location_ref_id,
+        nullif(p.village_sachivalayam_id, 0) as village_sachivalayam_id, p.dairy_farm_id, p.location_ref_id,
         r.role_nm, h.hierarchy_nm,
-        s.state_id, s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm, df.dairy_farm_name,
+        s.state_id, s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm,
+        br.branch_name, df.dairy_farm_name,
         ifnull(nullif(trim(concat(ifnull(u.first_nm, ''), ' ', ifnull(u.last_nm, ''))), ''), u.user_nm) as assigned_user,
         DATE_FORMAT(p.start_date, '%Y-%m-%d') as start_date,
         DATE_FORMAT(p.end_date, '%Y-%m-%d') as end_date,
@@ -507,9 +509,33 @@ exports.getPositionsMdl = () => {
         left join state_mstr_lst_t s on s.state_id = d.state_id
         left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = p.mandal_ulb_id
         left join village_sachivalayam_mst_lst_t v on v.village_sachivalayam_id = p.village_sachivalayam_id
-        left join dairy_farm_lst_t df on df.dairy_farm_id = p.location_ref_id
+        left join branches_lst_t br on br.branch_id = p.location_ref_id
+        left join dairy_farm_lst_t df on df.dairy_farm_id = p.dairy_farm_id
         where p.is_active = 1 order by p.position_nm asc`;
     return dbutils.executeQuery(qry, [], 'get positions model');
+}
+
+// fetches active branches (with their stored location) for the position form dropdown,
+// optionally only those under one dairy farm
+exports.getPositionBranchesMdl = (dairy_farm_id = null) => {
+    let qry = `select branch_id, branch_name, is_main_branch, dairy_farm_id,
+        state_id, district_id, mandal_ulb_id, village_sachivalayam_id
+        from branches_lst_t where is_active = 1`;
+    const params = [];
+
+    if (dairy_farm_id) {
+        qry += ' and dairy_farm_id = ?';
+        params.push(dairy_farm_id);
+    }
+
+    qry += ' order by is_main_branch desc, branch_name asc';
+    return dbutils.executeQuery(qry, params, 'get position branches model');
+}
+
+// fetches an active branch by id, used to validate the position's branch before saving
+exports.getActiveBranchByIdMdl = (branch_id) => {
+    const qry = 'select branch_id, branch_name, dairy_farm_id from branches_lst_t where is_active = 1 and branch_id = ?';
+    return dbutils.executeQuery(qry, [branch_id], 'get active branch by id model');
 }
 
 // fetches active roles for the position form dropdown
@@ -518,11 +544,30 @@ exports.getPositionRolesMdl = () => {
     return dbutils.executeQuery(qry, [], 'get position roles model');
 }
 
-// fetches active users for the position form dropdown
-exports.getPositionUsersMdl = () => {
-    const qry = `select user_id, user_nm, first_nm, last_nm from users_lst_t
-        where is_active = 1 order by first_nm asc, user_nm asc`;
-    return dbutils.executeQuery(qry, [], 'get position users model');
+// fetches active users who hold no active position, for the position form dropdown;
+// when editing, the position's own assignee stays selectable via excludePositionId
+exports.getPositionUsersMdl = (excludePositionId = null) => {
+    let qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm from users_lst_t u
+        where u.is_active = 1 and not exists (
+            select 1 from position_lst_t p
+            where p.is_active = 1 and p.user_id = u.user_id
+            and (p.end_date is null or p.end_date >= curdate())`;
+    const params = [];
+
+    if (excludePositionId) {
+        qry += ' and p.position_id <> ?';
+        params.push(excludePositionId);
+    }
+
+    qry += ') order by u.first_nm asc, u.user_nm asc';
+    return dbutils.executeQuery(qry, params, 'get position users model');
+}
+
+// stamps the assigned position's role onto the user row - login resolves permissions
+// through users_lst_t.role_id, so the position assignment is what grants the role
+exports.updateUserRoleMdl = (user_id, role_id) => {
+    const qry = 'update users_lst_t set role_id = ? where is_active = 1 and user_id = ?';
+    return dbutils.executeQuery(qry, [role_id, user_id], 'update user role model');
 }
 
 // fetches an active user by id, used to validate the assignment before saving a position
@@ -550,8 +595,8 @@ exports.getDuplicatePositionsMdl = (data, excludeId = null) => {
     let qry = `select position_id, position_nm, is_active from position_lst_t
         where lower(position_nm) = lower(?) and role_id = ? and hierarchy_id = ?
         and district_id = ? and mandal_ulb_id = ? and village_sachivalayam_id = ?
-        and ifnull(location_ref_id, 0) = ifnull(?, 0)`;
-    const params = [data.position_nm, data.role_id, data.hierarchy_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id];
+        and ifnull(dairy_farm_id, 0) = ifnull(?, 0) and ifnull(location_ref_id, 0) = ifnull(?, 0)`;
+    const params = [data.position_nm, data.role_id, data.hierarchy_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.dairy_farm_id, data.location_ref_id];
 
     if (excludeId) {
         qry += ' and position_id <> ?';
@@ -562,25 +607,25 @@ exports.getDuplicatePositionsMdl = (data, excludeId = null) => {
 
 // inserts a new position
 exports.insertPositionMdl = (data) => {
-    const qry = `insert into position_lst_t (position_nm, role_id, hierarchy_id, user_id, district_id, mandal_ulb_id, village_sachivalayam_id, location_ref_id, start_date, end_date)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id, data.start_date, data.end_date], 'insert position model');
+    const qry = `insert into position_lst_t (position_nm, role_id, hierarchy_id, user_id, district_id, mandal_ulb_id, village_sachivalayam_id, dairy_farm_id, location_ref_id, start_date, end_date)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.dairy_farm_id, data.location_ref_id, data.start_date, data.end_date], 'insert position model');
 }
 
 // updates an active position
 exports.updatePositionMdl = (position_id, data) => {
     const qry = `update position_lst_t set position_nm = ?, role_id = ?, hierarchy_id = ?, user_id = ?,
-        district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?, location_ref_id = ?, start_date = ?, end_date = ?
+        district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?, dairy_farm_id = ?, location_ref_id = ?, start_date = ?, end_date = ?
         where is_active = 1 and position_id = ?`;
-    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id, data.start_date, data.end_date, position_id], 'update position model');
+    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.dairy_farm_id, data.location_ref_id, data.start_date, data.end_date, position_id], 'update position model');
 }
 
 // brings back a soft deleted position with the latest details
 exports.reactivatePositionMdl = (position_id, data) => {
     const qry = `update position_lst_t set position_nm = ?, role_id = ?, hierarchy_id = ?, user_id = ?,
-        district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?, location_ref_id = ?, start_date = ?, end_date = ?, is_active = 1
+        district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?, dairy_farm_id = ?, location_ref_id = ?, start_date = ?, end_date = ?, is_active = 1
         where position_id = ?`;
-    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.location_ref_id, data.start_date, data.end_date, position_id], 'reactivate position model');
+    return dbutils.executeQuery(qry, [data.position_nm, data.role_id, data.hierarchy_id, data.user_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id, data.dairy_farm_id, data.location_ref_id, data.start_date, data.end_date, position_id], 'reactivate position model');
 }
 
 // fetches an active position by id
@@ -1035,15 +1080,16 @@ exports.softDeleteRoleMenuMapMdl = (role_menu_id) => {
 
 // ===================== USERS =====================
 
-// fetches all active users with their role names (password columns are never selected)
+// fetches all active users with their role and gender names (password columns are never selected)
 exports.getUserListMdl = () => {
-    const qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, u.mobile_no, u.email, u.role_id, u.is_locked, u.is_active,
-        r.role_nm,
+    const qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, u.mobile_no, u.email, u.role_id, u.gender_id, u.is_locked, u.is_active,
+        r.role_nm, g.gender_nm,
         DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login,
         DATE_FORMAT(u.created_at, '%d-%m-%Y %h:%i %p') as created_at,
         DATE_FORMAT(u.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
         from users_lst_t u
         left join roles_lst_t r on r.role_id = u.role_id
+        left join gender_mstr_lst_t g on g.gender_id = u.gender_id
         where u.is_active = 1 order by u.first_nm asc, u.user_nm asc`;
     return dbutils.executeQuery(qry, [], 'get user list model');
 }
@@ -1061,26 +1107,27 @@ exports.getDuplicateUsersMdl = (user_nm, excludeId = null) => {
     return dbutils.executeQuery(qry, params, 'get duplicate users model');
 }
 
-// inserts a new user with a hashed password (the plaintext is never stored)
+// inserts a new user; the role is NOT set here - it is stamped by the position assignment.
+// password_txt mirrors the signup convention (login itself only uses the hash)
 exports.insertUserMdl = (data) => {
-    const qry = `insert into users_lst_t (user_nm, first_nm, last_nm, mobile_no, email, role_id, password_hash, password_salt)
-        values (?, ?, ?, ?, ?, ?, ?, ?)`;
-    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.role_id, data.password_hash, data.password_salt], 'insert user model');
+    const qry = `insert into users_lst_t (user_nm, first_nm, last_nm, mobile_no, email, gender_id, password_hash, password_salt, password_txt)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.gender_id, data.password_hash, data.password_salt, data.password_txt], 'insert user model');
 }
 
-// updates an active user's profile and role (never the password - that flows through forgot password)
+// updates an active user's profile (the role comes from the position, the password from forgot password)
 exports.updateUserMdl = (user_id, data) => {
-    const qry = `update users_lst_t set user_nm = ?, first_nm = ?, last_nm = ?, mobile_no = ?, email = ?, role_id = ?
+    const qry = `update users_lst_t set user_nm = ?, first_nm = ?, last_nm = ?, mobile_no = ?, email = ?, gender_id = ?
         where is_active = 1 and user_id = ?`;
-    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.role_id, user_id], 'update user model');
+    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.gender_id, user_id], 'update user model');
 }
 
 // brings back a soft deleted user with fresh details, credentials and a clean lock state
 exports.reactivateUserMdl = (user_id, data) => {
-    const qry = `update users_lst_t set user_nm = ?, first_nm = ?, last_nm = ?, mobile_no = ?, email = ?, role_id = ?,
-        password_hash = ?, password_salt = ?, is_locked = 0, locked_until = null, login_attempts = 0, is_active = 1
+    const qry = `update users_lst_t set user_nm = ?, first_nm = ?, last_nm = ?, mobile_no = ?, email = ?, gender_id = ?,
+        password_hash = ?, password_salt = ?, password_txt = ?, is_locked = 0, locked_until = null, login_attempts = 0, is_active = 1
         where user_id = ?`;
-    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.role_id, data.password_hash, data.password_salt, user_id], 'reactivate user model');
+    return dbutils.executeQuery(qry, [data.user_nm, data.first_nm, data.last_nm, data.mobile_no, data.email, data.gender_id, data.password_hash, data.password_salt, data.password_txt, user_id], 'reactivate user model');
 }
 
 // fetches an active user by id along with the role handler for protection checks

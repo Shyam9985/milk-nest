@@ -4,8 +4,9 @@ import SideDrawer from '../../../utils/SideDrawer';
 import Modal from '../../../utils/ModelComponent';
 import UserForm from './UserForm';
 import {
-    getUserList, getUserRoles, createUser, updateUser, deleteUser
+    getUserList, createUser, updateUser, deleteUser
 } from '../../../services/settings.service';
+import { getGenderOptions } from '../../../services/auth.service';
 import { useToast } from '../../../contexts/MessageContext';
 
 const USER_COLUMNS = [
@@ -13,6 +14,7 @@ const USER_COLUMNS = [
     { label: 'Last Name', field: 'last_nm', minWidth: 140 },
     { label: 'Email (login)', field: 'user_nm', minWidth: 220 },
     { label: 'Mobile', field: 'mobile_no', minWidth: 130 },
+    { label: 'Gender', field: 'gender_nm', minWidth: 110 },
     { label: 'Role', field: 'role_nm', minWidth: 150 },
     { label: 'Locked', field: 'is_locked', type: 'boolean', minWidth: 90 },
     { label: 'Last Login', field: 'last_login', sortable: false, minWidth: 175 },
@@ -23,7 +25,7 @@ function Users() {
 
     const toast = useToast();
     const [records, setRecords] = useState([]);
-    const [roleOptions, setRoleOptions] = useState([]);
+    const [genderOptions, setGenderOptions] = useState([]);
     const [permissions, setPermissions] = useState({});
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -46,20 +48,20 @@ function Users() {
         setLoading(false);
     };
 
-    // roles are fetched once, the first time the drawer opens - not on page load
-    const ensureRoleOptions = async () => {
+    // genders are fetched once, the first time the drawer opens - not on page load
+    const ensureGenderOptions = async () => {
 
-        if (roleOptions.length) return;
+        if (genderOptions.length) return;
 
-        const result = await getUserRoles();
+        const genders = await getGenderOptions();
 
-        if (result?.success) {
-            setRoleOptions((result?.data?.records || []).map((role) => ({
-                value: role.role_id,
-                label: role.role_nm
+        if (genders?.success) {
+            setGenderOptions((genders?.data?.records || []).map((gender) => ({
+                value: gender.gender_id,
+                label: gender.gender_nm
             })));
         } else {
-            toast.error(result?.error || result?.message || 'Unable to load roles for the form.');
+            toast.error(genders?.error || genders?.message || 'Unable to load genders for the form.');
         }
     };
 
@@ -68,13 +70,13 @@ function Users() {
     }, []);
 
     const openAddDrawer = () => {
-        ensureRoleOptions();
+        ensureGenderOptions();
         setEditingRecord(null);
         setIsDrawerOpen(true);
     };
 
     const openEditDrawer = (record) => {
-        ensureRoleOptions();
+        ensureGenderOptions();
         // the form reads `email`; the list exposes the login name as user_nm
         setEditingRecord({ ...record, email: record.user_nm });
         setIsDrawerOpen(true);
@@ -145,7 +147,7 @@ function Users() {
 
                 <UserForm
                     initialValues={editingRecord}
-                    roleOptions={roleOptions}
+                    genderOptions={genderOptions}
                     submitting={submitting}
                     onSubmit={handleSubmit}
                     onCancel={closeDrawer}

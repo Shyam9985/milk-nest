@@ -4,7 +4,7 @@ import SideDrawer from '../../../utils/SideDrawer';
 import Modal from '../../../utils/ModelComponent';
 import PositionForm from './PositionForm';
 import {
-    getPositions, getPositionRoles, getPositionHierarchies, getPositionUsers,
+    getPositions, getPositionRoles, getPositionHierarchies, getPositionUsers, getPositionBranches,
     getStates, getDistricts, getMandals, getVillages, getDairyFarms,
     createPosition, updatePosition, deletePosition
 } from '../../../services/settings.service';
@@ -17,6 +17,7 @@ const POSITION_COLUMNS = [
     { label: 'Hierarchy', field: 'hierarchy_nm', minWidth: 150 },
     { label: 'Assigned User', field: 'assigned_user', minWidth: 180 },
     { label: 'Dairy Farm', field: 'dairy_farm_name', minWidth: 160 },
+    { label: 'Branch', field: 'branch_name', minWidth: 160 },
     { label: 'State', field: 'state_name', minWidth: 130 },
     { label: 'District', field: 'district_name', minWidth: 140 },
     { label: 'Mandal/ULB', field: 'mandal_ulb_nm', minWidth: 150 },
@@ -58,14 +59,30 @@ function Position() {
         setLoading(false);
     };
 
-    // dropdown data is fetched once, the first time the drawer opens - not on page load
+    // the assignable-user list depends on which record is open (only unassigned users, plus
+    // the current assignee when editing), so it reloads on every drawer open
+    const loadUserOptions = async (positionId = null) => {
+
+        const result = await getPositionUsers(positionId ? { position_id: positionId } : {});
+
+        if (result?.success) {
+            setUserOptions((result?.data?.records || []).map((user) => ({
+                value: user.user_id,
+                label: `${[user.first_nm, user.last_nm].filter(Boolean).join(' ') || user.user_nm} (${user.user_nm})`
+            })));
+        } else {
+            toast.error(result?.error || result?.message || 'Unable to load users for the form.');
+        }
+    };
+
+    // static dropdown data is fetched once, the first time the drawer opens - not on page load
     const ensureFormOptions = async () => {
 
-        if (roleOptions.length && hierarchyOptions.length && userOptions.length
+        if (roleOptions.length && hierarchyOptions.length
             && stateOptions.length && dairyFarmOptions.length) return;
 
-        const [roles, hierarchies, users, states, dairyFarms] = await Promise.all([
-            getPositionRoles(), getPositionHierarchies(), getPositionUsers(), getStates(), getDairyFarms()
+        const [roles, hierarchies, states, dairyFarms] = await Promise.all([
+            getPositionRoles(), getPositionHierarchies(), getStates(), getDairyFarms()
         ]);
 
         if (roles?.success) {
@@ -86,15 +103,6 @@ function Position() {
             toast.error(hierarchies?.error || hierarchies?.message || 'Unable to load hierarchies for the form.');
         }
 
-        if (users?.success) {
-            setUserOptions((users?.data?.records || []).map((user) => ({
-                value: user.user_id,
-                label: `${[user.first_nm, user.last_nm].filter(Boolean).join(' ') || user.user_nm} (${user.user_nm})`
-            })));
-        } else {
-            toast.error(users?.error || users?.message || 'Unable to load users for the form.');
-        }
-
         if (states?.success) {
             setStateOptions((states?.data?.records || []).map((state) => ({
                 value: state.state_id,
@@ -105,13 +113,39 @@ function Position() {
         }
 
         if (dairyFarms?.success) {
+            // options carry the farm's main-branch location so picking a farm auto-fills it
             setDairyFarmOptions((dairyFarms?.data?.records || []).map((dairyFarm) => ({
                 value: dairyFarm.dairy_farm_id,
-                label: `${dairyFarm.dairy_farm_name} (${dairyFarm.dairy_farm_code})`
+                label: `${dairyFarm.dairy_farm_name} (${dairyFarm.dairy_farm_code})`,
+                state_id: dairyFarm.state_id,
+                district_id: dairyFarm.district_id,
+                mandal_ulb_id: dairyFarm.mandal_ulb_id,
+                village_sachivalayam_id: dairyFarm.village_sachivalayam_id
             })));
         } else {
             toast.error(dairyFarms?.error || dairyFarms?.message || 'Unable to load dairy farms for the form.');
         }
+    };
+
+    // called by the form whenever a dairy farm is picked; fetches only that farm's branches,
+    // each option carrying its stored location for the auto-fill
+    const loadBranchOptions = async (dairyFarmId) => {
+
+        const result = await getPositionBranches({ dairy_farm_id: dairyFarmId });
+
+        if (result?.success) {
+            return (result?.data?.records || []).map((branch) => ({
+                value: branch.branch_id,
+                label: `${branch.branch_name}${branch.is_main_branch ? ' (Main)' : ''}`,
+                state_id: branch.state_id,
+                district_id: branch.district_id,
+                mandal_ulb_id: branch.mandal_ulb_id,
+                village_sachivalayam_id: branch.village_sachivalayam_id
+            }));
+        }
+
+        toast.error(result?.error || result?.message || 'Unable to load branches for the form.');
+        return [];
     };
 
     // called by the form whenever a state is picked; fetches only that state's districts
@@ -168,12 +202,14 @@ function Position() {
 
     const openAddDrawer = () => {
         ensureFormOptions();
+        loadUserOptions();
         setEditingRecord(null);
         setIsDrawerOpen(true);
     };
 
     const openEditDrawer = (record) => {
         ensureFormOptions();
+        loadUserOptions(record.position_id);
         setEditingRecord(record);
         setIsDrawerOpen(true);
     };
@@ -251,6 +287,7 @@ function Position() {
                     loadDistrictOptions={loadDistrictOptions}
                     loadMandalOptions={loadMandalOptions}
                     loadVillageOptions={loadVillageOptions}
+                    loadBranchOptions={loadBranchOptions}
                     submitting={submitting}
                     onSubmit={handleSubmit}
                     onCancel={closeDrawer}

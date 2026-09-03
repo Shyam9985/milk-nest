@@ -18,7 +18,7 @@ exports.getUserDetails = async (data, user) => {
         from users_lst_t u 
         join roles_lst_t r on r.role_id = u.role_id and r.is_active = 1
         join hierarchy_lst_t h on h.hirrarchy_id = r.hierarchy_id and h.is_active = 1 
-        join position_lst_t p on p.user_id = u.user_id and p.end_date >= CURDATE()
+        join position_lst_t p on p.user_id = u.user_id and p.is_active = 1 and p.end_date >= CURDATE()
         where u.is_active = 1 and u.user_nm = ?`;
     return dbutils.executeQuery(qry, [data.email], 'login');
 }

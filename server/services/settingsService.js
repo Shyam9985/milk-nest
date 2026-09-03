@@ -608,8 +608,12 @@ exports.deleteHierarchySrvc = async (hierarchy_id) => {
 // ===================== POSITION MASTER =====================
 
 // login inner-joins position_lst_t on end_date >= today, so a position without an
-// end date would silently lock its user out - hence the far-future default
-const POSITION_DEFAULT_END_DATE = '9999-12-31';
+// end date would silently lock its user out - hence the far-future default of 100 years
+const defaultPositionEndDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 100);
+    return date.toISOString().slice(0, 10);
+};
 const DATE_FORMAT_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // fetches all active positions with their role, hierarchy and assigned user
@@ -622,9 +626,14 @@ exports.getPositionRolesSrvc = async () => {
     return settingsMdl.getPositionRolesMdl();
 }
 
-// fetches active users for the position form dropdown
-exports.getPositionUsersSrvc = async () => {
-    return settingsMdl.getPositionUsersMdl();
+// fetches active users without an active position for the position form dropdown
+exports.getPositionUsersSrvc = async (excludePositionId = null) => {
+    return settingsMdl.getPositionUsersMdl(excludePositionId);
+}
+
+// fetches active branches for the position form dropdown, optionally filtered by dairy farm
+exports.getPositionBranchesSrvc = async (dairy_farm_id = null) => {
+    return settingsMdl.getPositionBranchesMdl(dairy_farm_id);
 }
 
 // validates an optional YYYY-MM-DD input, falling back to the given default
@@ -640,12 +649,18 @@ const normalizePositionDate = (value, label, fallback) => {
 
 // pulls the normalized position fields out of a request payload
 const normalizePositionPayload = (payload) => {
-    const start_date = normalizePositionDate(payload.start_date, 'Start Date', new Date().toISOString().slice(0, 10));
-    const end_date = normalizePositionDate(payload.end_date, 'End Date', POSITION_DEFAULT_END_DATE);
+    const today = new Date().toISOString().slice(0, 10);
+    const start_date = normalizePositionDate(payload.start_date, 'Start Date', today);
+    const end_date = normalizePositionDate(payload.end_date, 'End Date', defaultPositionEndDate());
 
     // ISO date strings compare correctly as plain strings
     if (end_date < start_date) {
         resutils.createError('validationFailed', 'End Date cannot be earlier than Start Date.');
+    }
+
+    // an already-expired position would silently lock its user out of the application
+    if (end_date < today) {
+        resutils.createError('validationFailed', 'End Date cannot be in the past.');
     }
 
     return {
@@ -657,6 +672,7 @@ const normalizePositionPayload = (payload) => {
         district_id: payload.district_id ? Number(payload.district_id) : 0,
         mandal_ulb_id: payload.mandal_ulb_id ? Number(payload.mandal_ulb_id) : 0,
         village_sachivalayam_id: payload.village_sachivalayam_id ? Number(payload.village_sachivalayam_id) : 0,
+        dairy_farm_id: payload.dairy_farm_id ? Number(payload.dairy_farm_id) : null,
         location_ref_id: payload.location_ref_id ? Number(payload.location_ref_id) : null,
         start_date,
         end_date
@@ -698,10 +714,24 @@ const assertPositionLocation = async (data) => {
         }
     }
 
-    if (data.location_ref_id) {
-        const [dairyFarm] = await settingsMdl.getActiveDairyFarmByIdMdl(data.location_ref_id);
+    if (data.dairy_farm_id) {
+        const [dairyFarm] = await settingsMdl.getActiveDairyFarmByIdMdl(data.dairy_farm_id);
         if (!dairyFarm) {
             resutils.createError('invalidParent', 'Selected dairy farm does not exist or is inactive.');
+        }
+    }
+
+    // location_ref_id references a branch, which must belong to the selected dairy farm
+    if (data.location_ref_id) {
+        if (!data.dairy_farm_id) {
+            resutils.createError('invalidParent', 'Select a dairy farm before choosing a branch.');
+        }
+        const [branch] = await settingsMdl.getActiveBranchByIdMdl(data.location_ref_id);
+        if (!branch) {
+            resutils.createError('invalidParent', 'Selected branch does not exist or is inactive.');
+        }
+        if (branch.dairy_farm_id != data.dairy_farm_id) {
+            resutils.createError('invalidParent', 'Selected branch does not belong to the selected dairy farm.');
         }
     }
 }
@@ -730,14 +760,29 @@ const assertAssignableUser = async (user_id, excludePositionId = null) => {
     }
 }
 
+// assigning a position grants its role: the user row's role_id (which login reads) is
+// stamped from the position, so users are never given roles directly any more
+const syncAssignedUserRole = async (data) => {
+    if (!data.user_id) return;
+    await settingsMdl.updateUserRoleMdl(data.user_id, data.role_id);
+}
+
+// role, hierarchy, location and assignment checks are independent of each other,
+// so they run concurrently instead of queueing five round trips
+const assertValidPosition = (data, excludePositionId = null) => {
+    return Promise.all([
+        assertActiveRole(data.role_id),
+        assertActiveHierarchy(data.hierarchy_id),
+        assertPositionLocation(data),
+        assertAssignableUser(data.user_id, excludePositionId)
+    ]);
+}
+
 // creates a position, reusing a soft deleted record when the same name/role/hierarchy/location comes back
 exports.createPositionSrvc = async (payload) => {
     const data = normalizePositionPayload(payload);
 
-    await assertActiveRole(data.role_id);
-    await assertActiveHierarchy(data.hierarchy_id);
-    await assertPositionLocation(data);
-    await assertAssignableUser(data.user_id);
+    await assertValidPosition(data);
 
     const duplicates = await settingsMdl.getDuplicatePositionsMdl(data);
 
@@ -750,10 +795,12 @@ exports.createPositionSrvc = async (payload) => {
     const inactiveDuplicate = duplicates[0];
     if (inactiveDuplicate) {
         await settingsMdl.reactivatePositionMdl(inactiveDuplicate.position_id, data);
+        await syncAssignedUserRole(data);
         return { position_id: inactiveDuplicate.position_id, reactivated: true, position_nm: data.position_nm };
     }
 
     const result = await settingsMdl.insertPositionMdl(data);
+    await syncAssignedUserRole(data);
     return { position_id: result.insertId, reactivated: false, position_nm: data.position_nm };
 }
 
@@ -761,10 +808,7 @@ exports.createPositionSrvc = async (payload) => {
 exports.updatePositionSrvc = async (position_id, payload) => {
     const data = normalizePositionPayload(payload);
 
-    await assertActiveRole(data.role_id);
-    await assertActiveHierarchy(data.hierarchy_id);
-    await assertPositionLocation(data);
-    await assertAssignableUser(data.user_id, position_id);
+    await assertValidPosition(data, position_id);
 
     const duplicates = await settingsMdl.getDuplicatePositionsMdl(data, position_id);
     if (duplicates.length) {
@@ -775,6 +819,9 @@ exports.updatePositionSrvc = async (position_id, payload) => {
     if (!result.affectedRows) {
         resutils.createError('recordNotFound', 'Position not found or already deleted.');
     }
+
+    await syncAssignedUserRole(data);
+
     return { position_id: Number(position_id), position_nm: data.position_nm };
 }
 
@@ -1368,7 +1415,8 @@ exports.getUserListSrvc = async () => {
     return settingsMdl.getUserListMdl();
 }
 
-// pulls the normalized user fields out of a request payload; the login name is always the email
+// pulls the normalized user fields out of a request payload; the login name is always the
+// email, and the role is intentionally absent - it is granted through a position assignment
 const normalizeUserPayload = (payload) => {
     const email = (payload.email || '').trim().toLowerCase();
 
@@ -1378,19 +1426,30 @@ const normalizeUserPayload = (payload) => {
         first_nm: emptyToNull(payload.first_nm),
         last_nm: emptyToNull(payload.last_nm),
         mobile_no: emptyToNull(payload.mobile_no),
-        role_id: Number(payload.role_id)
+        gender_id: payload.gender_id ? Number(payload.gender_id) : null
     };
 }
 
-// creates a user with a bcrypt-hashed password; unlike the public signup, the plaintext
-// password is never written to the database
+// makes sure the optionally chosen gender exists and is active
+const assertActiveGender = async (gender_id) => {
+    if (!gender_id) return;
+
+    const gender = await settingsMdl.getActiveGenderByIdMdl(gender_id);
+    if (!gender.length) {
+        resutils.createError('invalidParent', 'Selected gender does not exist or is inactive.');
+    }
+}
+
+// creates a user with a bcrypt-hashed password; password_txt is stored alongside it to
+// match the signup convention (note: login only ever verifies against the hash)
 exports.createUserSrvc = async (payload) => {
     const data = normalizeUserPayload(payload);
 
-    await assertActiveRole(data.role_id);
+    await assertActiveGender(data.gender_id);
 
     const password_salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(payload.password, password_salt);
+    const credentials = { password_hash, password_salt, password_txt: payload.password };
 
     const duplicates = await settingsMdl.getDuplicateUsersMdl(data.user_nm);
 
@@ -1402,11 +1461,11 @@ exports.createUserSrvc = async (payload) => {
     // a soft deleted user is reactivated with fresh details and credentials
     const inactiveDuplicate = duplicates[0];
     if (inactiveDuplicate) {
-        await settingsMdl.reactivateUserMdl(inactiveDuplicate.user_id, { ...data, password_hash, password_salt });
+        await settingsMdl.reactivateUserMdl(inactiveDuplicate.user_id, { ...data, ...credentials });
         return { user_id: inactiveDuplicate.user_id, reactivated: true, user_nm: data.user_nm };
     }
 
-    const result = await settingsMdl.insertUserMdl({ ...data, password_hash, password_salt });
+    const result = await settingsMdl.insertUserMdl({ ...data, ...credentials });
     return { user_id: result.insertId, reactivated: false, user_nm: data.user_nm };
 }
 
@@ -1414,7 +1473,7 @@ exports.createUserSrvc = async (payload) => {
 exports.updateUserSrvc = async (user_id, payload) => {
     const data = normalizeUserPayload(payload);
 
-    await assertActiveRole(data.role_id);
+    await assertActiveGender(data.gender_id);
 
     const duplicates = await settingsMdl.getDuplicateUsersMdl(data.user_nm, user_id);
     if (duplicates.length) {

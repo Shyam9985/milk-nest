@@ -256,9 +256,17 @@ export async function getPositionHierarchies() {
     }
 }
 
-export async function getPositionUsers() {
+export async function getPositionUsers(queryParams = {}) {
     try {
-        return await get('settings/master/position/user');
+        return await get('settings/master/position/user', queryParams);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getPositionBranches(queryParams = {}) {
+    try {
+        return await get('settings/master/position/branch', queryParams);
     } catch (error) {
         return error;
     }
@@ -501,14 +509,6 @@ export async function deleteRoleMenuMap(roleMenuId) {
 export async function getUserList() {
     try {
         return await get('settings/security/user');
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function getUserRoles() {
-    try {
-        return await get('settings/security/user/role');
     } catch (error) {
         return error;
     }

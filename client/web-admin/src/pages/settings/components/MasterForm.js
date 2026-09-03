@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef } from 'react';
 import AuthInput from '../../../components/AuthInput';
+import PasswordInput from '../../../components/PasswordInput';
 import SearchDropdown from '../../../components/SearchDropdown';
 
 /*
@@ -19,12 +20,14 @@ const clearDependents = (fields, changedName, nextValues) => {
     });
 };
 
-// finds the display label of a select field's current value (static or dynamically loaded options)
-const resolveOptionLabel = (field, value, dynamicOptions) => {
-    if (!field || value === '' || value === null || value === undefined) return '';
+// finds a select field's currently chosen option object (static or dynamically loaded options)
+const resolveOption = (field, value, dynamicOptions) => {
+    if (!field || value === '' || value === null || value === undefined) return null;
     const options = typeof field.loadOptions === 'function' ? (dynamicOptions[field.name] || []) : (field.options || []);
-    return options.find((option) => String(option.value) === String(value))?.label ?? '';
+    return options.find((option) => String(option.value) === String(value)) || null;
 };
+
+const resolveOptionLabel = (field, value, dynamicOptions) => resolveOption(field, value, dynamicOptions)?.label ?? '';
 
 // recomputes read-only derived fields (e.g. an address composed from the chosen location);
 // a field opts in with deriveValue(values, labelOf) in its definition
@@ -46,6 +49,16 @@ function formReducer(state, action) {
         case 'FIELD_CHANGED': {
             const values = { ...state.values, [action.name]: action.value };
             clearDependents(action.fields, action.name, values);
+
+            // a select can push values into sibling fields from its chosen option's extra
+            // data (e.g. picking a branch fills the location) - applied after clearDependents
+            // so the pushed values survive the dependency reset
+            const changedField = action.fields.find((field) => field.name === action.name);
+            if (typeof changedField?.onSelectFill === 'function') {
+                const option = resolveOption(changedField, action.value, state.dynamicOptions);
+                if (option) Object.assign(values, changedField.onSelectFill(option) || {});
+            }
+
             applyDerivedFields(action.fields, values, state.dynamicOptions);
             return { ...state, values, errors: { ...state.errors, [action.name]: '' } };
         }
@@ -131,7 +144,7 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
         fields.forEach((field) => {
             initial[field.name] = field.type === 'checkbox'
                 ? !!initialValues?.[field.name]
-                : (initialValues?.[field.name] ?? '');
+                : (initialValues?.[field.name] ?? field.defaultValue ?? '');
         });
 
         dispatch({ type: 'RESET_FORM', values: initial });
@@ -214,6 +227,15 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                         );
                     }
 
+                    if (field.type === 'password') {
+                        return (
+                            <PasswordInput key={field.name} name={field.name}
+                                label={field.required ? `${field.label} *` : field.label}
+                                value={values[field.name] ?? ''} error={errors[field.name]}
+                                placeholder={field.placeholder} onChange={handleChange} disabled={submitting} />
+                        );
+                    }
+
                     if (field.type === 'checkbox') {
                         return (
 
@@ -233,7 +255,8 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                             label={field.required ? `${field.label} *` : field.label}
                             value={values[field.name] ?? ''} error={errors[field.name]}
                             placeholder={field.placeholder} onChange={handleChange}
-                            disabled={submitting} readOnly={!!field.readOnly} />
+                            disabled={submitting} readOnly={!!field.readOnly} autoComplete={field.autoComplete}
+                            min={field.min} />
                     );
 
                 })}

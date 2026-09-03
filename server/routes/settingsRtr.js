@@ -51,6 +51,7 @@ router.get('/master/position', authmdlwre.isAuthenticated, authmdlwre.isAuthoriz
 router.get('/master/position/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionRolesCtrl);
 router.get('/master/position/hierarchy', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionHierarchiesCtrl);
 router.get('/master/position/user', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionUsersCtrl);
+router.get('/master/position/branch', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'read'), settingsCtrl.getPositionBranchesCtrl);
 router.post('/master/position', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'create'), settingsCtrl.createPositionCtrl);
 router.put('/master/position/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'update'), settingsCtrl.updatePositionCtrl);
 router.delete('/master/position/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('position', 'delete'), settingsCtrl.deletePositionCtrl);
@@ -90,9 +91,8 @@ router.post('/security/role-menu-map', authmdlwre.isAuthenticated, authmdlwre.is
 router.put('/security/role-menu-map/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'update'), settingsCtrl.updateRoleMenuMapCtrl);
 router.delete('/security/role-menu-map/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-menu-mapping', 'delete'), settingsCtrl.deleteRoleMenuMapCtrl);
 
-// user routes (role list feeds the form dropdown)
+// user routes (roles are granted through positions, so no role dropdown feed here)
 router.get('/security/user', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'read'), settingsCtrl.getUserListCtrl);
-router.get('/security/user/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'read'), settingsCtrl.getUserRolesCtrl);
 router.post('/security/user', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'create'), settingsCtrl.createUserCtrl);
 router.put('/security/user/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'update'), settingsCtrl.updateUserCtrl);
 router.delete('/security/user/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('users', 'delete'), settingsCtrl.deleteUserCtrl);

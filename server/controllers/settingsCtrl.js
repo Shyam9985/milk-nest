@@ -1010,11 +1010,17 @@ const POSITION_PAYLOAD_SCHEMA = {
     min: 1,
     label: "Village/Sachivalayam",
   },
-  location_ref_id: {
+  dairy_farm_id: {
     required: false,
     type: "number",
     min: 1,
     label: "Dairy Farm",
+  },
+  location_ref_id: {
+    required: false,
+    type: "number",
+    min: 1,
+    label: "Branch",
   },
   start_date: {
     required: false,
@@ -1080,7 +1086,9 @@ exports.getPositionHierarchiesCtrl = async (req, res) => {
 
 exports.getPositionUsersCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getPositionUsersSrvc();
+    // when editing, ?position_id keeps that position's own assignee in the list
+    const excludePositionId = parseOptionalQueryId(req, "position_id");
+    const records = await settingsService.getPositionUsersSrvc(excludePositionId);
 
     return resutils.sendSuccessResponse(
       req,
@@ -1091,6 +1099,23 @@ exports.getPositionUsersCtrl = async (req, res) => {
     );
   } catch (error) {
     return sendSettingsError(req, res, error, "get position users controller");
+  }
+};
+
+exports.getPositionBranchesCtrl = async (req, res) => {
+  try {
+    const dairyFarmId = parseOptionalQueryId(req, "dairy_farm_id");
+    const records = await settingsService.getPositionBranchesSrvc(dairyFarmId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get position branches", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get position branches controller");
   }
 };
 
@@ -1838,7 +1863,7 @@ const USER_BASE_PAYLOAD_SCHEMA = {
   last_nm: { required: false, type: "string", maxLength: 150, label: "Last Name" },
   email: { required: true, type: "email", label: "Email" },
   mobile_no: { required: false, type: "mobile-no", label: "Mobile Number" },
-  role_id: { required: true, type: "number", min: 1, label: "Role" },
+  gender_id: { required: false, type: "number", min: 1, label: "Gender" },
 };
 
 const USER_CREATE_PAYLOAD_SCHEMA = {
@@ -1859,22 +1884,6 @@ exports.getUserListCtrl = async (req, res) => {
     );
   } catch (error) {
     return sendSettingsError(req, res, error, "get users controller");
-  }
-};
-
-exports.getUserRolesCtrl = async (req, res) => {
-  try {
-    const records = await settingsService.getPositionRolesSrvc();
-
-    return resutils.sendSuccessResponse(
-      req,
-      res,
-      { records: records || [] },
-      RESPONSE_STATUS.SUCCESS,
-      { function: "get user roles", cacheType: CACHE_TYPES.NO_STORE },
-    );
-  } catch (error) {
-    return sendSettingsError(req, res, error, "get user roles controller");
   }
 };
 

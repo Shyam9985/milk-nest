@@ -46,6 +46,15 @@ export async function getSetupMenus() {
     }
 }
 
+export async function getGenderOptions() {
+    try {
+        const response = await get('admin/genders');
+        return response;
+    } catch (error) {
+        return error;
+    }
+}
+
 export async function sendForgotPasswordEmail(email) {
     try {
         const response = await post('/auth/forgot-password', { email: email });
