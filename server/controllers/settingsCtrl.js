@@ -3,6 +3,7 @@ const RESPONSE_STATUS = require("../utils/standard.messages");
 const validutils = require("../utils/validate.utils");
 const { CACHE_TYPES } = require("../utils/cache.utils");
 const settingsService = require("../services/settingsService");
+const { log } = require('../utils/log.utils');
 
 const STATE_PAYLOAD_SCHEMA = {
   state_name: {
@@ -207,6 +208,7 @@ const parseRecordId = (req) => {
 };
 
 exports.getStatesCtrl = async (req, res) => {
+    log('in getStatesCtrl');
   try {
     const records = await settingsService.getStatesSrvc();
 
@@ -223,6 +225,7 @@ exports.getStatesCtrl = async (req, res) => {
 };
 
 exports.createStateCtrl = async (req, res) => {
+    log('in createStateCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -249,6 +252,7 @@ exports.createStateCtrl = async (req, res) => {
 };
 
 exports.updateStateCtrl = async (req, res) => {
+    log('in updateStateCtrl');
   try {
     const stateId = parseRecordId(req);
 
@@ -277,6 +281,7 @@ exports.updateStateCtrl = async (req, res) => {
 };
 
 exports.deleteStateCtrl = async (req, res) => {
+    log('in deleteStateCtrl');
   try {
     const stateId = parseRecordId(req);
 
@@ -310,6 +315,7 @@ const parseOptionalQueryId = (req, key) => {
 };
 
 exports.getDistrictsCtrl = async (req, res) => {
+    log('in getDistrictsCtrl');
   try {
     const stateId = parseOptionalQueryId(req, "state_id");
     const records = await settingsService.getDistrictsSrvc(stateId);
@@ -327,6 +333,7 @@ exports.getDistrictsCtrl = async (req, res) => {
 };
 
 exports.createDistrictCtrl = async (req, res) => {
+    log('in createDistrictCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -353,6 +360,7 @@ exports.createDistrictCtrl = async (req, res) => {
 };
 
 exports.updateDistrictCtrl = async (req, res) => {
+    log('in updateDistrictCtrl');
   try {
     const districtId = parseRecordId(req);
 
@@ -384,6 +392,7 @@ exports.updateDistrictCtrl = async (req, res) => {
 };
 
 exports.deleteDistrictCtrl = async (req, res) => {
+    log('in deleteDistrictCtrl');
   try {
     const districtId = parseRecordId(req);
 
@@ -407,6 +416,7 @@ exports.deleteDistrictCtrl = async (req, res) => {
 // ===================== MANDAL / ULB MASTER =====================
 
 exports.getMandalsCtrl = async (req, res) => {
+    log('in getMandalsCtrl');
   try {
     const districtId = parseOptionalQueryId(req, "district_id");
     const records = await settingsService.getMandalsSrvc(districtId);
@@ -424,6 +434,7 @@ exports.getMandalsCtrl = async (req, res) => {
 };
 
 exports.createMandalCtrl = async (req, res) => {
+    log('in createMandalCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -450,6 +461,7 @@ exports.createMandalCtrl = async (req, res) => {
 };
 
 exports.updateMandalCtrl = async (req, res) => {
+    log('in updateMandalCtrl');
   try {
     const mandalId = parseRecordId(req);
 
@@ -478,6 +490,7 @@ exports.updateMandalCtrl = async (req, res) => {
 };
 
 exports.deleteMandalCtrl = async (req, res) => {
+    log('in deleteMandalCtrl');
   try {
     const mandalId = parseRecordId(req);
 
@@ -501,6 +514,7 @@ exports.deleteMandalCtrl = async (req, res) => {
 // ===================== VILLAGE / SACHIVALAYAM MASTER =====================
 
 exports.getVillagesCtrl = async (req, res) => {
+    log('in getVillagesCtrl');
   try {
     const districtId = parseOptionalQueryId(req, "district_id");
     const records = await settingsService.getVillagesSrvc(districtId);
@@ -518,6 +532,7 @@ exports.getVillagesCtrl = async (req, res) => {
 };
 
 exports.createVillageCtrl = async (req, res) => {
+    log('in createVillageCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -544,6 +559,7 @@ exports.createVillageCtrl = async (req, res) => {
 };
 
 exports.updateVillageCtrl = async (req, res) => {
+    log('in updateVillageCtrl');
   try {
     const villageId = parseRecordId(req);
 
@@ -572,6 +588,7 @@ exports.updateVillageCtrl = async (req, res) => {
 };
 
 exports.deleteVillageCtrl = async (req, res) => {
+    log('in deleteVillageCtrl');
   try {
     const villageId = parseRecordId(req);
 
@@ -630,6 +647,7 @@ const ROLE_PAYLOAD_SCHEMA = {
 };
 
 exports.getRolesCtrl = async (req, res) => {
+    log('in getRolesCtrl');
   try {
     const records = await settingsService.getRolesSrvc();
 
@@ -646,6 +664,7 @@ exports.getRolesCtrl = async (req, res) => {
 };
 
 exports.getRoleHierarchiesCtrl = async (req, res) => {
+    log('in getRoleHierarchiesCtrl');
   try {
     const records = await settingsService.getHierarchiesSrvc();
 
@@ -662,6 +681,7 @@ exports.getRoleHierarchiesCtrl = async (req, res) => {
 };
 
 exports.createRoleCtrl = async (req, res) => {
+    log('in createRoleCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -688,6 +708,7 @@ exports.createRoleCtrl = async (req, res) => {
 };
 
 exports.updateRoleCtrl = async (req, res) => {
+    log('in updateRoleCtrl');
   try {
     const roleId = parseRecordId(req);
 
@@ -716,6 +737,7 @@ exports.updateRoleCtrl = async (req, res) => {
 };
 
 exports.deleteRoleCtrl = async (req, res) => {
+    log('in deleteRoleCtrl');
   try {
     const roleId = parseRecordId(req);
 
@@ -756,6 +778,7 @@ const GENDER_PAYLOAD_SCHEMA = {
 };
 
 exports.getGendersCtrl = async (req, res) => {
+    log('in getGendersCtrl');
   try {
     const records = await settingsService.getGendersSrvc();
 
@@ -772,6 +795,7 @@ exports.getGendersCtrl = async (req, res) => {
 };
 
 exports.createGenderCtrl = async (req, res) => {
+    log('in createGenderCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -798,6 +822,7 @@ exports.createGenderCtrl = async (req, res) => {
 };
 
 exports.updateGenderCtrl = async (req, res) => {
+    log('in updateGenderCtrl');
   try {
     const genderId = parseRecordId(req);
 
@@ -826,6 +851,7 @@ exports.updateGenderCtrl = async (req, res) => {
 };
 
 exports.deleteGenderCtrl = async (req, res) => {
+    log('in deleteGenderCtrl');
   try {
     const genderId = parseRecordId(req);
 
@@ -873,6 +899,7 @@ const HIERARCHY_PAYLOAD_SCHEMA = {
 };
 
 exports.getHierarchyListCtrl = async (req, res) => {
+    log('in getHierarchyListCtrl');
   try {
     const records = await settingsService.getHierarchyListSrvc();
 
@@ -889,6 +916,7 @@ exports.getHierarchyListCtrl = async (req, res) => {
 };
 
 exports.createHierarchyCtrl = async (req, res) => {
+    log('in createHierarchyCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -915,6 +943,7 @@ exports.createHierarchyCtrl = async (req, res) => {
 };
 
 exports.updateHierarchyCtrl = async (req, res) => {
+    log('in updateHierarchyCtrl');
   try {
     const hierarchyId = parseRecordId(req);
 
@@ -946,6 +975,7 @@ exports.updateHierarchyCtrl = async (req, res) => {
 };
 
 exports.deleteHierarchyCtrl = async (req, res) => {
+    log('in deleteHierarchyCtrl');
   try {
     const hierarchyId = parseRecordId(req);
 
@@ -1039,6 +1069,7 @@ const POSITION_PAYLOAD_SCHEMA = {
 };
 
 exports.getPositionsCtrl = async (req, res) => {
+    log('in getPositionsCtrl');
   try {
     const records = await settingsService.getPositionsSrvc(req.user);
 
@@ -1055,6 +1086,7 @@ exports.getPositionsCtrl = async (req, res) => {
 };
 
 exports.getPositionRolesCtrl = async (req, res) => {
+    log('in getPositionRolesCtrl');
   try {
     const records = await settingsService.getPositionRolesSrvc();
 
@@ -1071,6 +1103,7 @@ exports.getPositionRolesCtrl = async (req, res) => {
 };
 
 exports.getPositionHierarchiesCtrl = async (req, res) => {
+    log('in getPositionHierarchiesCtrl');
   try {
     const records = await settingsService.getHierarchiesSrvc();
 
@@ -1087,6 +1120,7 @@ exports.getPositionHierarchiesCtrl = async (req, res) => {
 };
 
 exports.getPositionUsersCtrl = async (req, res) => {
+    log('in getPositionUsersCtrl');
   try {
     // when editing, ?position_id keeps that position's own assignee in the list
     const excludePositionId = parseOptionalQueryId(req, "position_id");
@@ -1105,6 +1139,7 @@ exports.getPositionUsersCtrl = async (req, res) => {
 };
 
 exports.getPositionBranchesCtrl = async (req, res) => {
+    log('in getPositionBranchesCtrl');
   try {
     const dairyFarmId = parseOptionalQueryId(req, "dairy_farm_id");
     const records = await settingsService.getPositionBranchesSrvc(req.user, dairyFarmId);
@@ -1122,6 +1157,7 @@ exports.getPositionBranchesCtrl = async (req, res) => {
 };
 
 exports.createPositionCtrl = async (req, res) => {
+    log('in createPositionCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1148,6 +1184,7 @@ exports.createPositionCtrl = async (req, res) => {
 };
 
 exports.updatePositionCtrl = async (req, res) => {
+    log('in updatePositionCtrl');
   try {
     const positionId = parseRecordId(req);
 
@@ -1179,6 +1216,7 @@ exports.updatePositionCtrl = async (req, res) => {
 };
 
 exports.deletePositionCtrl = async (req, res) => {
+    log('in deletePositionCtrl');
   try {
     const positionId = parseRecordId(req);
 
@@ -1239,6 +1277,7 @@ const DAIRY_FARM_PAYLOAD_SCHEMA = {
 };
 
 exports.getDairyFarmsCtrl = async (req, res) => {
+    log('in getDairyFarmsCtrl');
   try {
     // req.user carries the signed scope pair; the model filters rows with it
     const records = await settingsService.getDairyFarmsSrvc(req.user);
@@ -1256,6 +1295,7 @@ exports.getDairyFarmsCtrl = async (req, res) => {
 };
 
 exports.createDairyFarmCtrl = async (req, res) => {
+    log('in createDairyFarmCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1286,6 +1326,7 @@ exports.createDairyFarmCtrl = async (req, res) => {
 };
 
 exports.updateDairyFarmCtrl = async (req, res) => {
+    log('in updateDairyFarmCtrl');
   try {
     const dairyFarmId = parseRecordId(req);
 
@@ -1318,6 +1359,7 @@ exports.updateDairyFarmCtrl = async (req, res) => {
 };
 
 exports.deleteDairyFarmCtrl = async (req, res) => {
+    log('in deleteDairyFarmCtrl');
   try {
     const dairyFarmId = parseRecordId(req);
 
@@ -1359,6 +1401,7 @@ const ROLE_PERMISSION_PAYLOAD_SCHEMA = {
 };
 
 exports.getRolePermissionListCtrl = async (req, res) => {
+    log('in getRolePermissionListCtrl');
   try {
     const records = await settingsService.getRolePermissionListSrvc();
 
@@ -1375,6 +1418,7 @@ exports.getRolePermissionListCtrl = async (req, res) => {
 };
 
 exports.getRolePermissionRolesCtrl = async (req, res) => {
+    log('in getRolePermissionRolesCtrl');
   try {
     const records = await settingsService.getPositionRolesSrvc();
 
@@ -1391,6 +1435,7 @@ exports.getRolePermissionRolesCtrl = async (req, res) => {
 };
 
 exports.createRolePermissionCtrl = async (req, res) => {
+    log('in createRolePermissionCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1417,6 +1462,7 @@ exports.createRolePermissionCtrl = async (req, res) => {
 };
 
 exports.updateRolePermissionCtrl = async (req, res) => {
+    log('in updateRolePermissionCtrl');
   try {
     const rolePermissionId = parseRecordId(req);
 
@@ -1448,6 +1494,7 @@ exports.updateRolePermissionCtrl = async (req, res) => {
 };
 
 exports.deleteRolePermissionCtrl = async (req, res) => {
+    log('in deleteRolePermissionCtrl');
   try {
     const rolePermissionId = parseRecordId(req);
 
@@ -1493,6 +1540,7 @@ const MENU_ITEM_PAYLOAD_SCHEMA = {
 };
 
 exports.getMenuItemListCtrl = async (req, res) => {
+    log('in getMenuItemListCtrl');
   try {
     const records = await settingsService.getMenuItemListSrvc();
 
@@ -1509,6 +1557,7 @@ exports.getMenuItemListCtrl = async (req, res) => {
 };
 
 exports.getMenuParentItemsCtrl = async (req, res) => {
+    log('in getMenuParentItemsCtrl');
   try {
     const records = await settingsService.getMenuParentItemsSrvc();
 
@@ -1525,6 +1574,7 @@ exports.getMenuParentItemsCtrl = async (req, res) => {
 };
 
 exports.getMenuCategoryOptionsCtrl = async (req, res) => {
+    log('in getMenuCategoryOptionsCtrl');
   try {
     const records = await settingsService.getMenuCategoryListSrvc();
 
@@ -1541,6 +1591,7 @@ exports.getMenuCategoryOptionsCtrl = async (req, res) => {
 };
 
 exports.createMenuItemCtrl = async (req, res) => {
+    log('in createMenuItemCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1567,6 +1618,7 @@ exports.createMenuItemCtrl = async (req, res) => {
 };
 
 exports.updateMenuItemCtrl = async (req, res) => {
+    log('in updateMenuItemCtrl');
   try {
     const menuItemId = parseRecordId(req);
 
@@ -1595,6 +1647,7 @@ exports.updateMenuItemCtrl = async (req, res) => {
 };
 
 exports.deleteMenuItemCtrl = async (req, res) => {
+    log('in deleteMenuItemCtrl');
   try {
     const menuItemId = parseRecordId(req);
 
@@ -1638,6 +1691,7 @@ const MENU_CATEGORY_PAYLOAD_SCHEMA = {
 };
 
 exports.getMenuCategoryListCtrl = async (req, res) => {
+    log('in getMenuCategoryListCtrl');
   try {
     const records = await settingsService.getMenuCategoryListSrvc();
 
@@ -1654,6 +1708,7 @@ exports.getMenuCategoryListCtrl = async (req, res) => {
 };
 
 exports.createMenuCategoryCtrl = async (req, res) => {
+    log('in createMenuCategoryCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1680,6 +1735,7 @@ exports.createMenuCategoryCtrl = async (req, res) => {
 };
 
 exports.updateMenuCategoryCtrl = async (req, res) => {
+    log('in updateMenuCategoryCtrl');
   try {
     const categoryId = parseRecordId(req);
 
@@ -1708,6 +1764,7 @@ exports.updateMenuCategoryCtrl = async (req, res) => {
 };
 
 exports.deleteMenuCategoryCtrl = async (req, res) => {
+    log('in deleteMenuCategoryCtrl');
   try {
     const categoryId = parseRecordId(req);
 
@@ -1737,6 +1794,7 @@ const ROLE_MENU_MAP_PAYLOAD_SCHEMA = {
 };
 
 exports.getRoleMenuMapListCtrl = async (req, res) => {
+    log('in getRoleMenuMapListCtrl');
   try {
     const records = await settingsService.getRoleMenuMapListSrvc();
 
@@ -1753,6 +1811,7 @@ exports.getRoleMenuMapListCtrl = async (req, res) => {
 };
 
 exports.getRoleMenuMapRolesCtrl = async (req, res) => {
+    log('in getRoleMenuMapRolesCtrl');
   try {
     const records = await settingsService.getPositionRolesSrvc();
 
@@ -1769,6 +1828,7 @@ exports.getRoleMenuMapRolesCtrl = async (req, res) => {
 };
 
 exports.getRoleMenuMapMenuItemsCtrl = async (req, res) => {
+    log('in getRoleMenuMapMenuItemsCtrl');
   try {
     const records = await settingsService.getRoleMenuMapMenuItemsSrvc();
 
@@ -1785,6 +1845,7 @@ exports.getRoleMenuMapMenuItemsCtrl = async (req, res) => {
 };
 
 exports.createRoleMenuMapCtrl = async (req, res) => {
+    log('in createRoleMenuMapCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1811,6 +1872,7 @@ exports.createRoleMenuMapCtrl = async (req, res) => {
 };
 
 exports.updateRoleMenuMapCtrl = async (req, res) => {
+    log('in updateRoleMenuMapCtrl');
   try {
     const roleMenuId = parseRecordId(req);
 
@@ -1839,6 +1901,7 @@ exports.updateRoleMenuMapCtrl = async (req, res) => {
 };
 
 exports.deleteRoleMenuMapCtrl = async (req, res) => {
+    log('in deleteRoleMenuMapCtrl');
   try {
     const roleMenuId = parseRecordId(req);
 
@@ -1875,6 +1938,7 @@ const USER_CREATE_PAYLOAD_SCHEMA = {
 };
 
 exports.getUserListCtrl = async (req, res) => {
+    log('in getUserListCtrl');
   try {
     const records = await settingsService.getUserListSrvc(req.user);
 
@@ -1891,6 +1955,7 @@ exports.getUserListCtrl = async (req, res) => {
 };
 
 exports.createUserCtrl = async (req, res) => {
+    log('in createUserCtrl');
   try {
     const validation = await validutils.validatePayload(
       req.body,
@@ -1917,6 +1982,7 @@ exports.createUserCtrl = async (req, res) => {
 };
 
 exports.updateUserCtrl = async (req, res) => {
+    log('in updateUserCtrl');
   try {
     const userId = parseRecordId(req);
 
@@ -1945,6 +2011,7 @@ exports.updateUserCtrl = async (req, res) => {
 };
 
 exports.deleteUserCtrl = async (req, res) => {
+    log('in deleteUserCtrl');
   try {
     const userId = parseRecordId(req);
 

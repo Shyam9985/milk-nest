@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const settingsMdl = require('../models/settingsMdl');
 const resutils = require('../utils/response.utils');
+const { log } = require('../utils/log.utils');
 
 // normalizes names and codes before comparing and storing
 // names are stored in title case, e.g. ' guntur  DISTRICT ' -> 'Guntur District'
@@ -9,11 +10,13 @@ const normalizeCode = (value = '') => value.trim().replace(/\s+/g, '').toUpperCa
 
 // fetches all active states
 exports.getStatesSrvc = async () => {
+    log('in getStatesSrvc');
     return settingsMdl.getStatesMdl();
 }
 
 // creates a state, reusing a soft deleted record when the same name/code comes back
 exports.createStateSrvc = async (payload) => {
+    log('in createStateSrvc');
     const state_name = normalizeName(payload.state_name);
     const state_code = normalizeCode(payload.state_code);
 
@@ -37,6 +40,7 @@ exports.createStateSrvc = async (payload) => {
 
 // updates a state after making sure the new name/code is not taken by another record
 exports.updateStateSrvc = async (state_id, payload) => {
+    log('in updateStateSrvc');
     const state_name = normalizeName(payload.state_name);
     const state_code = normalizeCode(payload.state_code);
 
@@ -54,6 +58,7 @@ exports.updateStateSrvc = async (state_id, payload) => {
 
 // soft deletes a state after making sure no active district depends on it
 exports.deleteStateSrvc = async (state_id) => {
+    log('in deleteStateSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveStateByIdMdl(state_id);
     if (!record) {
@@ -76,6 +81,7 @@ exports.deleteStateSrvc = async (state_id) => {
 
 // fetches active districts, optionally filtered by parent state
 exports.getDistrictsSrvc = async (state_id = null) => {
+    log('in getDistrictsSrvc');
     return settingsMdl.getDistrictsMdl(state_id);
 }
 
@@ -89,6 +95,7 @@ const assertActiveState = async (state_id) => {
 
 // creates a district under a state, reusing a soft deleted record when the same name/code comes back
 exports.createDistrictSrvc = async (payload) => {
+    log('in createDistrictSrvc');
     const district_name = normalizeName(payload.district_name);
     const district_code = normalizeCode(payload.district_code);
     const state_id = Number(payload.state_id);
@@ -114,6 +121,7 @@ exports.createDistrictSrvc = async (payload) => {
 
 // updates a district after re-validating the parent and duplicate rules
 exports.updateDistrictSrvc = async (district_id, payload) => {
+    log('in updateDistrictSrvc');
     const district_name = normalizeName(payload.district_name);
     const district_code = normalizeCode(payload.district_code);
     const state_id = Number(payload.state_id);
@@ -134,6 +142,7 @@ exports.updateDistrictSrvc = async (district_id, payload) => {
 
 // soft deletes a district after making sure no active mandal/village depends on it
 exports.deleteDistrictSrvc = async (district_id) => {
+    log('in deleteDistrictSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveDistrictByIdMdl(district_id);
     if (!record) {
@@ -158,6 +167,7 @@ exports.deleteDistrictSrvc = async (district_id) => {
 
 // fetches active mandals/ULBs, optionally filtered by parent district
 exports.getMandalsSrvc = async (district_id = null) => {
+    log('in getMandalsSrvc');
     return settingsMdl.getMandalsMdl(district_id);
 }
 
@@ -172,6 +182,7 @@ const assertActiveDistrict = async (district_id) => {
 
 // creates a mandal/ULB under a district, reusing a soft deleted record when the same name/code comes back
 exports.createMandalSrvc = async (payload) => {
+    log('in createMandalSrvc');
     const mandal_ulb_nm = normalizeName(payload.mandal_ulb_nm);
     const mandal_ulb_code = normalizeCode(payload.mandal_ulb_code);
     const district_id = Number(payload.district_id);
@@ -198,6 +209,7 @@ exports.createMandalSrvc = async (payload) => {
 
 // updates a mandal/ULB after re-validating the parent and duplicate rules
 exports.updateMandalSrvc = async (mandal_ulb_id, payload) => {
+    log('in updateMandalSrvc');
     const mandal_ulb_nm = normalizeName(payload.mandal_ulb_nm);
     const mandal_ulb_code = normalizeCode(payload.mandal_ulb_code);
     const district_id = Number(payload.district_id);
@@ -219,6 +231,7 @@ exports.updateMandalSrvc = async (mandal_ulb_id, payload) => {
 
 // soft deletes a mandal/ULB after making sure no active village depends on it
 exports.deleteMandalSrvc = async (mandal_ulb_id) => {
+    log('in deleteMandalSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveMandalByIdMdl(mandal_ulb_id);
     if (!record) {
@@ -241,11 +254,13 @@ exports.deleteMandalSrvc = async (mandal_ulb_id) => {
 
 // fetches active villages/sachivalayams, optionally filtered by parent district
 exports.getVillagesSrvc = async (district_id = null) => {
+    log('in getVillagesSrvc');
     return settingsMdl.getVillagesMdl(district_id);
 }
 
 // creates a village/sachivalayam, reusing a soft deleted record when the same name/code comes back
 exports.createVillageSrvc = async (payload) => {
+    log('in createVillageSrvc');
     const village_sachivalayam_nm = normalizeName(payload.village_sachivalayam_nm);
     const village_sachivalayam_code = normalizeCode(payload.village_sachivalayam_code);
     const district_id = Number(payload.district_id);
@@ -273,6 +288,7 @@ exports.createVillageSrvc = async (payload) => {
 
 // updates a village/sachivalayam after re-validating parents and duplicate rules
 exports.updateVillageSrvc = async (village_sachivalayam_id, payload) => {
+    log('in updateVillageSrvc');
     const village_sachivalayam_nm = normalizeName(payload.village_sachivalayam_nm);
     const village_sachivalayam_code = normalizeCode(payload.village_sachivalayam_code);
     const district_id = Number(payload.district_id);
@@ -295,6 +311,7 @@ exports.updateVillageSrvc = async (village_sachivalayam_id, payload) => {
 
 // soft deletes a village/sachivalayam
 exports.deleteVillageSrvc = async (village_sachivalayam_id) => {
+    log('in deleteVillageSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveVillageByIdMdl(village_sachivalayam_id);
     if (!record) {
@@ -336,11 +353,13 @@ const emptyToNull = (value) => {
 
 // fetches all active roles
 exports.getRolesSrvc = async () => {
+    log('in getRolesSrvc');
     return settingsMdl.getRolesMdl();
 }
 
 // fetches active hierarchies for the role form dropdown
 exports.getHierarchiesSrvc = async () => {
+    log('in getHierarchiesSrvc');
     return settingsMdl.getHierarchiesMdl();
 }
 
@@ -365,6 +384,7 @@ const normalizeRolePayload = (payload) => ({
 
 // creates a role, reusing a soft deleted record when the same name/handler comes back
 exports.createRoleSrvc = async (payload) => {
+    log('in createRoleSrvc');
     const data = normalizeRolePayload(payload);
 
     await assertActiveHierarchy(data.hierarchy_id);
@@ -389,6 +409,7 @@ exports.createRoleSrvc = async (payload) => {
 
 // updates a role after making sure the new name/handler is not taken by another record
 exports.updateRoleSrvc = async (role_id, payload) => {
+    log('in updateRoleSrvc');
     const data = normalizeRolePayload(payload);
 
     await assertActiveHierarchy(data.hierarchy_id);
@@ -407,6 +428,7 @@ exports.updateRoleSrvc = async (role_id, payload) => {
 
 // soft deletes a role after making sure it is not the super admin role and no active user depends on it
 exports.deleteRoleSrvc = async (role_id) => {
+    log('in deleteRoleSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveRoleByIdMdl(role_id);
     if (!record) {
@@ -434,11 +456,13 @@ exports.deleteRoleSrvc = async (role_id) => {
 
 // fetches all active genders
 exports.getGendersSrvc = async () => {
+    log('in getGendersSrvc');
     return settingsMdl.getGendersMdl();
 }
 
 // creates a gender, reusing a soft deleted record when the same name/code comes back
 exports.createGenderSrvc = async (payload) => {
+    log('in createGenderSrvc');
     const gender_nm = normalizeName(payload.gender_nm);
     const gender_code = normalizeCode(payload.gender_code);
 
@@ -462,6 +486,7 @@ exports.createGenderSrvc = async (payload) => {
 
 // updates a gender after making sure the new name/code is not taken by another record
 exports.updateGenderSrvc = async (gender_id, payload) => {
+    log('in updateGenderSrvc');
     const gender_nm = normalizeName(payload.gender_nm);
     const gender_code = normalizeCode(payload.gender_code);
 
@@ -479,6 +504,7 @@ exports.updateGenderSrvc = async (gender_id, payload) => {
 
 // soft deletes a gender
 exports.deleteGenderSrvc = async (gender_id) => {
+    log('in deleteGenderSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveGenderByIdMdl(gender_id);
     if (!record) {
@@ -496,6 +522,7 @@ exports.deleteGenderSrvc = async (gender_id) => {
 
 // fetches all active hierarchies with their parent names
 exports.getHierarchyListSrvc = async () => {
+    log('in getHierarchyListSrvc');
     return settingsMdl.getHierarchyListMdl();
 }
 
@@ -536,6 +563,7 @@ const assertValidHierarchyParent = async (parent_hirrarchy_id, selfId = null) =>
 
 // creates a hierarchy, reusing a soft deleted record when the same name comes back
 exports.createHierarchySrvc = async (payload) => {
+    log('in createHierarchySrvc');
     const data = normalizeHierarchyPayload(payload);
 
     await assertValidHierarchyParent(data.parent_hirrarchy_id);
@@ -559,6 +587,7 @@ exports.createHierarchySrvc = async (payload) => {
 
 // updates a hierarchy after re-validating the parent chain and duplicate rules
 exports.updateHierarchySrvc = async (hierarchy_id, payload) => {
+    log('in updateHierarchySrvc');
     const data = normalizeHierarchyPayload(payload);
 
     await assertValidHierarchyParent(data.parent_hirrarchy_id, hierarchy_id);
@@ -577,6 +606,7 @@ exports.updateHierarchySrvc = async (hierarchy_id, payload) => {
 
 // soft deletes a hierarchy after making sure nothing depends on it
 exports.deleteHierarchySrvc = async (hierarchy_id) => {
+    log('in deleteHierarchySrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveHierarchyByIdMdl(hierarchy_id);
     if (!record) {
@@ -618,22 +648,26 @@ const DATE_FORMAT_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // fetches active positions visible to the logged in user's scope
 exports.getPositionsSrvc = async (user) => {
+    log('in getPositionsSrvc');
     return settingsMdl.getPositionsMdl(user);
 }
 
 // fetches active roles for the position form dropdown
 exports.getPositionRolesSrvc = async () => {
+    log('in getPositionRolesSrvc');
     return settingsMdl.getPositionRolesMdl();
 }
 
 // fetches active users without an active position for the position form dropdown
 exports.getPositionUsersSrvc = async (excludePositionId = null) => {
+    log('in getPositionUsersSrvc');
     return settingsMdl.getPositionUsersMdl(excludePositionId);
 }
 
 // fetches active branches for the position form dropdown, optionally filtered by dairy farm,
 // restricted to the logged in user's scope
 exports.getPositionBranchesSrvc = async (user, dairy_farm_id = null) => {
+    log('in getPositionBranchesSrvc');
     return settingsMdl.getPositionBranchesMdl(user, dairy_farm_id);
 }
 
@@ -781,6 +815,7 @@ const assertValidPosition = (data, excludePositionId = null) => {
 
 // creates a position, reusing a soft deleted record when the same name/role/hierarchy/location comes back
 exports.createPositionSrvc = async (payload) => {
+    log('in createPositionSrvc');
     const data = normalizePositionPayload(payload);
 
     await assertValidPosition(data);
@@ -807,6 +842,7 @@ exports.createPositionSrvc = async (payload) => {
 
 // updates a position after re-validating parents, location, assignment and duplicate rules
 exports.updatePositionSrvc = async (position_id, payload) => {
+    log('in updatePositionSrvc');
     const data = normalizePositionPayload(payload);
 
     await assertValidPosition(data, position_id);
@@ -828,6 +864,7 @@ exports.updatePositionSrvc = async (position_id, payload) => {
 
 // soft deletes a position after making sure no user is assigned to it
 exports.deletePositionSrvc = async (position_id) => {
+    log('in deletePositionSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActivePositionByIdMdl(position_id);
     if (!record) {
@@ -850,6 +887,7 @@ exports.deletePositionSrvc = async (position_id) => {
 
 // fetches active dairy farms visible to the logged in user's scope
 exports.getDairyFarmsSrvc = async (user) => {
+    log('in getDairyFarmsSrvc');
     return settingsMdl.getDairyFarmsMdl(user);
 }
 
@@ -959,6 +997,7 @@ const generateDairyFarmCode = async (dairy_farm_name, contact_number) => {
 
 // creates a dairy farm together with its main branch, reusing a soft deleted farm when the same name comes back
 exports.createDairyFarmSrvc = async (payload, user_id) => {
+    log('in createDairyFarmSrvc');
     const { farm, branch } = normalizeDairyFarmPayload(payload);
 
     // the stored address is always the server-composed location string
@@ -989,6 +1028,7 @@ exports.createDairyFarmSrvc = async (payload, user_id) => {
 
 // updates a dairy farm and its main branch after making sure the new name is not taken
 exports.updateDairyFarmSrvc = async (dairy_farm_id, payload, user_id) => {
+    log('in updateDairyFarmSrvc');
     const { farm, branch } = normalizeDairyFarmPayload(payload);
 
     // fetched first for its code, which the main branch upsert may need for code generation
@@ -1015,6 +1055,7 @@ exports.updateDairyFarmSrvc = async (dairy_farm_id, payload, user_id) => {
 
 // soft deletes a dairy farm and its main branch after making sure no active sub branch depends on it
 exports.deleteDairyFarmSrvc = async (dairy_farm_id, user_id) => {
+    log('in deleteDairyFarmSrvc');
     // record is fetched first so the success message can carry its name
     const [record] = await settingsMdl.getActiveDairyFarmByIdMdl(dairy_farm_id);
     if (!record) {
@@ -1039,6 +1080,7 @@ const normalizePermissionKey = (value = '') => value.trim().replace(/\s+/g, '-')
 
 // fetches all active role permissions
 exports.getRolePermissionListSrvc = async () => {
+    log('in getRolePermissionListSrvc');
     return settingsMdl.getRolePermissionListMdl();
 }
 
@@ -1062,6 +1104,7 @@ const assertNotProtectedPermission = (record) => {
 
 // creates a role permission, reusing a soft deleted record when the same role/key comes back
 exports.createRolePermissionSrvc = async (payload) => {
+    log('in createRolePermissionSrvc');
     const data = normalizeRolePermissionPayload(payload);
 
     await assertActiveRole(data.role_id);
@@ -1085,6 +1128,7 @@ exports.createRolePermissionSrvc = async (payload) => {
 
 // updates a role permission after duplicate and protection checks
 exports.updateRolePermissionSrvc = async (role_permission_id, payload) => {
+    log('in updateRolePermissionSrvc');
     const data = normalizeRolePermissionPayload(payload);
 
     const [existing] = await settingsMdl.getActiveRolePermissionByIdMdl(role_permission_id);
@@ -1109,6 +1153,7 @@ exports.updateRolePermissionSrvc = async (role_permission_id, payload) => {
 
 // soft deletes a role permission; super admin rows stay - removing them would lock administrators out
 exports.deleteRolePermissionSrvc = async (role_permission_id) => {
+    log('in deleteRolePermissionSrvc');
     const [record] = await settingsMdl.getActiveRolePermissionByIdMdl(role_permission_id);
     if (!record) {
         resutils.createError('recordNotFound', 'Permission entry not found or already deleted.');
@@ -1129,11 +1174,13 @@ exports.deleteRolePermissionSrvc = async (role_permission_id) => {
 
 // fetches all active menu items
 exports.getMenuItemListSrvc = async () => {
+    log('in getMenuItemListSrvc');
     return settingsMdl.getMenuItemListMdl();
 }
 
 // fetches active main menu items for the parent dropdown
 exports.getMenuParentItemsSrvc = async () => {
+    log('in getMenuParentItemsSrvc');
     return settingsMdl.getMenuParentItemsMdl();
 }
 
@@ -1188,6 +1235,7 @@ const assertValidMenuItem = async (data, selfId = null) => {
 
 // creates a menu item, reusing a soft deleted record when the same name/parent/flag comes back
 exports.createMenuItemSrvc = async (payload) => {
+    log('in createMenuItemSrvc');
     const data = normalizeMenuItemPayload(payload);
 
     await assertValidMenuItem(data);
@@ -1211,6 +1259,7 @@ exports.createMenuItemSrvc = async (payload) => {
 
 // updates a menu item after re-validating cross-field and duplicate rules
 exports.updateMenuItemSrvc = async (menu_item_id, payload) => {
+    log('in updateMenuItemSrvc');
     const data = normalizeMenuItemPayload(payload);
 
     await assertValidMenuItem(data, menu_item_id);
@@ -1229,6 +1278,7 @@ exports.updateMenuItemSrvc = async (menu_item_id, payload) => {
 
 // soft deletes a menu item after making sure no children or role mappings depend on it
 exports.deleteMenuItemSrvc = async (menu_item_id) => {
+    log('in deleteMenuItemSrvc');
     const [record] = await settingsMdl.getActiveMenuItemByIdMdl(menu_item_id);
     if (!record) {
         resutils.createError('recordNotFound', 'Menu item not found or already deleted.');
@@ -1255,6 +1305,7 @@ exports.deleteMenuItemSrvc = async (menu_item_id) => {
 
 // fetches all active quick menu categories
 exports.getMenuCategoryListSrvc = async () => {
+    log('in getMenuCategoryListSrvc');
     return settingsMdl.getMenuCategoryListMdl();
 }
 
@@ -1269,6 +1320,7 @@ const normalizeMenuCategoryPayload = (payload) => ({
 
 // creates a quick menu category, reusing a soft deleted record when the same name/code comes back
 exports.createMenuCategorySrvc = async (payload) => {
+    log('in createMenuCategorySrvc');
     const data = normalizeMenuCategoryPayload(payload);
 
     const duplicates = await settingsMdl.getDuplicateMenuCategoriesMdl(data.ctgry_nm, data.ctgry_cd);
@@ -1290,6 +1342,7 @@ exports.createMenuCategorySrvc = async (payload) => {
 
 // updates a quick menu category after duplicate checks
 exports.updateMenuCategorySrvc = async (quick_menu_ctgry_id, payload) => {
+    log('in updateMenuCategorySrvc');
     const data = normalizeMenuCategoryPayload(payload);
 
     const duplicates = await settingsMdl.getDuplicateMenuCategoriesMdl(data.ctgry_nm, data.ctgry_cd, quick_menu_ctgry_id);
@@ -1306,6 +1359,7 @@ exports.updateMenuCategorySrvc = async (quick_menu_ctgry_id, payload) => {
 
 // soft deletes a quick menu category after making sure no menu items depend on it
 exports.deleteMenuCategorySrvc = async (quick_menu_ctgry_id) => {
+    log('in deleteMenuCategorySrvc');
     const [record] = await settingsMdl.getActiveMenuCategoryByIdMdl(quick_menu_ctgry_id);
     if (!record) {
         resutils.createError('recordNotFound', 'Category not found or already deleted.');
@@ -1327,17 +1381,20 @@ exports.deleteMenuCategorySrvc = async (quick_menu_ctgry_id) => {
 
 // fetches all active role menu mappings
 exports.getRoleMenuMapListSrvc = async () => {
+    log('in getRoleMenuMapListSrvc');
     return settingsMdl.getRoleMenuMapListMdl();
 }
 
 // fetches active menu items for the mapping form dropdown
 exports.getRoleMenuMapMenuItemsSrvc = async () => {
+    log('in getRoleMenuMapMenuItemsSrvc');
     return settingsMdl.getRoleMenuMapMenuItemsMdl();
 }
 
 // creates a role menu mapping; the DB enforces one row per role+menu, so a soft deleted
 // pair is ALWAYS reactivated - inserting again would violate the unique key
 exports.createRoleMenuMapSrvc = async (payload) => {
+    log('in createRoleMenuMapSrvc');
     const data = {
         role_id: Number(payload.role_id),
         menu_item_id: Number(payload.menu_item_id),
@@ -1370,6 +1427,7 @@ exports.createRoleMenuMapSrvc = async (payload) => {
 
 // updates a role menu mapping after re-validating parents and the unique role+menu rule
 exports.updateRoleMenuMapSrvc = async (role_menu_id, payload) => {
+    log('in updateRoleMenuMapSrvc');
     const data = {
         role_id: Number(payload.role_id),
         menu_item_id: Number(payload.menu_item_id),
@@ -1397,6 +1455,7 @@ exports.updateRoleMenuMapSrvc = async (role_menu_id, payload) => {
 
 // soft deletes a role menu mapping
 exports.deleteRoleMenuMapSrvc = async (role_menu_id) => {
+    log('in deleteRoleMenuMapSrvc');
     const [record] = await settingsMdl.getActiveRoleMenuMapByIdMdl(role_menu_id);
     if (!record) {
         resutils.createError('recordNotFound', 'Mapping not found or already deleted.');
@@ -1413,6 +1472,7 @@ exports.deleteRoleMenuMapSrvc = async (role_menu_id) => {
 
 // fetches active users visible to the logged in user's scope
 exports.getUserListSrvc = async (user) => {
+    log('in getUserListSrvc');
     return settingsMdl.getUserListMdl(user);
 }
 
@@ -1444,6 +1504,7 @@ const assertActiveGender = async (gender_id) => {
 // creates a user with a bcrypt-hashed password; password_txt is stored alongside it to
 // match the signup convention (note: login only ever verifies against the hash)
 exports.createUserSrvc = async (payload) => {
+    log('in createUserSrvc');
     const data = normalizeUserPayload(payload);
 
     await assertActiveGender(data.gender_id);
@@ -1472,6 +1533,7 @@ exports.createUserSrvc = async (payload) => {
 
 // updates a user's profile and role; passwords change only through the forgot password flow
 exports.updateUserSrvc = async (user_id, payload) => {
+    log('in updateUserSrvc');
     const data = normalizeUserPayload(payload);
 
     await assertActiveGender(data.gender_id);
@@ -1491,6 +1553,7 @@ exports.updateUserSrvc = async (user_id, payload) => {
 // soft deletes a user with three guards: no self-delete, super admins are protected,
 // and users still holding an active position must be unassigned first
 exports.deleteUserSrvc = async (user_id, requestingUserId) => {
+    log('in deleteUserSrvc');
     const [record] = await settingsMdl.getActiveUserForAdminByIdMdl(user_id);
     if (!record) {
         resutils.createError('recordNotFound', 'User not found or already deleted.');

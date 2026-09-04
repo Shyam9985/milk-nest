@@ -8,6 +8,8 @@
  * own spine (positions) pass their column map instead.
  */
 
+const { log } = require('./log.utils');
+
 // maps hierarchy_level to the branches_lst_t column carrying that level's id.
 // must stay in sync with SCOPE_KEY_COLUMNS in authService (the token side)
 const BRANCH_SCOPE_COLUMNS = {
@@ -42,14 +44,17 @@ const POSITION_SCOPE_COLUMNS = {
 ************************************************/
 exports.getScopeFilter = (user, alias, columns = BRANCH_SCOPE_COLUMNS) => {
     if (user?.hierarchy_level === 'super_admin') {
+        log('[scope] super_admin - unrestricted');
         return { clause: '', params: [], unrestricted: true, denied: false };
     }
 
     const column = columns[user?.hierarchy_level];
     if (!column) {
+        log(`[scope] level '${user?.hierarchy_level}' has no filter column - DENIED (no rows)`);
         return { clause: ' and 1 = 0', params: [], unrestricted: false, denied: true };
     }
 
+    log(`[scope] level '${user?.hierarchy_level}' -> ${alias}.${column} = ${Number(user?.hierarchy_key) || 0}`);
     return {
         clause: ` and ${alias}.${column} = ?`,
         params: [Number(user?.hierarchy_key) || 0],

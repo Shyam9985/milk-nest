@@ -5,6 +5,7 @@ const resutils = require("../utils/response.utils");
 const RESPONSE_STATUS = require("../utils/standard.messages");
 const filesService = require("../services/filesService");
 const fileutils = require("../utils/files.utils");
+const { log } = require('../utils/log.utils');
 
 // profile photos get their own corner of the uploads area; the service
 // falls back to its default directory when a caller passes nothing
@@ -30,6 +31,7 @@ const sendFilesError = (req, res, error, location) => {
 // streaming version: the raw request stream is handed to the service untouched;
 // no chunk ever piles up here, the service pipes them straight to disk
 exports.uploadFiles = async (req, res) => {
+    log('in uploadFiles');
   // the body is the raw file itself, so metadata travels in headers
   const meta = {
     originalName: decodeURIComponent(req.headers["x-file-name"] || ""),
@@ -74,6 +76,7 @@ exports.uploadFiles = async (req, res) => {
 // streams the logged in user's current profile photo back to the browser —
 // the same pipeline mechanics as the upload, in the opposite direction
 exports.getProfilePhoto = async (req, res) => {
+    log('in getProfilePhoto');
   try {
     console.log(`[download] profile photo requested by user ${req.user?.user_id}`);
     const photo = await filesService.getProfilePhotoSrvc(req.user?.user_id);

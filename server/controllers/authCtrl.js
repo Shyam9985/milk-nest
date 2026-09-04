@@ -3,6 +3,7 @@ const validutils = require('../utils/validate.utils');
 const RESPONSE_STATUS = require('../utils/standard.messages');
 const authService = require('../services/authService');
 const UAParser = require('ua-parser-js');
+const { log } = require('../utils/log.utils');
 
 // extracts ip and device details from the request
 const getRequestContext = (req) => {
@@ -80,6 +81,7 @@ const sendAuthError = (req, res, error, fname, fallbackMessage) => {
 
 //Sing up controller
 exports.signUp = async (req, res) => {
+    log('in signUp');
     const body = req.body;
 
     try {
@@ -106,6 +108,7 @@ exports.signUp = async (req, res) => {
 }
 // login controller
 exports.logIn = async (req, res) => {
+    log('in logIn');
     const body = req.body;
 
     try {
@@ -159,6 +162,7 @@ exports.logIn = async (req, res) => {
 }
 
 exports.logOut = async (req, res) => {
+    log('in logOut');
     try {
 
         // get session
@@ -184,11 +188,13 @@ exports.logOut = async (req, res) => {
 }
 
 exports.getAllusers = async (req, res) => {
+    log('in getAllusers');
     req.session.user = req.query?.id || '987';
     return resutils.sendSuccessResponse(req, res, [], RESPONSE_STATUS.DATA_FOUND, {});
 }
 
 exports.forgotPassword = async (req, res) => {
+    log('in forgotPassword');
     const body = req.body;
 
     try {
@@ -206,6 +212,7 @@ exports.forgotPassword = async (req, res) => {
 }
 
 exports.updatePassword = async (req, res) => {
+    log('in updatePassword');
     const body = req.body;
 
     try {
@@ -230,6 +237,7 @@ exports.updatePassword = async (req, res) => {
 }
 
 exports.sendResetPasswordEmail = async (req, res) => {
+    log('in sendResetPasswordEmail');
     try {
         const user = req.user;
 
@@ -247,6 +255,7 @@ exports.sendResetPasswordEmail = async (req, res) => {
 }
 
 exports.verifyEmailOtp = async (req, res) => {
+    log('in verifyEmailOtp');
     const body = req.body;
 
     try {

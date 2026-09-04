@@ -1,6 +1,7 @@
 const resutils = require('../utils/response.utils');
 const RESPONSE_STATUS = require('../utils/standard.messages');
 const profileService = require('../services/profileService');
+const { log } = require('../utils/log.utils');
 
 // maps profile error names to standard responses, mirroring the other controllers
 const sendProfileError = (req, res, error, fname) => {
@@ -16,6 +17,7 @@ const sendProfileError = (req, res, error, fname) => {
 
 // profile controller - fresh user details for the logged in user (req.user is set by auth middleware)
 exports.getProfile = async (req, res) => {
+    log('in getProfile');
     try {
         const result = await profileService.getProfileSrvc(req.user.user_id);
 

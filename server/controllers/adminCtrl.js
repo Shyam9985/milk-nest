@@ -2,6 +2,7 @@ const { CACHE_TYPES } = require("../utils/cache.utils");
 const resutils = require("../utils/response.utils");
 const RESPONSE_STATUS = require("../utils/standard.messages");
 const adminService = require("../services/adminService");
+const { log } = require('../utils/log.utils');
 
 // maps known admin error names to standard error responses, mirroring the settings controller.
 // db errors get their own status so a database outage is distinguishable from a bad request
@@ -18,6 +19,7 @@ const sendAdminError = (req, res, error, fname, fallbackMessage) => {
 };
 
 exports.getMenuItemsCtrl = async (req, res) => {
+    log('in getMenuItemsCtrl');
     try {
         const menuItems = await adminService.getMenuItemsSrvc(req.user);
 
@@ -31,6 +33,7 @@ exports.getMenuItemsCtrl = async (req, res) => {
 }
 
 exports.getGendersCtrl = async (req, res) => {
+    log('in getGendersCtrl');
     try {
         const records = await adminService.getGendersSrvc();
 
@@ -43,6 +46,7 @@ exports.getGendersCtrl = async (req, res) => {
 }
 
 exports.getSetupMenusCtrl = async (req, res) => {
+    log('in getSetupMenusCtrl');
     try {
         const menuItemCategory = req.query.category || 'stp';
         const groupedSetupMenus = await adminService.getSetupMenusSrvc(req.user, menuItemCategory);

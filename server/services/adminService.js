@@ -1,5 +1,6 @@
 const admMdl = require('../models/adminMdl');
 const _ = require('lodash');
+const { log } = require('../utils/log.utils');
 
 // groups quick menus by their category and orders the items
 const groupSetupMenusByCategory = (menuItems = []) => {
@@ -19,16 +20,19 @@ const groupSetupMenusByCategory = (menuItems = []) => {
 
 // fetches the role based main menu items
 exports.getMenuItemsSrvc = async (user) => {
+    log('in getMenuItemsSrvc');
     return admMdl.getMenuItemsMdl(user);
 }
 
 // fetches the role based quick menus grouped by category
 exports.getSetupMenusSrvc = async (user, menuItemCategory) => {
+    log('in getSetupMenusSrvc');
     const setupMenus = await admMdl.getSetupMenusMdl(user, menuItemCategory);
     return groupSetupMenusByCategory(setupMenus || []);
 }
 
 // fetches active genders for form dropdowns
 exports.getGendersSrvc = async () => {
+    log('in getGendersSrvc');
     return admMdl.getGendersMdl();
 }

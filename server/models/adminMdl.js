@@ -1,7 +1,9 @@
 const dbutils = require("../utils/db.utils");
+const { log } = require('../utils/log.utils');
 
 
 exports.getMenuItemsMdl = async (user) => {
+    log('in getMenuItemsMdl');
     const qry = `select m.menu_item_id, m.menu_name, m.menu_url, m.icon , m.is_main_item , m.is_quick_menu, m.parent_item_id, rm.display_order from role_menu_map_t as rm 
         join menu_items_t m on rm.menu_item_id = m.menu_item_id and rm.is_active = 1
         where rm.is_active = 1 and m.is_quick_menu <> 1 and rm.role_id = ?
@@ -11,12 +13,14 @@ exports.getMenuItemsMdl = async (user) => {
 
 // fetches active genders for form dropdowns (user management, future profile screens)
 exports.getGendersMdl = async () => {
+    log('in getGendersMdl');
     const qry = `select gender_id, gender_nm, gender_code from gender_mstr_lst_t
         where is_active = 1 order by gender_nm asc`;
     return dbutils.executeQuery(qry, [], 'get genders model');
 }
 
 exports.getSetupMenusMdl = async (user, menuItemCategory = 'SETUP') => {
+    log('in getSetupMenusMdl');
     const qry = `SELECT c.ctgry_nm, m.menu_item_id, m.menu_name, m.menu_url, m.icon, rm.display_order
         FROM menu_items_t m
         JOIN quick_menu_category_lst_t c ON c.quick_menu_ctgry_id = m.quick_menu_ctgry_id AND c.is_active = 1

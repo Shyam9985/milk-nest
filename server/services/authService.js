@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const authMdl = require('../models/authMdl');
 const resutils = require('../utils/response.utils');
 const emailutils = require('../utils/email.utils');
+const { log } = require('../utils/log.utils');
 
 // maps a hierarchy's declared level_type to the position column carrying that level's id.
 // available levels: super_admin, form_branch, dairy_form, state, district, mandal, village.
@@ -109,6 +110,7 @@ const sendOtpEmail = async (email, data, user) => {
 
 // generates a signed jwt for the given user row and session
 exports.generateJWToken = async (user, session_id) => {
+    log('in generateJWToken');
     const obj = { ...buildUserObj(user), session_id };
     const token = jwt.sign(obj, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: process.env.SESSION_EXPIRES });
     return { token, obj };
@@ -116,6 +118,7 @@ exports.generateJWToken = async (user, session_id) => {
 
 // creates a new user with a hashed password
 exports.signUpSrvc = async (payload) => {
+    log('in signUpSrvc');
     const saltKey = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(payload.password, saltKey);
 
@@ -136,6 +139,7 @@ exports.signUpSrvc = async (payload) => {
 
 // verifies credentials and lock status; records the failed attempt when the password is wrong
 exports.authenticateUserSrvc = async (payload, context = {}) => {
+    log('in authenticateUserSrvc');
     const userData = await authMdl.getUserDetails(payload);
 
     if (!userData?.length) resutils.createError('invalidCredentials', 'Invalid email/password.');
@@ -159,6 +163,7 @@ exports.authenticateUserSrvc = async (payload, context = {}) => {
 
 // records session/login history, resets attempts and returns the jwt with the user object
 exports.establishSessionSrvc = async (userRow, sessionId, expiresAt, context = {}) => {
+    log('in establishSessionSrvc');
     const tokenRes = await exports.generateJWToken(userRow, sessionId);
 
     const sessionHistory = await authMdl.insertSessionHistory({ session_id: sessionId, user_id: userRow.user_id, expires_at: expiresAt });
@@ -173,6 +178,7 @@ exports.establishSessionSrvc = async (userRow, sessionId, expiresAt, context = {
 
 // expires the stored session record
 exports.logoutSrvc = async (sessionId) => {
+    log('in logoutSrvc');
     return authMdl.expireExpressSession(sessionId);
 }
 
@@ -181,6 +187,7 @@ exports.buildUserObj = buildUserObj;
 
 // sends the forgot password OTP mail
 exports.sendForgotPasswordOtpSrvc = async (email, fullName, user = null) => {
+    log('in sendForgotPasswordOtpSrvc');
     const otp = emailutils.get6DigitOtp();
 
     const data = buildOtpEmailData(email, fullName, otp, {
@@ -195,6 +202,7 @@ exports.sendForgotPasswordOtpSrvc = async (email, fullName, user = null) => {
 
 // sends the reset password OTP mail for the logged in user
 exports.sendResetPasswordOtpSrvc = async (user) => {
+    log('in sendResetPasswordOtpSrvc');
     const otp = emailutils.get6DigitOtp();
 
     const data = buildOtpEmailData(user.email, user?.full_name, otp, {
@@ -209,6 +217,7 @@ exports.sendResetPasswordOtpSrvc = async (user) => {
 
 // validates the entered OTP and marks it as used
 exports.verifyEmailOtpSrvc = async (payload, user) => {
+    log('in verifyEmailOtpSrvc');
     const otpRes = await authMdl.getOTPData(payload, user);
 
     if (!otpRes?.length) resutils.createError('noOtpRes', 'OTP request not found.');
@@ -226,6 +235,7 @@ exports.verifyEmailOtpSrvc = async (payload, user) => {
 
 // updates the password after checking the OTP was verified and not expired
 exports.updatePasswordSrvc = async (payload) => {
+    log('in updatePasswordSrvc');
     const forgotMailRes = await authMdl.getLatestMailByRequest(payload, payload?.usedFor);
     const response = forgotMailRes?.[0];
 

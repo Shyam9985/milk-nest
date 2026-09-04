@@ -1,7 +1,9 @@
 const dbutils = require('../utils/db.utils');
+const { log } = require('../utils/log.utils');
 
 // records a saved file's details; the row is the source of truth for later lookups
 exports.insertUploadedFileMdl = (data) => {
+    log('in insertUploadedFileMdl');
     const qry = `insert into uploaded_files_lst_t
         (original_nm, stored_nm, file_path, extension, mime_type, size_bytes, checksum_sha256, entity_type, entity_id, uploaded_by)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -15,6 +17,7 @@ exports.insertUploadedFileMdl = (data) => {
 // inserts the history row and repoints the user's current photo in ONE transaction:
 // either both writes land or neither does — no half-updated profile
 exports.insertProfilePhotoMdl = (data) => {
+    log('in insertProfilePhotoMdl');
     const queries = [
         {
             query: `insert into uploaded_files_lst_t
@@ -34,6 +37,7 @@ exports.insertProfilePhotoMdl = (data) => {
 
 // latest active file attached to an entity (e.g. a user's current profile photo)
 exports.getActiveFileByEntityMdl = (entity_type, entity_id) => {
+    log('in getActiveFileByEntityMdl');
     const qry = `select file_id, original_nm, stored_nm, file_path, mime_type, size_bytes
         from uploaded_files_lst_t
         where entity_type = ? and entity_id = ? and is_active = 1

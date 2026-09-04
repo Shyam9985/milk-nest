@@ -12,35 +12,47 @@ USE dairy_farm_management;
 -- BRANCHES
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS branches_lst_t (
+CREATE TABLE dairy_farm_lst_t (
+    dairy_farm_id BIGINT PRIMARY KEY AUTO_INCREMENT,    
+    dairy_farm_code VARCHAR(50) UNIQUE NOT NULL,
+    dairy_farm_name VARCHAR(255) NOT NULL,
+    contact_number VARCHAR(20),
+    email VARCHAR(255),
+    address TEXT,
+    created_by BIGINT,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_by BIGINT,
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+    deleted_by BIGINT,
+    deleted_time TIMESTAMP NULL,
+    is_active TINYINT(1) DEFAULT 1
+);
+
+CREATE TABLE branches_lst_t (
     branch_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    dairy_farm_id BIGINT NOT NULL,
     branch_code VARCHAR(50) UNIQUE NOT NULL,
     branch_name VARCHAR(255) NOT NULL,
-
     state_id BIGINT,
     district_id BIGINT,
     mandal_id BIGINT,
     village_id BIGINT,
     street_id BIGINT,
-
     manager_user_id BIGINT,
-
     contact_number VARCHAR(20),
     email VARCHAR(255),
     address TEXT,
-
     created_by BIGINT,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     updated_by BIGINT,
-    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
-
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_by BIGINT,
     deleted_time TIMESTAMP NULL,
-
     is_active TINYINT(1) DEFAULT 1
 );
+
+ALTER TABLE branches_lst_t ADD CONSTRAINT fk_branches_dairy_farm FOREIGN KEY (dairy_farm_id) REFERENCES dairy_farm_lst_t(dairy_farm_id);
 
 -- =====================================================
 -- CATTLE TYPES MASTER

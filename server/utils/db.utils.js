@@ -1,5 +1,6 @@
 const dbconfig = require('../config/db.config');
 const dberrors = require('./db-errors')
+const { log, logBlock } = require('./log.utils');
 const pool = dbconfig.pool;
 dbconfig.logPoolEvents(pool);
 
@@ -24,6 +25,9 @@ const formatDbError = (error) => {
 const executeQuery = async (query, params = [], fname, dbPool = pool) => {
     console.log('in executeQuery and quries received from ' + fname);
 
+    // SHOW_LOG=true prints every model's SQL and bound parameters under a styled heading
+    logBlock(`[${fname}] query:`, query.replace(/\s+/g, ' ').trim(), '| params:', params);
+
     try {
         const [rows] = await dbPool.execute(query, params);
         return rows;
@@ -47,6 +51,7 @@ const executeMultipleQueries = async (queries = [], fname, dbPool = pool) => {
         connection = await dbPool.getConnection();
         const results = [];
         for (const query of queries) {
+            logBlock(`[${fname}] query:`, query.query.replace(/\s+/g, ' ').trim(), '| params:', query.params || []);
             const [rows] = await connection.execute(query.query, query.params || []);
             results.push(rows);
 
@@ -101,6 +106,7 @@ const executeTransactionQueries = async (queries = [], fname, dbPool = pool) => 
         await connection.beginTransaction();
         const results = [];
         for (const query of queries) {
+            logBlock(`[${fname}] query:`, query.query.replace(/\s+/g, ' ').trim(), '| params:', query.params || []);
             const [rows] = await connection.execute(query.query, query.params || []);
             results.push(rows);
         }

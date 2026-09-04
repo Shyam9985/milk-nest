@@ -6,6 +6,7 @@ const { pipeline } = require("stream/promises");
 const resutils = require("../utils/response.utils");
 const fileutils = require("../utils/files.utils");
 const filesMdl = require("../models/filesMdl");
+const { log } = require('../utils/log.utils');
 
 // used when the caller does not specify a destination
 const DEFAULT_UPLOAD_DIR = path.join(__dirname, "../uploads");
@@ -20,6 +21,7 @@ const validationError = (message) => {
 // validates an uploaded image and streams it to disk under a crypto-random name;
 // chunks flow request -> inspector -> disk, so memory never holds the whole file
 exports.saveStreamedFileSrvc = async (readStream, meta, uploadDir = DEFAULT_UPLOAD_DIR) => {
+    log('in saveStreamedFileSrvc');
     // metadata checks need no bytes — fail before touching the stream or the disk
     const originalName = fileutils.sanitizeFileName(meta.originalName);
     if (!originalName) {
@@ -118,6 +120,7 @@ exports.saveStreamedFileSrvc = async (readStream, meta, uploadDir = DEFAULT_UPLO
 
 // resolves a user's current profile photo to an absolute path for streaming back
 exports.getProfilePhotoSrvc = async (user_id) => {
+    log('in getProfilePhotoSrvc');
     const [photo] = await filesMdl.getActiveFileByEntityMdl("USER_PROFILE", user_id);
     if (!photo) {
         resutils.createError("noPhoto", "No profile photo found.");
