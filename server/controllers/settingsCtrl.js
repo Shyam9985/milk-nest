@@ -1040,7 +1040,7 @@ const POSITION_PAYLOAD_SCHEMA = {
 
 exports.getPositionsCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getPositionsSrvc();
+    const records = await settingsService.getPositionsSrvc(req.user);
 
     return resutils.sendSuccessResponse(
       req,
@@ -1107,7 +1107,7 @@ exports.getPositionUsersCtrl = async (req, res) => {
 exports.getPositionBranchesCtrl = async (req, res) => {
   try {
     const dairyFarmId = parseOptionalQueryId(req, "dairy_farm_id");
-    const records = await settingsService.getPositionBranchesSrvc(dairyFarmId);
+    const records = await settingsService.getPositionBranchesSrvc(req.user, dairyFarmId);
 
     return resutils.sendSuccessResponse(
       req,
@@ -1240,7 +1240,8 @@ const DAIRY_FARM_PAYLOAD_SCHEMA = {
 
 exports.getDairyFarmsCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getDairyFarmsSrvc();
+    // req.user carries the signed scope pair; the model filters rows with it
+    const records = await settingsService.getDairyFarmsSrvc(req.user);
 
     return resutils.sendSuccessResponse(
       req,
@@ -1875,7 +1876,7 @@ const USER_CREATE_PAYLOAD_SCHEMA = {
 
 exports.getUserListCtrl = async (req, res) => {
   try {
-    const records = await settingsService.getUserListSrvc();
+    const records = await settingsService.getUserListSrvc(req.user);
 
     return resutils.sendSuccessResponse(
       req,

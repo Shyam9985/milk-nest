@@ -1,4 +1,5 @@
 const dbutils = require('../utils/db.utils');
+const scopeutils = require('../utils/scope.utils');
 
 // fetches all active states
 exports.getStatesMdl = () => {
@@ -489,7 +490,9 @@ exports.softDeleteHierarchyMdl = (hierarchy_id) => {
 // location_ref_id points at a BRANCH; the dairy farm is derived through it for display and edit.
 // unset location ids (stored as 0) come back as null so the edit form treats them as empty;
 // start/end dates come back as YYYY-MM-DD so the edit form's date inputs can load them
-exports.getPositionsMdl = () => {
+exports.getPositionsMdl = (user) => {
+    const scope = scopeutils.getScopeFilter(user, 'p', scopeutils.POSITION_SCOPE_COLUMNS);
+
     const qry = `select p.position_id, p.position_nm, p.role_id, p.hierarchy_id, p.user_id, p.is_active,
         nullif(p.district_id, 0) as district_id, nullif(p.mandal_ulb_id, 0) as mandal_ulb_id,
         nullif(p.village_sachivalayam_id, 0) as village_sachivalayam_id, p.dairy_farm_id, p.location_ref_id,
@@ -511,24 +514,26 @@ exports.getPositionsMdl = () => {
         left join village_sachivalayam_mst_lst_t v on v.village_sachivalayam_id = p.village_sachivalayam_id
         left join branches_lst_t br on br.branch_id = p.location_ref_id
         left join dairy_farm_lst_t df on df.dairy_farm_id = p.dairy_farm_id
-        where p.is_active = 1 order by p.position_nm asc`;
-    return dbutils.executeQuery(qry, [], 'get positions model');
+        where p.is_active = 1${scope.clause} order by p.position_nm asc`;
+    return dbutils.executeQuery(qry, scope.params, 'get positions model');
 }
 
 // fetches active branches (with their stored location) for the position form dropdown,
-// optionally only those under one dairy farm
-exports.getPositionBranchesMdl = (dairy_farm_id = null) => {
-    let qry = `select branch_id, branch_name, is_main_branch, dairy_farm_id,
-        state_id, district_id, mandal_ulb_id, village_sachivalayam_id
-        from branches_lst_t where is_active = 1`;
-    const params = [];
+// optionally only those under one dairy farm, restricted to the logged in user's scope
+exports.getPositionBranchesMdl = (user, dairy_farm_id = null) => {
+    const scope = scopeutils.getScopeFilter(user, 'b');
+
+    let qry = `select b.branch_id, b.branch_name, b.is_main_branch, b.dairy_farm_id,
+        b.state_id, b.district_id, b.mandal_ulb_id, b.village_sachivalayam_id
+        from branches_lst_t b where b.is_active = 1${scope.clause}`;
+    const params = [...scope.params];
 
     if (dairy_farm_id) {
-        qry += ' and dairy_farm_id = ?';
+        qry += ' and b.dairy_farm_id = ?';
         params.push(dairy_farm_id);
     }
 
-    qry += ' order by is_main_branch desc, branch_name asc';
+    qry += ' order by b.is_main_branch desc, b.branch_name asc';
     return dbutils.executeQuery(qry, params, 'get position branches model');
 }
 
@@ -644,9 +649,12 @@ exports.softDeletePositionMdl = (position_id) => {
 // dairy_farm_lst_t uses created_time/updated_time columns; they are aliased to
 // created_at/updated_at so the client renders every master the same way
 
-// fetches all active dairy farms along with their main branch and its location names
-exports.getDairyFarmsMdl = () => {
-    const qry = `select df.dairy_farm_id, df.dairy_farm_name, df.dairy_farm_code, df.contact_number, df.email, df.address, df.is_active,
+// fetches active dairy farms along with their main branch and its location names,
+// restricted to the logged in user's scope
+exports.getDairyFarmsMdl = (user) => {
+    const scope = scopeutils.getScopeFilter(user, 'sb');
+
+    let qry = `select df.dairy_farm_id, df.dairy_farm_name, df.dairy_farm_code, df.contact_number, df.email, df.address, df.is_active,
         b.branch_id as main_branch_id, b.branch_code as main_branch_code, b.branch_name as main_branch_name,
         b.state_id, b.district_id, b.mandal_ulb_id, b.village_sachivalayam_id,
         s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm,
@@ -658,8 +666,16 @@ exports.getDairyFarmsMdl = () => {
         left join district_mstr_lst_t d on d.district_id = b.district_id
         left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = b.mandal_ulb_id
         left join village_sachivalayam_mst_lst_t v on v.village_sachivalayam_id = b.village_sachivalayam_id
-        where df.is_active = 1 order by df.dairy_farm_name asc`;
-    return dbutils.executeQuery(qry, [], 'get dairy farms model');
+        where df.is_active = 1`;
+
+    // a farm is visible when ANY of its branches falls inside the user's scope
+    if (scope.clause) {
+        qry += ` and exists (select 1 from branches_lst_t sb
+            where sb.is_active = 1 and sb.dairy_farm_id = df.dairy_farm_id${scope.clause})`;
+    }
+
+    qry += ' order by df.dairy_farm_name asc';
+    return dbutils.executeQuery(qry, scope.params, 'get dairy farms model');
 }
 
 // finds records matching the given name (active and inactive), optionally excluding one record
@@ -1080,9 +1096,12 @@ exports.softDeleteRoleMenuMapMdl = (role_menu_id) => {
 
 // ===================== USERS =====================
 
-// fetches all active users with their role and gender names (password columns are never selected)
-exports.getUserListMdl = () => {
-    const qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, u.mobile_no, u.email, u.role_id, u.gender_id, u.is_locked, u.is_active,
+// fetches active users with their role and gender names (password columns are never selected),
+// restricted to the logged in user's scope via each user's position
+exports.getUserListMdl = (user) => {
+    const scope = scopeutils.getScopeFilter(user, 'sp', scopeutils.POSITION_SCOPE_COLUMNS);
+
+    let qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, u.mobile_no, u.email, u.role_id, u.gender_id, u.is_locked, u.is_active,
         r.role_nm, g.gender_nm,
         DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login,
         DATE_FORMAT(u.created_at, '%d-%m-%Y %h:%i %p') as created_at,
@@ -1090,8 +1109,19 @@ exports.getUserListMdl = () => {
         from users_lst_t u
         left join roles_lst_t r on r.role_id = u.role_id
         left join gender_mstr_lst_t g on g.gender_id = u.gender_id
-        where u.is_active = 1 order by u.first_nm asc, u.user_nm asc`;
-    return dbutils.executeQuery(qry, [], 'get user list model');
+        where u.is_active = 1`;
+
+    if (scope.denied) {
+        qry += ' and 1 = 0';
+    } else if (!scope.unrestricted) {
+        // visible = users holding a position inside the scope, plus users with no active
+        // position at all (the unassigned pool a scoped admin hires from)
+        qry += ` and (exists (select 1 from position_lst_t sp where sp.is_active = 1 and sp.user_id = u.user_id${scope.clause})
+            or not exists (select 1 from position_lst_t ap where ap.is_active = 1 and ap.user_id = u.user_id))`;
+    }
+
+    qry += ' order by u.first_nm asc, u.user_nm asc';
+    return dbutils.executeQuery(qry, scope.params, 'get user list model');
 }
 
 // finds users matching the given login name/email (active and inactive), optionally excluding one record

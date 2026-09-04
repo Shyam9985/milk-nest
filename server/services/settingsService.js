@@ -616,9 +616,9 @@ const defaultPositionEndDate = () => {
 };
 const DATE_FORMAT_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// fetches all active positions with their role, hierarchy and assigned user
-exports.getPositionsSrvc = async () => {
-    return settingsMdl.getPositionsMdl();
+// fetches active positions visible to the logged in user's scope
+exports.getPositionsSrvc = async (user) => {
+    return settingsMdl.getPositionsMdl(user);
 }
 
 // fetches active roles for the position form dropdown
@@ -631,9 +631,10 @@ exports.getPositionUsersSrvc = async (excludePositionId = null) => {
     return settingsMdl.getPositionUsersMdl(excludePositionId);
 }
 
-// fetches active branches for the position form dropdown, optionally filtered by dairy farm
-exports.getPositionBranchesSrvc = async (dairy_farm_id = null) => {
-    return settingsMdl.getPositionBranchesMdl(dairy_farm_id);
+// fetches active branches for the position form dropdown, optionally filtered by dairy farm,
+// restricted to the logged in user's scope
+exports.getPositionBranchesSrvc = async (user, dairy_farm_id = null) => {
+    return settingsMdl.getPositionBranchesMdl(user, dairy_farm_id);
 }
 
 // validates an optional YYYY-MM-DD input, falling back to the given default
@@ -847,9 +848,9 @@ exports.deletePositionSrvc = async (position_id) => {
 
 // ===================== DAIRY FARM MASTER =====================
 
-// fetches all active dairy farms
-exports.getDairyFarmsSrvc = async () => {
-    return settingsMdl.getDairyFarmsMdl();
+// fetches active dairy farms visible to the logged in user's scope
+exports.getDairyFarmsSrvc = async (user) => {
+    return settingsMdl.getDairyFarmsMdl(user);
 }
 
 // pulls the normalized dairy farm and main branch fields out of a request payload; the codes
@@ -1410,9 +1411,9 @@ exports.deleteRoleMenuMapSrvc = async (role_menu_id) => {
 
 // ===================== USERS =====================
 
-// fetches all active users
-exports.getUserListSrvc = async () => {
-    return settingsMdl.getUserListMdl();
+// fetches active users visible to the logged in user's scope
+exports.getUserListSrvc = async (user) => {
+    return settingsMdl.getUserListMdl(user);
 }
 
 // pulls the normalized user fields out of a request payload; the login name is always the
