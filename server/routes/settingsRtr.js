@@ -62,6 +62,12 @@ router.post('/master/dairy-farm', authmdlwre.isAuthenticated, authmdlwre.isAutho
 router.put('/master/dairy-farm/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'update'), settingsCtrl.updateDairyFarmCtrl);
 router.delete('/master/dairy-farm/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'delete'), settingsCtrl.deleteDairyFarmCtrl);
 
+// branch routes (sub branches managed from the dairy farm screen, same permission key)
+router.get('/master/branch', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'read'), settingsCtrl.getBranchListCtrl);
+router.post('/master/branch', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'create'), settingsCtrl.createBranchCtrl);
+router.put('/master/branch/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'update'), settingsCtrl.updateBranchCtrl);
+router.delete('/master/branch/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'delete'), settingsCtrl.deleteBranchCtrl);
+
 // role permission routes (role list feeds the form dropdown)
 router.get('/security/role-permission', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionListCtrl);
 router.get('/security/role-permission/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionRolesCtrl);

@@ -602,8 +602,109 @@ exports.getPositionBranchesMdl = (user, dairy_farm_id = null) => {
 // fetches an active branch by id, used to validate the position's branch before saving
 exports.getActiveBranchByIdMdl = (branch_id) => {
     log('in getActiveBranchByIdMdl');
-    const qry = 'select branch_id, branch_name, dairy_farm_id from branches_lst_t where is_active = 1 and branch_id = ?';
+    const qry = 'select branch_id, branch_name, dairy_farm_id, is_main_branch from branches_lst_t where is_active = 1 and branch_id = ?';
     return dbutils.executeQuery(qry, [branch_id], 'get active branch by id model');
+}
+
+// ===================== BRANCHES (dairy farm screen) =====================
+
+// fetches active branches with their farm and location names, restricted to the user's scope
+exports.getBranchListMdl = (user) => {
+    log('in getBranchListMdl');
+    const scope = scopeutils.getScopeFilter(user, 'b');
+
+    const qry = `select b.branch_id, b.branch_name, b.branch_code, b.is_main_branch, b.dairy_farm_id,
+        b.state_id, b.district_id, b.mandal_ulb_id, b.village_sachivalayam_id, b.contact_number, b.email, b.address, b.is_active,
+        df.dairy_farm_name, s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm,
+        DATE_FORMAT(b.created_time, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(b.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        from branches_lst_t b
+        join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id
+        left join state_mstr_lst_t s on s.state_id = b.state_id
+        left join district_mstr_lst_t d on d.district_id = b.district_id
+        left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = b.mandal_ulb_id
+        left join village_sachivalayam_mst_lst_t v on v.village_sachivalayam_id = b.village_sachivalayam_id
+        where b.is_active = 1${scope.clause}
+        order by df.dairy_farm_name asc, b.is_main_branch desc, b.branch_name asc`;
+    return dbutils.executeQuery(qry, scope.params, 'get branch list model');
+}
+
+// finds branches clashing on name within the same farm (active and inactive), optionally excluding one record
+exports.getDuplicateBranchesMdl = (dairy_farm_id, branch_name, excludeId = null) => {
+    log('in getDuplicateBranchesMdl');
+    let qry = `select branch_id, branch_name, is_main_branch, is_active from branches_lst_t
+        where dairy_farm_id = ? and lower(branch_name) = lower(?)`;
+    const params = [dairy_farm_id, branch_name];
+
+    if (excludeId) {
+        qry += ' and branch_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate branches model');
+}
+
+// inserts a new branch; is_main_branch is decided by the service - the farm's first
+// active branch becomes its main branch, every later one is a sub branch
+exports.insertBranchMdl = (data, user_id) => {
+    log('in insertBranchMdl');
+    const qry = `insert into branches_lst_t (dairy_farm_id, branch_code, branch_name, is_main_branch,
+        state_id, district_id, mandal_ulb_id, village_sachivalayam_id, contact_number, email, address, created_by)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.dairy_farm_id, data.branch_code, data.branch_name, data.is_main_branch,
+        data.state_id, data.district_id, data.mandal_ulb_id, data.village_sachivalayam_id,
+        data.contact_number, data.email, data.address, user_id], 'insert branch model');
+}
+
+// updates an active branch (the main flag is never touched here)
+exports.updateBranchMdl = (branch_id, data, user_id) => {
+    log('in updateBranchMdl');
+    const qry = `update branches_lst_t set dairy_farm_id = ?, branch_name = ?, state_id = ?, district_id = ?,
+        mandal_ulb_id = ?, village_sachivalayam_id = ?, contact_number = ?, email = ?, address = ?, updated_by = ?
+        where is_active = 1 and branch_id = ?`;
+    return dbutils.executeQuery(qry, [data.dairy_farm_id, data.branch_name, data.state_id, data.district_id,
+        data.mandal_ulb_id, data.village_sachivalayam_id, data.contact_number, data.email, data.address, user_id, branch_id], 'update branch model');
+}
+
+// brings back a soft deleted branch with fresh details, keeping its original code and main flag
+exports.reactivateBranchMdl = (branch_id, data, user_id) => {
+    log('in reactivateBranchMdl');
+    const qry = `update branches_lst_t set dairy_farm_id = ?, branch_name = ?, state_id = ?, district_id = ?,
+        mandal_ulb_id = ?, village_sachivalayam_id = ?, contact_number = ?, email = ?, address = ?,
+        updated_by = ?, deleted_by = null, deleted_time = null, is_active = 1
+        where branch_id = ?`;
+    return dbutils.executeQuery(qry, [data.dairy_farm_id, data.branch_name, data.state_id, data.district_id,
+        data.mandal_ulb_id, data.village_sachivalayam_id, data.contact_number, data.email, data.address, user_id, branch_id], 'reactivate branch model');
+}
+
+// makes the given branch the farm's single main branch: the current main is demoted and
+// the new one promoted in ONE transaction, so a farm never has zero or two main branches
+exports.switchMainBranchMdl = (dairy_farm_id, new_main_branch_id, user_id) => {
+    log('in switchMainBranchMdl');
+    return dbutils.executeTransactionQueries([
+        {
+            query: 'update branches_lst_t set is_main_branch = 0, updated_by = ? where is_active = 1 and is_main_branch = 1 and dairy_farm_id = ?',
+            params: [user_id, dairy_farm_id]
+        },
+        {
+            query: 'update branches_lst_t set is_main_branch = 1, updated_by = ? where is_active = 1 and branch_id = ?',
+            params: [user_id, new_main_branch_id]
+        }
+    ], 'switch main branch model');
+}
+
+// counts active positions stationed at a branch, used to block deleting a branch that is in use
+exports.countActivePositionsByBranchMdl = (branch_id) => {
+    log('in countActivePositionsByBranchMdl');
+    const qry = 'select count(*) as cnt from position_lst_t where is_active = 1 and location_ref_id = ?';
+    return dbutils.executeQuery(qry, [branch_id], 'count active positions by branch model');
+}
+
+// soft deletes a sub branch, stamping who deleted it and when
+exports.softDeleteBranchMdl = (branch_id, user_id) => {
+    log('in softDeleteBranchMdl');
+    const qry = `update branches_lst_t set is_active = 0, deleted_by = ?, deleted_time = current_timestamp
+        where is_active = 1 and is_main_branch = 0 and branch_id = ?`;
+    return dbutils.executeQuery(qry, [user_id, branch_id], 'soft delete branch model');
 }
 
 // fetches active roles for the position form dropdown
@@ -828,61 +929,6 @@ exports.getMainBranchByFarmMdl = (dairy_farm_id) => {
     const qry = `select branch_id, branch_code, branch_name, is_active from branches_lst_t
         where is_main_branch = 1 and dairy_farm_id = ? order by is_active desc limit 1`;
     return dbutils.executeQuery(qry, [dairy_farm_id], 'get main branch by farm model');
-}
-
-// creates a dairy farm and its main branch atomically - a farm must never exist without one
-exports.createDairyFarmWithMainBranchMdl = (farm, branch, user_id) => {
-    log('in createDairyFarmWithMainBranchMdl');
-    return dbutils.executeTransaction(async (connection) => {
-        const [farmResult] = await connection.execute(
-            `insert into dairy_farm_lst_t (dairy_farm_name, dairy_farm_code, contact_number, email, address, created_by)
-                values (?, ?, ?, ?, ?, ?)`,
-            [farm.dairy_farm_name, farm.dairy_farm_code, farm.contact_number, farm.email, farm.address, user_id]
-        );
-
-        // the main branch shares the farm's contact details
-        await connection.execute(
-            `insert into branches_lst_t (dairy_farm_id, branch_code, branch_name, is_main_branch,
-                state_id, district_id, mandal_ulb_id, village_sachivalayam_id, contact_number, email, address, created_by)
-                values (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [farmResult.insertId, branch.branch_code, branch.branch_name,
-                branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
-                farm.contact_number, farm.email, farm.address, user_id]
-        );
-
-        return { insertId: farmResult.insertId };
-    }, 'create dairy farm with main branch model');
-}
-
-// inserts a main branch for an existing farm (used when a legacy farm is edited or restored)
-exports.insertMainBranchMdl = (dairy_farm_id, branch, farm, user_id) => {
-    log('in insertMainBranchMdl');
-    const qry = `insert into branches_lst_t (dairy_farm_id, branch_code, branch_name, is_main_branch,
-        state_id, district_id, mandal_ulb_id, village_sachivalayam_id, contact_number, email, address, created_by)
-        values (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    return dbutils.executeQuery(qry, [dairy_farm_id, branch.branch_code, branch.branch_name,
-        branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
-        farm.contact_number, farm.email, farm.address, user_id], 'insert main branch model');
-}
-
-// updates a farm's active main branch, keeping its contact details in sync with the farm
-exports.updateMainBranchMdl = (branch_id, branch, farm, user_id) => {
-    log('in updateMainBranchMdl');
-    const qry = `update branches_lst_t set branch_name = ?, state_id = ?, district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?,
-        contact_number = ?, email = ?, address = ?, updated_by = ?
-        where is_active = 1 and branch_id = ?`;
-    return dbutils.executeQuery(qry, [branch.branch_name, branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
-        farm.contact_number, farm.email, farm.address, user_id, branch_id], 'update main branch model');
-}
-
-// brings back a soft deleted main branch with fresh details
-exports.reactivateMainBranchMdl = (branch_id, branch, farm, user_id) => {
-    log('in reactivateMainBranchMdl');
-    const qry = `update branches_lst_t set branch_name = ?, state_id = ?, district_id = ?, mandal_ulb_id = ?, village_sachivalayam_id = ?,
-        contact_number = ?, email = ?, address = ?, updated_by = ?, deleted_by = null, deleted_time = null, is_active = 1
-        where branch_id = ?`;
-    return dbutils.executeQuery(qry, [branch.branch_name, branch.state_id, branch.district_id, branch.mandal_ulb_id, branch.village_sachivalayam_id,
-        farm.contact_number, farm.email, farm.address, user_id, branch_id], 'reactivate main branch model');
 }
 
 // soft deletes a dairy farm together with its main branch, atomically

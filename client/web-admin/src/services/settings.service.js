@@ -328,6 +328,40 @@ export async function deleteDairyFarm(dairyFarmId) {
     }
 }
 
+// ===================== BRANCHES (dairy farm screen) =====================
+
+export async function getBranchList() {
+    try {
+        return await get('settings/master/branch');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createBranch(payload) {
+    try {
+        return await post('settings/master/branch', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateBranch(branchId, payload) {
+    try {
+        return await put(`settings/master/branch/${branchId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteBranch(branchId) {
+    try {
+        return await remove(`settings/master/branch/${branchId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
 // ===================== ROLE PERMISSIONS =====================
 
 export async function getRolePermissionList() {

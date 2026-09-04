@@ -23,7 +23,7 @@ const formatDbError = (error) => {
 * input : ('SELECT * FROM dymmy where id = ?', [2], 'server', operatorPool) - pool is optional, defaults to admin pool
 ************************************************/
 const executeQuery = async (query, params = [], fname, dbPool = pool) => {
-    console.log('in executeQuery and quries received from ' + fname);
+    log('in executeQuery and quries received from ' + fname);
 
     // SHOW_LOG=true prints every model's SQL and bound parameters under a styled heading
     logBlock(`[${fname}] query:`, query.replace(/\s+/g, ' ').trim(), '| params:', params);
@@ -34,7 +34,7 @@ const executeQuery = async (query, params = [], fname, dbPool = pool) => {
     } catch (error) {
         throw formatDbError(error);
     } finally {
-        console.log('Execution completed!');
+        log('Execution completed!');
     }
 };
 
@@ -44,7 +44,7 @@ const executeQuery = async (query, params = [], fname, dbPool = pool) => {
 * input : ('server', [{ query: 'SELECT * FROM dymmy where id = ?', params: [2] }, { query: 'SELECT * FROM dymmy where id = ?', params: [1] }])
 ************************************************/
 const executeMultipleQueries = async (queries = [], fname, dbPool = pool) => {
-    console.log('in executeMultipleQueries and quries received from ' + fname);
+    log('in executeMultipleQueries and quries received from ' + fname);
 
     let connection = null;
     try {
@@ -56,7 +56,7 @@ const executeMultipleQueries = async (queries = [], fname, dbPool = pool) => {
             results.push(rows);
 
         }
-        console.log(results);
+        logBlock(`[${fname}] results:`, results);
 
         return results;
     } catch (error) {
@@ -72,7 +72,7 @@ const executeMultipleQueries = async (queries = [], fname, dbPool = pool) => {
 * input : ('server', async (connection) => {await connection.execute(`INSERT INTO users_lst_t (user_name) VALUES(?)`,['Syam']); await connection.execute(`INSERT INTO audit_logs_t(activity) VALUES(?)`,['User Created']);});)
 ************************************************/
 const executeTransaction = async (callback, fname, dbPool = pool) => {
-    console.log('in executeTransaction and quries received from ' + fname);
+    log('in executeTransaction and quries received from ' + fname);
 
     let connection = null;
 
@@ -97,7 +97,7 @@ const executeTransaction = async (callback, fname, dbPool = pool) => {
 * input : ('server', [{ query: 'insert into dymmy (dumy_name) values (?)', params: ['Shyam'] }, { query: 'insert into dymmy (dumy_name) values (?)', params: ['Prasad'] }])
 ************************************************/
 const executeTransactionQueries = async (queries = [], fname, dbPool = pool) => {
-    console.log('in executeTransactionQueries and quries received from ' + fname);
+    log('in executeTransactionQueries and quries received from ' + fname);
 
     let connection = null;
 

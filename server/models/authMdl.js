@@ -1,6 +1,6 @@
 const dbutils = require('../utils/db.utils');
 const dateFns = require('date-fns');
-const { log } = require('../utils/log.utils');
+const { log, logBlock } = require('../utils/log.utils');
 
 // sign up controller
 exports.signUp = async (data, user) => {
@@ -30,7 +30,7 @@ exports.getUserDetails = async (data, user) => {
 // increases login attempts
 exports.increaseLoginAttempts = (email) => {
     log('in increaseLoginAttempts');
-    console.log('in incease login attempts model');
+    log('in incease login attempts model');
 
     const qry = `update users_lst_t set login_attempts = ifnull(login_attempts, 0) + 1, is_locked = case when login_attempts > 4 then 1 else 0 end,
     locked_until = case when login_attempts > 4 then date_add(current_timestamp(),INTERVAL 1 day) else null end  
@@ -156,7 +156,7 @@ exports.slideExpressSession = (sessionId) => {
 // unlock locked users
 exports.unlockUsers = () => {
     log('in unlockUsers');
-    console.log('Unlocking the users at :', dateFns.format(new Date(), 'dd-MM-yyyy hh:mm:ss a'));
+    logBlock('[unlock users] unlocking the users at:', dateFns.format(new Date(), 'dd-MM-yyyy hh:mm:ss a'));
     const query = 'update users_lst_t set is_locked = 0 , login_attempts = 0 , locked_until = null where is_active = 1 and locked_until < current_timestamp();';
     return dbutils.executeQuery(query, [], 'unlock users');
 }

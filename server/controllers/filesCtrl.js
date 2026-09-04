@@ -39,11 +39,11 @@ exports.uploadFiles = async (req, res) => {
     uploadedBy: req.user?.user_id || null,
   };
 
-  console.log(`[upload] request received — name: '${meta.originalName}', mime: ${meta.mimeType}, user: ${meta.uploadedBy}`);
+  log(`[upload] request received — name: '${meta.originalName}', mime: ${meta.mimeType}, user: ${meta.uploadedBy}`);
 
   // cheap early reject: the declared size alone already breaks the limit
   const declaredSize = Number(req.headers["content-length"] || 0);
-  console.log(`[upload] declared content-length: ${declaredSize} bytes (cap ${fileutils.MAX_FILE_SIZE_BYTES})`);
+  log(`[upload] declared content-length: ${declaredSize} bytes (cap ${fileutils.MAX_FILE_SIZE_BYTES})`);
   if (declaredSize > fileutils.MAX_FILE_SIZE_BYTES) {
     return sendFilesError(
       req,
@@ -54,9 +54,9 @@ exports.uploadFiles = async (req, res) => {
   }
 
   try {
-    console.log("[upload] handing the request stream to filesService (no bytes read yet)");
+    log("[upload] handing the request stream to filesService (no bytes read yet)");
     const result = await filesService.saveStreamedFileSrvc(req, meta, PROFILE_PHOTO_DIR);
-    console.log(`[upload] done — file_id ${result.file_id}, stored at ${result.file_path}`);
+    log(`[upload] done — file_id ${result.file_id}, stored at ${result.file_path}`);
 
     return resutils.sendSuccessResponse(
       req,
@@ -78,16 +78,16 @@ exports.uploadFiles = async (req, res) => {
 exports.getProfilePhoto = async (req, res) => {
     log('in getProfilePhoto');
   try {
-    console.log(`[download] profile photo requested by user ${req.user?.user_id}`);
+    log(`[download] profile photo requested by user ${req.user?.user_id}`);
     const photo = await filesService.getProfilePhotoSrvc(req.user?.user_id);
-    console.log(`[download] serving ${photo.absolutePath} (${photo.sizeBytes} bytes, ${photo.mimeType})`);
+    log(`[download] serving ${photo.absolutePath} (${photo.sizeBytes} bytes, ${photo.mimeType})`);
 
     res.setHeader("Content-Type", photo.mimeType);
     res.setHeader("Content-Length", photo.sizeBytes);
 
     // disk -> res is the upload pipeline in reverse; res is a writable stream
     await pipeline(fs.createReadStream(photo.absolutePath), res);
-    console.log("[download] stream to browser complete");
+    log("[download] stream to browser complete");
   } catch (error) {
     return sendFilesError(req, res, error, "get profile photo controller");
   }

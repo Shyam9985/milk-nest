@@ -891,22 +891,14 @@ exports.getDairyFarmsSrvc = async (user) => {
     return settingsMdl.getDairyFarmsMdl(user);
 }
 
-// pulls the normalized dairy farm and main branch fields out of a request payload; the codes
-// are not part of the payload - they are generated server-side on create and never change
+// pulls the normalized dairy farm fields out of a request payload; the code is generated
+// server-side. The address is the FARM's own registered address (branch addresses are
+// composed from their locations separately)
 const normalizeDairyFarmPayload = (payload) => ({
-    farm: {
-        dairy_farm_name: normalizeName(payload.dairy_farm_name),
-        contact_number: emptyToNull(payload.contact_number),
-        email: emptyToNull(payload.email)?.toLowerCase() ?? null,
-        address: emptyToNull(payload.address)
-    },
-    branch: {
-        branch_name: normalizeName(payload.main_branch_name),
-        state_id: Number(payload.state_id),
-        district_id: Number(payload.district_id),
-        mandal_ulb_id: Number(payload.mandal_ulb_id),
-        village_sachivalayam_id: Number(payload.village_sachivalayam_id)
-    }
+    dairy_farm_name: normalizeName(payload.dairy_farm_name),
+    contact_number: emptyToNull(payload.contact_number),
+    email: emptyToNull(payload.email)?.toLowerCase() ?? null,
+    address: emptyToNull(payload.address)
 });
 
 // the branch location columns are NOT NULL in branches_lst_t, so the full chain is mandatory:
@@ -963,22 +955,6 @@ const generateBranchCode = async (farm_code, branch_name) => {
     resutils.createError('duplicateRecord', 'Unable to generate a unique branch code. Please try a different branch name.');
 }
 
-// updates, restores or creates the farm's single main branch - farms created before the
-// main-branch rule get one here the next time they are saved
-const upsertMainBranch = async (dairy_farm_id, farm_code, farm, branch, user_id) => {
-    const [existing] = await settingsMdl.getMainBranchByFarmMdl(dairy_farm_id);
-
-    if (existing && existing.is_active == 1) {
-        return settingsMdl.updateMainBranchMdl(existing.branch_id, branch, farm, user_id);
-    }
-    if (existing) {
-        return settingsMdl.reactivateMainBranchMdl(existing.branch_id, branch, farm, user_id);
-    }
-
-    branch.branch_code = await generateBranchCode(farm_code, branch.branch_name);
-    return settingsMdl.insertMainBranchMdl(dairy_farm_id, branch, farm, user_id);
-}
-
 // builds a readable unique code from the farm name initials and the mobile's last digits,
 // e.g. 'Sunrise Dairy Farm' + 9876543210 -> 'SDF-3210'; a numeric suffix resolves clashes
 const generateDairyFarmCode = async (dairy_farm_name, contact_number) => {
@@ -995,13 +971,11 @@ const generateDairyFarmCode = async (dairy_farm_name, contact_number) => {
     resutils.createError('duplicateRecord', 'Unable to generate a unique dairy farm code. Please try a different name.');
 }
 
-// creates a dairy farm together with its main branch, reusing a soft deleted farm when the same name comes back
+// creates a dairy farm (branches, including the main one, are managed on the branches grid),
+// reusing a soft deleted farm when the same name comes back
 exports.createDairyFarmSrvc = async (payload, user_id) => {
     log('in createDairyFarmSrvc');
-    const { farm, branch } = normalizeDairyFarmPayload(payload);
-
-    // the stored address is always the server-composed location string
-    farm.address = await assertMainBranchLocation(branch);
+    const farm = normalizeDairyFarmPayload(payload);
 
     const duplicates = await settingsMdl.getDuplicateDairyFarmsMdl(farm.dairy_farm_name);
 
@@ -1010,35 +984,28 @@ exports.createDairyFarmSrvc = async (payload, user_id) => {
         resutils.createError('duplicateRecord', `Dairy farm already exists with the same name (${activeDuplicate.dairy_farm_name} - ${activeDuplicate.dairy_farm_code}).`);
     }
 
-    // a soft deleted duplicate is reactivated instead of inserting a new row; it keeps its
-    // original code, and its main branch is restored or created alongside it
+    // a soft deleted duplicate is reactivated instead of inserting a new row; it keeps its original code
     const inactiveDuplicate = duplicates[0];
     if (inactiveDuplicate) {
         await settingsMdl.reactivateDairyFarmMdl(inactiveDuplicate.dairy_farm_id, farm, user_id);
-        await upsertMainBranch(inactiveDuplicate.dairy_farm_id, inactiveDuplicate.dairy_farm_code, farm, branch, user_id);
         return { dairy_farm_id: inactiveDuplicate.dairy_farm_id, reactivated: true, dairy_farm_name: farm.dairy_farm_name };
     }
 
     farm.dairy_farm_code = await generateDairyFarmCode(farm.dairy_farm_name, farm.contact_number);
-    branch.branch_code = await generateBranchCode(farm.dairy_farm_code, branch.branch_name);
 
-    const result = await settingsMdl.createDairyFarmWithMainBranchMdl(farm, branch, user_id);
+    const result = await settingsMdl.insertDairyFarmMdl(farm, user_id);
     return { dairy_farm_id: result.insertId, reactivated: false, dairy_farm_name: farm.dairy_farm_name };
 }
 
-// updates a dairy farm and its main branch after making sure the new name is not taken
+// updates a dairy farm's own fields after making sure the new name is not taken
 exports.updateDairyFarmSrvc = async (dairy_farm_id, payload, user_id) => {
     log('in updateDairyFarmSrvc');
-    const { farm, branch } = normalizeDairyFarmPayload(payload);
+    const farm = normalizeDairyFarmPayload(payload);
 
-    // fetched first for its code, which the main branch upsert may need for code generation
     const [record] = await settingsMdl.getActiveDairyFarmByIdMdl(dairy_farm_id);
     if (!record) {
         resutils.createError('recordNotFound', 'Dairy farm not found or already deleted.');
     }
-
-    // the stored address is always the server-composed location string
-    farm.address = await assertMainBranchLocation(branch);
 
     const duplicates = await settingsMdl.getDuplicateDairyFarmsMdl(farm.dairy_farm_name, dairy_farm_id);
     if (duplicates.length) {
@@ -1046,9 +1013,6 @@ exports.updateDairyFarmSrvc = async (dairy_farm_id, payload, user_id) => {
     }
 
     await settingsMdl.updateDairyFarmMdl(dairy_farm_id, farm, user_id);
-
-    // farms created before the main-branch rule get their main branch here
-    await upsertMainBranch(dairy_farm_id, record.dairy_farm_code, farm, branch, user_id);
 
     return { dairy_farm_id: Number(dairy_farm_id), dairy_farm_name: farm.dairy_farm_name };
 }
@@ -1071,6 +1035,147 @@ exports.deleteDairyFarmSrvc = async (dairy_farm_id, user_id) => {
     await settingsMdl.softDeleteDairyFarmWithMainBranchMdl(dairy_farm_id, user_id);
 
     return { dairy_farm_id: Number(dairy_farm_id), dairy_farm_name: record.dairy_farm_name };
+}
+
+// ===================== BRANCHES (dairy farm screen) =====================
+
+// fetches branches visible to the logged in user's scope
+exports.getBranchListSrvc = async (user) => {
+    log('in getBranchListSrvc');
+    return settingsMdl.getBranchListMdl(user);
+}
+
+// pulls the normalized branch fields out of a request payload; code and address are not
+// part of the payload - the code is generated and the address composed from the location
+const normalizeBranchPayload = (payload) => ({
+    dairy_farm_id: Number(payload.dairy_farm_id),
+    branch_name: normalizeName(payload.branch_name),
+    state_id: Number(payload.state_id),
+    district_id: Number(payload.district_id),
+    mandal_ulb_id: Number(payload.mandal_ulb_id),
+    village_sachivalayam_id: Number(payload.village_sachivalayam_id),
+    contact_number: emptyToNull(payload.contact_number),
+    email: emptyToNull(payload.email)?.toLowerCase() ?? null,
+    // an explicit "make this the main branch" request from the form checkbox
+    wants_main: !!payload.is_main_branch
+});
+
+// creates a branch under a farm; the farm's FIRST active branch automatically becomes its
+// main branch, every later one is a sub branch. Reuses a soft deleted branch of the same name.
+exports.createBranchSrvc = async (payload, user_id) => {
+    log('in createBranchSrvc');
+    const data = normalizeBranchPayload(payload);
+
+    const [dairyFarm] = await settingsMdl.getActiveDairyFarmByIdMdl(data.dairy_farm_id);
+    if (!dairyFarm) {
+        resutils.createError('invalidParent', 'Selected dairy farm does not exist or is inactive.');
+    }
+
+    data.address = await assertMainBranchLocation(data);
+
+    const [existingMain] = await settingsMdl.getMainBranchByFarmMdl(data.dairy_farm_id);
+    const hasActiveMain = !!existingMain && existingMain.is_active == 1;
+
+    const duplicates = await settingsMdl.getDuplicateBranchesMdl(data.dairy_farm_id, data.branch_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `A branch already exists with the same name under this farm (${activeDuplicate.branch_name}).`);
+    }
+
+    // a soft deleted duplicate is reactivated with its original code and main flag; a
+    // main-flagged row is only revived while the farm has no active main, so a farm
+    // can never end up with two main branches
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        if (inactiveDuplicate.is_main_branch == 1 && hasActiveMain) {
+            resutils.createError('duplicateRecord', `An inactive main branch already holds this name (${inactiveDuplicate.branch_name}). Choose a different name.`);
+        }
+        await settingsMdl.reactivateBranchMdl(inactiveDuplicate.branch_id, data, user_id);
+
+        // honor an explicit main request (or inherit main when the farm has none)
+        if (inactiveDuplicate.is_main_branch != 1 && (data.wants_main || !hasActiveMain)) {
+            await settingsMdl.switchMainBranchMdl(data.dairy_farm_id, inactiveDuplicate.branch_id, user_id);
+        }
+        return { branch_id: inactiveDuplicate.branch_id, reactivated: true, branch_name: data.branch_name };
+    }
+
+    // the farm's first branch is always its main branch
+    data.is_main_branch = hasActiveMain ? 0 : 1;
+    data.branch_code = await generateBranchCode(dairyFarm.dairy_farm_code, data.branch_name);
+
+    const result = await settingsMdl.insertBranchMdl(data, user_id);
+
+    // an explicit main request on a later branch demotes the current main - one main per farm
+    if (hasActiveMain && data.wants_main) {
+        await settingsMdl.switchMainBranchMdl(data.dairy_farm_id, result.insertId, user_id);
+    }
+
+    return { branch_id: result.insertId, reactivated: false, branch_name: data.branch_name };
+}
+
+// updates a branch (main included - it is no longer managed through the farm form);
+// the main branch can never be moved to another farm
+exports.updateBranchSrvc = async (branch_id, payload, user_id) => {
+    log('in updateBranchSrvc');
+    const data = normalizeBranchPayload(payload);
+
+    const [record] = await settingsMdl.getActiveBranchByIdMdl(branch_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Branch not found or already deleted.');
+    }
+    if (record.is_main_branch && record.dairy_farm_id != data.dairy_farm_id) {
+        resutils.createError('recordInUse', 'The main branch cannot be moved to another dairy farm.');
+    }
+    // a farm must always keep exactly one main branch; the main flag moves by promoting
+    // another branch, never by unmarking the current one
+    if (record.is_main_branch && !data.wants_main) {
+        resutils.createError('recordInUse', 'A farm must keep one main branch. To change it, mark another branch as main instead.');
+    }
+
+    const [dairyFarm] = await settingsMdl.getActiveDairyFarmByIdMdl(data.dairy_farm_id);
+    if (!dairyFarm) {
+        resutils.createError('invalidParent', 'Selected dairy farm does not exist or is inactive.');
+    }
+
+    data.address = await assertMainBranchLocation(data);
+
+    const duplicates = await settingsMdl.getDuplicateBranchesMdl(data.dairy_farm_id, data.branch_name, branch_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another branch already exists with the same name under this farm (${duplicates[0].branch_name}).`);
+    }
+
+    await settingsMdl.updateBranchMdl(branch_id, data, user_id);
+
+    // promoting this branch demotes the farm's current main in one transaction
+    if (data.wants_main && !record.is_main_branch) {
+        await settingsMdl.switchMainBranchMdl(data.dairy_farm_id, branch_id, user_id);
+    }
+
+    return { branch_id: Number(branch_id), branch_name: data.branch_name };
+}
+
+// soft deletes a sub branch after making sure no positions are stationed at it
+exports.deleteBranchSrvc = async (branch_id, user_id) => {
+    log('in deleteBranchSrvc');
+    const [record] = await settingsMdl.getActiveBranchByIdMdl(branch_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Branch not found or already deleted.');
+    }
+    if (record.is_main_branch) {
+        resutils.createError('recordInUse', 'The main branch cannot be deleted on its own - it is deactivated together with its dairy farm.');
+    }
+
+    const [{ cnt: positionCount }] = await settingsMdl.countActivePositionsByBranchMdl(branch_id);
+    if (positionCount) {
+        resutils.createError('recordInUse', `Branch cannot be deleted. ${positionCount} active position(s) are stationed at it. Move those positions first.`);
+    }
+
+    const result = await settingsMdl.softDeleteBranchMdl(branch_id, user_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Branch not found or already deleted.');
+    }
+    return { branch_id: Number(branch_id), branch_name: record.branch_name };
 }
 
 // ===================== ROLE PERMISSIONS =====================

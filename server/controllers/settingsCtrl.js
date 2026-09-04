@@ -1263,17 +1263,6 @@ const DAIRY_FARM_PAYLOAD_SCHEMA = {
     maxLength: 1000,
     label: "Address",
   },
-  main_branch_name: {
-    required: true,
-    type: "string",
-    minLength: 2,
-    maxLength: 255,
-    label: "Main Branch Name",
-  },
-  state_id: { required: true, type: "number", min: 1, label: "State" },
-  district_id: { required: true, type: "number", min: 1, label: "District" },
-  mandal_ulb_id: { required: true, type: "number", min: 1, label: "Mandal/ULB" },
-  village_sachivalayam_id: { required: true, type: "number", min: 1, label: "Village/Sachivalayam" },
 };
 
 exports.getDairyFarmsCtrl = async (req, res) => {
@@ -1380,6 +1369,131 @@ exports.deleteDairyFarmCtrl = async (req, res) => {
     );
   } catch (error) {
     return sendSettingsError(req, res, error, "delete dairy farm controller");
+  }
+};
+
+// ===================== BRANCHES (dairy farm screen) =====================
+
+const BRANCH_PAYLOAD_SCHEMA = {
+  dairy_farm_id: { required: true, type: "number", min: 1, label: "Dairy Farm" },
+  branch_name: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 255,
+    label: "Branch Name",
+  },
+  state_id: { required: true, type: "number", min: 1, label: "State" },
+  district_id: { required: true, type: "number", min: 1, label: "District" },
+  mandal_ulb_id: { required: true, type: "number", min: 1, label: "Mandal/ULB" },
+  village_sachivalayam_id: { required: true, type: "number", min: 1, label: "Village/Sachivalayam" },
+  contact_number: { required: false, type: "mobile-no", label: "Contact Number" },
+  email: { required: false, type: "email", label: "Email" },
+  is_main_branch: { required: false, type: "boolean", label: "Is Main Branch" },
+};
+
+exports.getBranchListCtrl = async (req, res) => {
+  log('in getBranchListCtrl');
+  try {
+    const records = await settingsService.getBranchListSrvc(req.user);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get branches", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get branches controller");
+  }
+};
+
+exports.createBranchCtrl = async (req, res) => {
+  log('in createBranchCtrl');
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      BRANCH_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createBranchSrvc(
+      req.body,
+      req.user?.user_id,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Branch '${result.branch_name}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create branch" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create branch controller");
+  }
+};
+
+exports.updateBranchCtrl = async (req, res) => {
+  log('in updateBranchCtrl');
+  try {
+    const branchId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      BRANCH_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateBranchSrvc(
+      branchId,
+      req.body,
+      req.user?.user_id,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Branch '${result.branch_name}' updated successfully.`,
+      },
+      { function: "update branch" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update branch controller");
+  }
+};
+
+exports.deleteBranchCtrl = async (req, res) => {
+  log('in deleteBranchCtrl');
+  try {
+    const branchId = parseRecordId(req);
+
+    const result = await settingsService.deleteBranchSrvc(
+      branchId,
+      req.user?.user_id,
+    );
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Branch '${result.branch_name}' deleted successfully.`,
+      },
+      { function: "delete branch" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete branch controller");
   }
 };
 

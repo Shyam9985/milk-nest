@@ -3,23 +3,33 @@ import DataGrid from '../../../components/table/DataGrid';
 import SideDrawer from '../../../utils/SideDrawer';
 import Modal from '../../../utils/ModelComponent';
 import DairyFarmForm from './DairyFarmForm';
+import BranchForm from './BranchForm';
 import {
     getDairyFarms, getStates, getDistricts, getMandals, getVillages,
-    createDairyFarm, updateDairyFarm, deleteDairyFarm
+    createDairyFarm, updateDairyFarm, deleteDairyFarm,
+    getBranchList, createBranch, updateBranch, deleteBranch
 } from '../../../services/settings.service';
 import { useToast } from '../../../contexts/MessageContext';
 
+// branch details live on the branches grid below; the address is synced from the main branch
 const DAIRY_FARM_COLUMNS = [
     { label: 'Farm Name', field: 'dairy_farm_name', minWidth: 190 },
     { label: 'Farm Code', field: 'dairy_farm_code', minWidth: 130 },
-    { label: 'Main Branch', field: 'main_branch_name', minWidth: 180 },
-    { label: 'Branch Code', field: 'main_branch_code', minWidth: 140 },
-    { label: 'State', field: 'state_name', minWidth: 130 },
-    { label: 'District', field: 'district_name', minWidth: 140 },
-    { label: 'Mandal/ULB', field: 'mandal_ulb_nm', minWidth: 150 },
-    { label: 'Village/Sachivalayam', field: 'village_sachivalayam_nm', minWidth: 180 },
     { label: 'Contact Number', field: 'contact_number', minWidth: 140 },
     { label: 'Email', field: 'email', minWidth: 200 },
+    { label: 'Address', field: 'address', minWidth: 220 },
+    { label: 'Created On', field: 'created_at', sortable: false, minWidth: 175 },
+    { label: 'Updated On', field: 'updated_at', sortable: false, minWidth: 175 }
+];
+
+const BRANCH_COLUMNS = [
+    { label: 'Branch Name', field: 'branch_name', minWidth: 180 },
+    { label: 'Branch Code', field: 'branch_code', minWidth: 140 },
+    { label: 'Main', field: 'is_main_branch', type: 'boolean', minWidth: 80 },
+    { label: 'Dairy Farm', field: 'dairy_farm_name', minWidth: 180 },
+    // the composed village-to-state location in one column
+    { label: 'Location', field: 'address', minWidth: 260 },
+    { label: 'Contact Number', field: 'contact_number', minWidth: 140 },
     { label: 'Created On', field: 'created_at', sortable: false, minWidth: 175 },
     { label: 'Updated On', field: 'updated_at', sortable: false, minWidth: 175 }
 ];
@@ -35,6 +45,18 @@ function DairyFarm() {
     const [editingRecord, setEditingRecord] = useState(null);
     const [deletingRecord, setDeletingRecord] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
+    const [branchRecords, setBranchRecords] = useState([]);
+    const [branchLoading, setBranchLoading] = useState(true);
+    const [isBranchDrawerOpen, setIsBranchDrawerOpen] = useState(false);
+    const [editingBranch, setEditingBranch] = useState(null);
+    const [deletingBranch, setDeletingBranch] = useState(null);
+
+    // the loaded farm grid doubles as the dairy farm dropdown source for the branch form
+    const farmOptions = records.map((farm) => ({
+        value: farm.dairy_farm_id,
+        label: `${farm.dairy_farm_name} (${farm.dairy_farm_code})`
+    }));
 
     const fetchDairyFarms = async () => {
 
@@ -117,18 +139,31 @@ function DairyFarm() {
         return [];
     };
 
+    const fetchBranches = async () => {
+
+        setBranchLoading(true);
+        const result = await getBranchList();
+
+        if (result?.success) {
+            setBranchRecords(result?.data?.records || []);
+        } else {
+            toast.error(result?.error || result?.message || 'Unable to load branches.');
+        }
+
+        setBranchLoading(false);
+    };
+
     useEffect(() => {
         fetchDairyFarms();
+        fetchBranches();
     }, []);
 
     const openAddDrawer = () => {
-        ensureStateOptions();
         setEditingRecord(null);
         setIsDrawerOpen(true);
     };
 
     const openEditDrawer = (record) => {
-        ensureStateOptions();
         setEditingRecord(record);
         setIsDrawerOpen(true);
     };
@@ -169,14 +204,70 @@ function DairyFarm() {
         if (result?.success) {
             toast.success(result?.message || 'Dairy farm deleted successfully.');
             fetchDairyFarms();
+            fetchBranches(); // the farm's main branch goes down with it
         } else {
             toast.error(result?.error || result?.message || 'Unable to delete dairy farm.');
         }
     };
 
+    /* ---------------- Branches ---------------- */
+
+    const openAddBranchDrawer = () => {
+        ensureStateOptions();
+        setEditingBranch(null);
+        setIsBranchDrawerOpen(true);
+    };
+
+    const openEditBranchDrawer = (record) => {
+        ensureStateOptions();
+        setEditingBranch(record);
+        setIsBranchDrawerOpen(true);
+    };
+
+    const closeBranchDrawer = () => {
+        if (submitting) return;
+        setIsBranchDrawerOpen(false);
+        setEditingBranch(null);
+    };
+
+    const handleBranchSubmit = async (payload) => {
+
+        setSubmitting(true);
+
+        const result = editingBranch
+            ? await updateBranch(editingBranch.branch_id, payload)
+            : await createBranch(payload);
+
+        setSubmitting(false);
+
+        if (result?.success) {
+            toast.success(result?.message || 'Branch saved successfully.');
+            setIsBranchDrawerOpen(false);
+            setEditingBranch(null);
+            fetchBranches();
+        } else {
+            toast.error(result?.error || result?.message || 'Unable to save branch.');
+        }
+    };
+
+    const handleBranchDelete = async () => {
+
+        if (!deletingBranch) return;
+
+        const result = await deleteBranch(deletingBranch.branch_id);
+        setDeletingBranch(null);
+
+        if (result?.success) {
+            toast.success(result?.message || 'Branch deleted successfully.');
+            fetchBranches();
+        } else {
+            toast.error(result?.error || result?.message || 'Unable to delete branch.');
+        }
+    };
+
     return (
 
-        <div className="p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
+        <div className="space-y-8 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
 
             <DataGrid
                 title="Dairy Farm Master"
@@ -193,15 +284,31 @@ function DairyFarm() {
                 config={{ emptyMessage: 'No dairy farms found. Add the first dairy farm to get started.' }}
             />
 
+            <DataGrid
+                title="Branches"
+                subtitle="Branches of the dairy farms. A farm's first branch becomes its main branch; mark another branch as main to switch."
+                columns={BRANCH_COLUMNS}
+                rows={branchRecords}
+                loading={branchLoading}
+                permissions={permissions}
+                addLabel="Add Branch"
+                onAdd={openAddBranchDrawer}
+                onEdit={openEditBranchDrawer}
+                onDelete={(record) => {
+                    if (record.is_main_branch) {
+                        toast.info('The main branch cannot be deleted on its own - it is deactivated together with its dairy farm.');
+                        return;
+                    }
+                    setDeletingBranch(record);
+                }}
+                config={{ emptyMessage: 'No branches found. Add the first branch of a farm here - it becomes the main branch.' }}
+            />
+
             <SideDrawer isOpen={isDrawerOpen} onClose={closeDrawer}
                 title={editingRecord ? 'Update Dairy Farm' : 'Add Dairy Farm'} drawerSize="xs">
 
                 <DairyFarmForm
                     initialValues={editingRecord}
-                    stateOptions={stateOptions}
-                    loadDistrictOptions={loadDistrictOptions}
-                    loadMandalOptions={loadMandalOptions}
-                    loadVillageOptions={loadVillageOptions}
                     submitting={submitting}
                     onSubmit={handleSubmit}
                     onCancel={closeDrawer}
@@ -214,7 +321,34 @@ function DairyFarm() {
 
                 <p>
                     Are you sure you want to delete <strong>{deletingRecord?.dairy_farm_name}</strong> ({deletingRecord?.dairy_farm_code})?
-                    The record will be deactivated and comes back automatically if the same dairy farm is added again.
+                    Its main branch is deactivated along with it. The record comes back automatically if the same dairy farm is added again.
+                </p>
+
+            </Modal>
+
+            <SideDrawer isOpen={isBranchDrawerOpen} onClose={closeBranchDrawer}
+                title={editingBranch ? 'Update Branch' : 'Add Branch'} drawerSize="xs">
+
+                <BranchForm
+                    initialValues={editingBranch}
+                    farmOptions={farmOptions}
+                    stateOptions={stateOptions}
+                    loadDistrictOptions={loadDistrictOptions}
+                    loadMandalOptions={loadMandalOptions}
+                    loadVillageOptions={loadVillageOptions}
+                    submitting={submitting}
+                    onSubmit={handleBranchSubmit}
+                    onCancel={closeBranchDrawer}
+                />
+
+            </SideDrawer>
+
+            <Modal isOpen={!!deletingBranch} onClose={() => setDeletingBranch(null)} onSubmit={handleBranchDelete}
+                title="Delete Branch" primaryButtonName="Delete" secondaryButtonName="Cancel">
+
+                <p>
+                    Are you sure you want to delete <strong>{deletingBranch?.branch_name}</strong> ({deletingBranch?.branch_code})?
+                    Branches with active positions stationed at them cannot be deleted.
                 </p>
 
             </Modal>

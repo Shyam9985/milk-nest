@@ -38,13 +38,13 @@ exports.saveStreamedFileSrvc = async (readStream, meta, uploadDir = DEFAULT_UPLO
         resutils.createError("validationFailed", `Extension '${extension || "none"}' does not match the file type '${meta.mimeType}'.`);
     }
 
-    console.log(`[upload] metadata valid — '${originalName}' (${meta.mimeType}, ext ${extension})`);
+    log(`[upload] metadata valid — '${originalName}' (${meta.mimeType}, ext ${extension})`);
 
     await fs.promises.mkdir(uploadDir, { recursive: true });
 
     const storedName = fileutils.generateUniqueFileName(extension);
     const filePath = path.join(uploadDir, storedName);
-    console.log(`[upload] crypto name generated, streaming to ${filePath}`);
+    log(`[upload] crypto name generated, streaming to ${filePath}`);
 
     const hash = crypto.createHash("sha256");
     let receivedBytes = 0;
@@ -56,18 +56,18 @@ exports.saveStreamedFileSrvc = async (readStream, meta, uploadDir = DEFAULT_UPLO
         transform(chunk, encoding, callback) {
             if (!firstChunkChecked) {
                 firstChunkChecked = true;
-                console.log(`[upload] first chunk arrived — magic bytes: ${chunk.slice(0, 4).toString("hex")}`);
+                log(`[upload] first chunk arrived — magic bytes: ${chunk.slice(0, 4).toString("hex")}`);
 
                 // the opening bytes must prove the claimed format — headers can lie
                 if (!fileutils.matchesMagicBytes(chunk, meta.mimeType)) {
                     return callback(validationError("File content does not match the declared image type."));
                 }
-                console.log(`[upload] magic bytes match ${meta.mimeType} — continuing`);
+                log(`[upload] magic bytes match ${meta.mimeType} — continuing`);
             }
 
             receivedBytes += chunk.length;
             chunkCount += 1;
-            console.log(`[upload] chunk ${chunkCount}: ${chunk.length} bytes (running total ${receivedBytes})`);
+            log(`[upload] chunk ${chunkCount}: ${chunk.length} bytes (running total ${receivedBytes})`);
 
             // content-length can lie too — enforce the cap on actual received bytes
             if (receivedBytes > fileutils.MAX_FILE_SIZE_BYTES) {
@@ -83,7 +83,7 @@ exports.saveStreamedFileSrvc = async (readStream, meta, uploadDir = DEFAULT_UPLO
         // pipeline moves the chunks and owns backpressure: when the disk lags,
         // it pauses the request and resumes it once the write buffer drains
         await pipeline(readStream, inspector, fs.createWriteStream(filePath));
-        console.log(`[upload] stream complete — ${receivedBytes} bytes in ${chunkCount} chunks, file is on disk`);
+        log(`[upload] stream complete — ${receivedBytes} bytes in ${chunkCount} chunks, file is on disk`);
 
         if (!receivedBytes) {
             resutils.createError("validationFailed", "No file data received in the request body.");
@@ -102,11 +102,11 @@ exports.saveStreamedFileSrvc = async (readStream, meta, uploadDir = DEFAULT_UPLO
             uploaded_by: meta.uploadedBy || null,
         };
 
-        console.log(`[upload] sha256 (built chunk by chunk): ${record.checksum_sha256}`);
+        log(`[upload] sha256 (built chunk by chunk): ${record.checksum_sha256}`);
 
         // history row + user's current-photo pointer land in one transaction
         const [insertResult] = await filesMdl.insertProfilePhotoMdl(record);
-        console.log(`[upload] db transaction committed — history row + users_lst_t.profile_photo_url`);
+        log(`[upload] db transaction committed — history row + users_lst_t.profile_photo_url`);
 
         return { file_id: insertResult.insertId, ...record };
     } catch (error) {

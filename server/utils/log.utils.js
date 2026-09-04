@@ -24,6 +24,5 @@ exports.log = (...args) => {
 // console.log would treat %d/%i inside SQL (DATE_FORMAT patterns) as printf placeholders
 exports.logBlock = (heading, ...body) => {
     if (!isEnabled()) return;
-    console.log(chalk.bold.bgBlue.white(` ${heading} `));
-    console.log(body.map((part) => (typeof part === 'string' ? part : util.inspect(part))).join(' '));
+    console.log(chalk.bgBlue.white(` ${heading} `), body.map((part) => (typeof part === 'string' ? part : util.inspect(part))).join(' '));
 };

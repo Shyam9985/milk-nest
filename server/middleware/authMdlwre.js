@@ -3,12 +3,13 @@ const resutils = require("../utils/response.utils");
 const RESPONSE_STATUS = require("../utils/standard.messages");
 const authMdl = require('../models/authMdl');
 const authService = require('../services/authService');
+const { logBlock } = require('../utils/log.utils');
 
 // authntication validation middleware
 exports.isAuthenticated = async (req, res, next) => {
     let token = req.headers['access-token'];
     let user = null
-    console.log('token', token);
+    logBlock('[is authenticated] token:', token);
 
     try {
         // retrieve the access token form the headers 
@@ -31,7 +32,7 @@ exports.isAuthenticated = async (req, res, next) => {
             if (error.name === 'TokenExpiredError') {
 
                 const decoded = jwt.decode(token);
-                console.log('Token expired checking session...', decoded);
+                logBlock('[is authenticated] token expired, checking session - decoded token:', decoded);
                 const sessionId = decoded?.session_id;
 
                 if (!sessionId) resutils.createError('sessionExpired', 'Your session has expired. Please log in again.');

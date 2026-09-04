@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
+const { log } = require('../utils/log.utils');
 
 const baseConfig = {
     connectionLimit: 7,
@@ -34,9 +35,9 @@ const viewerPool = mysql.createPool({
 });
 
 const logPoolEvents = function (pool) {
-    console.log('In logPoolEvents function');
+    log('In logPoolEvents function');
     pool.on('acquire', function (connection) {
-        console.log('Connection %d acquired', connection.threadId);
+        log('Connection %d acquired', connection.threadId);
     })
 
     pool.on('connection', function (connection) {
@@ -44,11 +45,11 @@ const logPoolEvents = function (pool) {
     });
 
     pool.on('enqueue', function () {
-        console.log('Waiting for available connection slot');
+        log('Waiting for available connection slot');
     });
 
     pool.on('release', function (connection) {
-        console.log('Connection %d released', connection.threadId);
+        log('Connection %d released', connection.threadId);
     });
 }
 
