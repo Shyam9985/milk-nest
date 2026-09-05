@@ -252,10 +252,10 @@ exports.deleteMandalSrvc = async (mandal_ulb_id) => {
 
 // ===================== VILLAGE / SACHIVALAYAM MASTER =====================
 
-// fetches active villages/sachivalayams, optionally filtered by parent district
-exports.getVillagesSrvc = async (district_id = null) => {
+// fetches active villages/sachivalayams, optionally filtered by parent district and/or mandal
+exports.getVillagesSrvc = async (district_id = null, mandal_ulb_id = null) => {
     log('in getVillagesSrvc');
-    return settingsMdl.getVillagesMdl(district_id);
+    return settingsMdl.getVillagesMdl(district_id, mandal_ulb_id);
 }
 
 // creates a village/sachivalayam, reusing a soft deleted record when the same name/code comes back
@@ -382,6 +382,34 @@ const normalizeRolePayload = (payload) => ({
     hierarchy_id: payload.hierarchy_id ? Number(payload.hierarchy_id) : null
 });
 
+// every new role starts with a working shell: view-only 'menu-items' permission (without it
+// the menus middleware rejects the role's users before the sidebar can load) plus a mapping
+// to the Settings sidebar entry (without it the sidebar renders empty).
+// idempotent: existing active rows are kept untouched, soft deleted ones are revived
+const applyDefaultRoleAccess = async (role_id) => {
+
+    const menuPermission = { role_id, permission_key: 'menu-items', can_view: 1, can_insert: 0, can_update: 0, can_delete: 0 };
+    const permissions = await settingsMdl.getDuplicateRolePermissionsMdl(role_id, 'menu-items');
+
+    const existingPermission = permissions[0];
+    if (existingPermission && existingPermission.is_active != 1) {
+        await settingsMdl.reactivateRolePermissionMdl(existingPermission.role_permission_id, menuPermission);
+    } else if (!existingPermission) {
+        await settingsMdl.insertRolePermissionMdl(menuPermission);
+    }
+
+    const [settingsMenu] = await settingsMdl.getSettingsMenuItemMdl();
+    if (!settingsMenu) return; // no Settings sidebar entry defined - nothing to map
+
+    const mappings = await settingsMdl.getDuplicateRoleMenuMapsMdl(role_id, settingsMenu.menu_item_id);
+    const existingMapping = mappings[0];
+    if (existingMapping && existingMapping.is_active != 1) {
+        await settingsMdl.reactivateRoleMenuMapMdl(existingMapping.role_menu_id, { display_order: 10 });
+    } else if (!existingMapping) {
+        await settingsMdl.insertRoleMenuMapMdl({ role_id, menu_item_id: settingsMenu.menu_item_id, display_order: 10 });
+    }
+}
+
 // creates a role, reusing a soft deleted record when the same name/handler comes back
 exports.createRoleSrvc = async (payload) => {
     log('in createRoleSrvc');
@@ -400,10 +428,12 @@ exports.createRoleSrvc = async (payload) => {
     const inactiveDuplicate = duplicates[0];
     if (inactiveDuplicate) {
         await settingsMdl.reactivateRoleMdl(inactiveDuplicate.role_id, data);
+        await applyDefaultRoleAccess(inactiveDuplicate.role_id);
         return { role_id: inactiveDuplicate.role_id, reactivated: true, role_nm: data.role_nm };
     }
 
     const result = await settingsMdl.insertRoleMdl(data);
+    await applyDefaultRoleAccess(result.insertId);
     return { role_id: result.insertId, reactivated: false, role_nm: data.role_nm };
 }
 

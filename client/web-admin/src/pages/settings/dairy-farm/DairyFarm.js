@@ -123,10 +123,11 @@ function DairyFarm() {
         return [];
     };
 
-    // called by the form whenever a district is picked; fetches only that district's villages
-    const loadVillageOptions = async (districtId) => {
+    // called by the form whenever a mandal is picked; fetches that mandal's villages
+    // (the server also includes district-direct villages that have no mandal)
+    const loadVillageOptions = async (mandalUlbId) => {
 
-        const result = await getVillages({ district_id: districtId });
+        const result = await getVillages({ mandal_ulb_id: mandalUlbId });
 
         if (result?.success) {
             return (result?.data?.records || []).map((village) => ({

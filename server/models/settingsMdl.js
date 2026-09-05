@@ -235,8 +235,10 @@ exports.countActiveVillagesByMandalMdl = (mandal_ulb_id) => {
 
 // ===================== VILLAGE / SACHIVALAYAM MASTER =====================
 
-// fetches active villages/sachivalayams along with their parent district and mandal, optionally only those under one district
-exports.getVillagesMdl = (district_id = null) => {
+// fetches active villages/sachivalayams along with their parent district and mandal,
+// optionally only those under one district and/or one mandal. Filtering by mandal also
+// includes district-direct villages (no mandal set) of that mandal's district
+exports.getVillagesMdl = (district_id = null, mandal_ulb_id = null) => {
     log('in getVillagesMdl');
     let qry = `select v.village_sachivalayam_id, v.village_sachivalayam_nm, v.village_sachivalayam_code,
         v.district_id, v.mandal_ulb_id, v.is_sachivalayam, v.is_active,
@@ -252,6 +254,12 @@ exports.getVillagesMdl = (district_id = null) => {
     if (district_id) {
         qry += ' and v.district_id = ?';
         params.push(district_id);
+    }
+
+    if (mandal_ulb_id) {
+        qry += ` and (v.mandal_ulb_id = ? or (v.mandal_ulb_id is null and v.district_id = (
+            select district_id from mandal_ulb_mstr_lst_t where mandal_ulb_id = ?)))`;
+        params.push(mandal_ulb_id, mandal_ulb_id);
     }
 
     qry += ' order by d.district_name asc, v.village_sachivalayam_nm asc';
@@ -1205,6 +1213,15 @@ exports.getRoleMenuMapMenuItemsMdl = () => {
     const qry = `select menu_item_id, menu_name, menu_url, is_quick_menu from menu_items_t
         where is_active = 1 order by menu_name asc`;
     return dbutils.executeQuery(qry, [], 'get role menu map menu items model');
+}
+
+// finds the Settings sidebar entry - the default menu every new role gets mapped to
+exports.getSettingsMenuItemMdl = () => {
+    log('in getSettingsMenuItemMdl');
+    const qry = `select menu_item_id, menu_name from menu_items_t
+        where is_active = 1 and is_quick_menu <> 1 and (menu_url = '/settings' or lower(menu_name) = 'settings')
+        limit 1`;
+    return dbutils.executeQuery(qry, [], 'get settings menu item model');
 }
 
 // finds mappings for the same role and menu (active and inactive), optionally excluding one record

@@ -517,7 +517,8 @@ exports.getVillagesCtrl = async (req, res) => {
     log('in getVillagesCtrl');
   try {
     const districtId = parseOptionalQueryId(req, "district_id");
-    const records = await settingsService.getVillagesSrvc(districtId);
+    const mandalUlbId = parseOptionalQueryId(req, "mandal_ulb_id");
+    const records = await settingsService.getVillagesSrvc(districtId, mandalUlbId);
 
     return resutils.sendSuccessResponse(
       req,
@@ -1390,6 +1391,8 @@ const BRANCH_PAYLOAD_SCHEMA = {
   contact_number: { required: false, type: "mobile-no", label: "Contact Number" },
   email: { required: false, type: "email", label: "Email" },
   is_main_branch: { required: false, type: "boolean", label: "Is Main Branch" },
+  // sent by the form's auto-filled display field; the service recomposes it authoritatively
+  address: { required: false, type: "string", maxLength: 1000, label: "Address" },
 };
 
 exports.getBranchListCtrl = async (req, res) => {

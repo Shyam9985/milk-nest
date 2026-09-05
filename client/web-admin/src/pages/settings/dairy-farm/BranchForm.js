@@ -12,7 +12,7 @@ function BranchForm({ initialValues = null, farmOptions = [], stateOptions = [],
         { name: 'state_id', label: 'State', type: 'select', required: true, options: stateOptions, placeholder: 'Select State' },
         { name: 'district_id', label: 'District', type: 'select', required: true, dependsOn: 'state_id', loadOptions: loadDistrictOptions, placeholder: 'Select District' },
         { name: 'mandal_ulb_id', label: 'Mandal/ULB', type: 'select', required: true, dependsOn: 'district_id', loadOptions: loadMandalOptions, placeholder: 'Select Mandal/ULB' },
-        { name: 'village_sachivalayam_id', label: 'Village/Sachivalayam', type: 'select', required: true, dependsOn: 'district_id', loadOptions: loadVillageOptions, placeholder: 'Select Village/Sachivalayam' },
+        { name: 'village_sachivalayam_id', label: 'Village/Sachivalayam', type: 'select', required: true, dependsOn: 'mandal_ulb_id', loadOptions: loadVillageOptions, placeholder: 'Select Village/Sachivalayam' },
         { name: 'contact_number', label: 'Contact Number', type: 'text', maxLength: 20, placeholder: 'e.g. 9876543210' },
         { name: 'email', label: 'Email', type: 'email', maxLength: 255, placeholder: 'e.g. branch@milknest.com' },
         // one main branch per farm: checking this promotes the branch and demotes the current main
