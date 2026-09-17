@@ -4,12 +4,14 @@ const router = express.Router();
 const authRtr = require('./authRtr');
 const adminRtr = require('./adminRtr');
 const settingsRtr = require('./settingsRtr');
+const milkRtr = require('./milkRtr');
 const filesRouter = require('./filesRtr');
 const profileRtr = require('./profileRtr');
 
 router.use('/auth', authRtr);
 router.use('/admin', adminRtr);
 router.use('/settings', settingsRtr);
+router.use('/milk-production', milkRtr);
 router.use('/files', filesRouter);
 router.use('/profile', profileRtr);
 

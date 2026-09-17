@@ -362,6 +362,40 @@ export async function deleteBranch(branchId) {
     }
 }
 
+// ===================== MILK PRODUCTION =====================
+
+export async function getMilkProductionSheet(queryParams = {}) {
+    try {
+        return await get('milk-production/sheet', queryParams);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function saveMilkProductionSheet(payload) {
+    try {
+        return await post('milk-production/sheet', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getMilkProductionList(queryParams = {}) {
+    try {
+        return await get('milk-production', queryParams);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteMilkProduction(milkProductionId) {
+    try {
+        return await remove(`milk-production/${milkProductionId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
 // ===================== CATTLE REGISTER =====================
 
 export async function getCattleList() {

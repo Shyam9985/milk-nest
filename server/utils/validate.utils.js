@@ -209,6 +209,16 @@ const isValidString = (value, { minLength = 0, maxLength = Infinity, allowEmpty 
     return { status: true, message: null };
 };
 
+const isValidArray = (value, { minItems = 0, maxItems = Infinity, allowEmpty = false, label = 'Value' } = {}) => {
+
+    if (!Array.isArray(value)) return { status: false, message: `${label} must be a valid list.` };
+
+    if (!allowEmpty && value.length === 0) return { status: false, message: `${label} cannot be empty.` };
+    if (value.length < minItems) return { status: false, message: `${label} should contain minimum ${minItems} item(s).` };
+    if (value.length > maxItems) return { status: false, message: `${label} should contain maximum ${maxItems} item(s).` };
+    return { status: true, message: null };
+};
+
 const isValidObject = (value, { allowEmpty = false, minKeys = 0, maxKeys = Infinity, label = 'Value' } = {}) => {
 
     if (value === null || typeof value !== 'object' || Array.isArray(value)) return { status: false, message: `${label} must be a valid object.` };
@@ -368,9 +378,10 @@ const validateNode = (payload, schema, errors, strictMode = true, path = '') => 
                 break;
             }
 
-            // recursive array item validation
+            // recursive array item validation - each item is validated against itemSchema,
+            // and its path carries the row index so a failure names the offending row
             if (rules?.itemSchema && Array.isArray(value))
-                value.forEach((item, index) => { validateNode(this, item, rules.itemSchema, errors, strictMode, `${currentPath}[${index}]`); });
+                value.forEach((item, index) => { validateNode(item, rules.itemSchema, errors, strictMode, `${currentPath}[${index}]`); });
             continue;
         }
 
@@ -384,7 +395,7 @@ const validateNode = (payload, schema, errors, strictMode = true, path = '') => 
             }
 
             // recursive object validation
-            if (rules?.schema) validateNode(this, value, rules.schema, errors, strictMode, currentPath);
+            if (rules?.schema) validateNode(value, rules.schema, errors, strictMode, currentPath);
             continue;
         }
 
@@ -449,5 +460,6 @@ module.exports = {
     isValidGstin,
     isValidString,
     isValidNumber,
-    isValidObject
+    isValidObject,
+    isValidArray
 };

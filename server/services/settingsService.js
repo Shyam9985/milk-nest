@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const settingsMdl = require('../models/settingsMdl');
 const resutils = require('../utils/response.utils');
 const { log } = require('../utils/log.utils');
+const { todayLocal, yearsFromTodayLocal, DATE_ONLY_RE } = require('../utils/date.utils');
 
 // normalizes names and codes before comparing and storing
 // names are stored in title case, e.g. ' guntur  DISTRICT ' -> 'Guntur District'
@@ -697,12 +698,8 @@ exports.deleteHierarchySrvc = async (hierarchy_id) => {
 
 // login inner-joins position_lst_t on end_date >= today, so a position without an
 // end date would silently lock its user out - hence the far-future default of 100 years
-const defaultPositionEndDate = () => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() + 100);
-    return date.toISOString().slice(0, 10);
-};
-const DATE_FORMAT_RE = /^\d{4}-\d{2}-\d{2}$/;
+const defaultPositionEndDate = () => yearsFromTodayLocal(100);
+const DATE_FORMAT_RE = DATE_ONLY_RE;
 
 // fetches active positions visible to the logged in user's scope
 exports.getPositionsSrvc = async (user) => {
@@ -742,7 +739,7 @@ const normalizePositionDate = (value, label, fallback) => {
 
 // pulls the normalized position fields out of a request payload
 const normalizePositionPayload = (payload) => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocal();
     const start_date = normalizePositionDate(payload.start_date, 'Start Date', today);
     const end_date = normalizePositionDate(payload.end_date, 'End Date', defaultPositionEndDate());
 
@@ -1959,7 +1956,7 @@ const parsePastDate = (value, label) => {
     if (!DATE_FORMAT_RE.test(raw) || isNaN(new Date(raw).getTime())) {
         resutils.createError('validationFailed', `${label} must be a valid date (YYYY-MM-DD).`);
     }
-    if (raw > new Date().toISOString().slice(0, 10)) {
+    if (raw > todayLocal()) {
         resutils.createError('validationFailed', `${label} cannot be in the future.`);
     }
     return raw;
