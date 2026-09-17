@@ -256,7 +256,7 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                             value={values[field.name] ?? ''} error={errors[field.name]}
                             placeholder={field.placeholder} onChange={handleChange}
                             disabled={submitting} readOnly={!!field.readOnly} autoComplete={field.autoComplete}
-                            min={field.min} />
+                            min={field.min} max={field.max} />
                     );
 
                 })}

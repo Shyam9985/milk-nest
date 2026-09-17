@@ -362,6 +362,140 @@ export async function deleteBranch(branchId) {
     }
 }
 
+// ===================== CATTLE REGISTER =====================
+
+export async function getCattleList() {
+    try {
+        return await get('settings/master/cattle');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getCattleFormOptions() {
+    try {
+        return await get('settings/master/cattle/form-options');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getCattleBranchOptions(queryParams = {}) {
+    try {
+        return await get('settings/master/cattle/branch', queryParams);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getCattleBreedOptions(queryParams = {}) {
+    try {
+        return await get('settings/master/cattle/breed', queryParams);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createCattle(payload) {
+    try {
+        return await post('settings/master/cattle', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateCattle(cattleId, payload) {
+    try {
+        return await put(`settings/master/cattle/${cattleId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteCattle(cattleId) {
+    try {
+        return await remove(`settings/master/cattle/${cattleId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== CATTLE TYPES =====================
+
+export async function getCattleTypeList() {
+    try {
+        return await get('settings/master/cattle-type');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createCattleType(payload) {
+    try {
+        return await post('settings/master/cattle-type', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateCattleType(cattleTypeId, payload) {
+    try {
+        return await put(`settings/master/cattle-type/${cattleTypeId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteCattleType(cattleTypeId) {
+    try {
+        return await remove(`settings/master/cattle-type/${cattleTypeId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== CATTLE BREEDS =====================
+
+export async function getCattleBreedList() {
+    try {
+        return await get('settings/master/cattle-breed');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function getCattleBreedTypeOptions() {
+    try {
+        return await get('settings/master/cattle-breed/cattle-type');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createCattleBreed(payload) {
+    try {
+        return await post('settings/master/cattle-breed', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateCattleBreed(breedId, payload) {
+    try {
+        return await put(`settings/master/cattle-breed/${breedId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteCattleBreed(breedId) {
+    try {
+        return await remove(`settings/master/cattle-breed/${breedId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
 // ===================== ROLE PERMISSIONS =====================
 
 export async function getRolePermissionList() {

@@ -1,4 +1,4 @@
-function AuthInput({ label, name, type = "text", value, error, placeholder, onChange, disabled = false, readOnly = false, autoComplete, min }) {
+function AuthInput({ label, name, type = "text", value, error, placeholder, onChange, disabled = false, readOnly = false, autoComplete, min, max }) {
 
     return (
 
@@ -20,6 +20,7 @@ function AuthInput({ label, name, type = "text", value, error, placeholder, onCh
                 readOnly={readOnly}
                 autoComplete={autoComplete}
                 min={min}
+                max={max}
                 className={`w-full rounded-lg border border-[var(--input-border)] px-4 py-3 text-[var(--input-text)]
                     placeholder:text-[var(--input-placeholder)] outline-none transition-colors
                     ${readOnly ? "bg-[var(--bg-secondary)]" : "bg-[var(--input-bg)]"}

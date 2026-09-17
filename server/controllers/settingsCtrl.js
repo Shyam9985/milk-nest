@@ -2127,6 +2127,406 @@ exports.updateUserCtrl = async (req, res) => {
   }
 };
 
+// ===================== CATTLE REGISTER =====================
+
+const CATTLE_PAYLOAD_SCHEMA = {
+  branch_id: { required: true, type: "number", min: 1, label: "Branch" },
+  cattle_type_id: { required: true, type: "number", min: 1, label: "Cattle Type" },
+  breed_id: { required: true, type: "number", min: 1, label: "Breed" },
+  gender_id: { required: false, type: "number", min: 1, label: "Gender" },
+  date_of_birth: { required: false, type: "string", maxLength: 10, label: "Date of Birth" },
+  purchase_date: { required: false, type: "string", maxLength: 10, label: "Purchase Date" },
+  weight: { required: false, type: "number", min: 0, label: "Weight (kg)" },
+  purchase_cost: { required: false, type: "number", min: 0, label: "Purchase Cost" },
+  color: { required: false, type: "string", maxLength: 100, label: "Colour" },
+  health_status: { required: false, type: "string", maxLength: 255, label: "Health Status" },
+  remarks: { required: false, type: "string", maxLength: 1000, label: "Remarks" },
+  // the form sends the read-only generated tag back on edit; the server keeps its own value
+  cattle_unique_code: { required: false, type: "string", maxLength: 100, label: "Cattle Code" },
+};
+
+exports.getCattleListCtrl = async (req, res) => {
+  log('in getCattleListCtrl');
+  try {
+    const records = await settingsService.getCattleListSrvc(req.user);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle controller");
+  }
+};
+
+// the static dropdown lists (dairy farms, cattle types, genders) in one call
+exports.getCattleFormOptionsCtrl = async (req, res) => {
+  log('in getCattleFormOptionsCtrl');
+  try {
+    const options = await settingsService.getCattleFormOptionsSrvc(req.user);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      options,
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle form options", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle form options controller");
+  }
+};
+
+// branches of one dairy farm, scope filtered
+exports.getCattleBranchOptionsCtrl = async (req, res) => {
+  log('in getCattleBranchOptionsCtrl');
+  try {
+    const dairyFarmId = parseOptionalQueryId(req, "dairy_farm_id");
+    const records = await settingsService.getPositionBranchesSrvc(req.user, dairyFarmId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle branch options", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle branch options controller");
+  }
+};
+
+// breeds of one cattle type
+exports.getCattleBreedOptionsCtrl = async (req, res) => {
+  log('in getCattleBreedOptionsCtrl');
+  try {
+    const cattleTypeId = parseOptionalQueryId(req, "cattle_type_id");
+    const records = await settingsService.getCattleBreedListSrvc(cattleTypeId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle breed options", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle breed options controller");
+  }
+};
+
+exports.createCattleCtrl = async (req, res) => {
+  log('in createCattleCtrl');
+  try {
+    const validation = await validutils.validatePayload(req.body, CATTLE_PAYLOAD_SCHEMA);
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createCattleSrvc(req.body, req.user?.user_id);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Cattle '${result.cattle_unique_code}' added successfully.`,
+      },
+      { function: "create cattle" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create cattle controller");
+  }
+};
+
+exports.updateCattleCtrl = async (req, res) => {
+  log('in updateCattleCtrl');
+  try {
+    const cattleId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(req.body, CATTLE_PAYLOAD_SCHEMA);
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateCattleSrvc(cattleId, req.body, req.user?.user_id);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Cattle '${result.cattle_unique_code}' updated successfully.`,
+      },
+      { function: "update cattle" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update cattle controller");
+  }
+};
+
+exports.deleteCattleCtrl = async (req, res) => {
+  log('in deleteCattleCtrl');
+  try {
+    const cattleId = parseRecordId(req);
+
+    const result = await settingsService.deleteCattleSrvc(cattleId, req.user?.user_id);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Cattle '${result.cattle_unique_code}' removed successfully.`,
+      },
+      { function: "delete cattle" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete cattle controller");
+  }
+};
+
+// ===================== CATTLE TYPE MASTER =====================
+
+const CATTLE_TYPE_PAYLOAD_SCHEMA = {
+  cattle_type_name: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 100,
+    label: "Cattle Type Name",
+  },
+  description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+};
+
+exports.getCattleTypeListCtrl = async (req, res) => {
+  log('in getCattleTypeListCtrl');
+  try {
+    const records = await settingsService.getCattleTypeListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle types", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle types controller");
+  }
+};
+
+exports.createCattleTypeCtrl = async (req, res) => {
+  log('in createCattleTypeCtrl');
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      CATTLE_TYPE_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createCattleTypeSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Cattle type '${result.cattle_type_name}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create cattle type" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create cattle type controller");
+  }
+};
+
+exports.updateCattleTypeCtrl = async (req, res) => {
+  log('in updateCattleTypeCtrl');
+  try {
+    const cattleTypeId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      CATTLE_TYPE_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateCattleTypeSrvc(cattleTypeId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Cattle type '${result.cattle_type_name}' updated successfully.`,
+      },
+      { function: "update cattle type" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update cattle type controller");
+  }
+};
+
+exports.deleteCattleTypeCtrl = async (req, res) => {
+  log('in deleteCattleTypeCtrl');
+  try {
+    const cattleTypeId = parseRecordId(req);
+
+    const result = await settingsService.deleteCattleTypeSrvc(cattleTypeId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Cattle type '${result.cattle_type_name}' deleted successfully.`,
+      },
+      { function: "delete cattle type" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete cattle type controller");
+  }
+};
+
+// ===================== CATTLE BREED MASTER =====================
+
+const CATTLE_BREED_PAYLOAD_SCHEMA = {
+  cattle_type_id: { required: true, type: "number", min: 1, label: "Cattle Type" },
+  breed_name: {
+    required: true,
+    type: "string",
+    minLength: 2,
+    maxLength: 255,
+    label: "Breed Name",
+  },
+  description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+};
+
+// cattle types for the breed form dropdown, served under the BREED permission so that
+// maintaining breeds does not require cattle type rights
+exports.getCattleBreedTypeOptionsCtrl = async (req, res) => {
+  log('in getCattleBreedTypeOptionsCtrl');
+  try {
+    const records = await settingsService.getCattleTypeListSrvc();
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [] },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle breed type options", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle breed type options controller");
+  }
+};
+
+exports.getCattleBreedListCtrl = async (req, res) => {
+  log('in getCattleBreedListCtrl');
+  try {
+    const records = await settingsService.getCattleBreedListSrvc();
+
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get cattle breeds", cacheType: CACHE_TYPES.NO_STORE },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get cattle breeds controller");
+  }
+};
+
+exports.createCattleBreedCtrl = async (req, res) => {
+  log('in createCattleBreedCtrl');
+  try {
+    const validation = await validutils.validatePayload(
+      req.body,
+      CATTLE_BREED_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createCattleBreedSrvc(req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.CREATED,
+        message: `Breed '${result.breed_name}' ${result.reactivated ? "restored" : "added"} successfully.`,
+      },
+      { function: "create cattle breed" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create cattle breed controller");
+  }
+};
+
+exports.updateCattleBreedCtrl = async (req, res) => {
+  log('in updateCattleBreedCtrl');
+  try {
+    const breedId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(
+      req.body,
+      CATTLE_BREED_PAYLOAD_SCHEMA,
+    );
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateCattleBreedSrvc(breedId, req.body);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.UPDATED,
+        message: `Breed '${result.breed_name}' updated successfully.`,
+      },
+      { function: "update cattle breed" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update cattle breed controller");
+  }
+};
+
+exports.deleteCattleBreedCtrl = async (req, res) => {
+  log('in deleteCattleBreedCtrl');
+  try {
+    const breedId = parseRecordId(req);
+
+    const result = await settingsService.deleteCattleBreedSrvc(breedId);
+
+    return resutils.sendSuccessResponse(
+      req,
+      res,
+      result,
+      {
+        ...RESPONSE_STATUS.DELETED,
+        message: `Breed '${result.breed_name}' deleted successfully.`,
+      },
+      { function: "delete cattle breed" },
+    );
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete cattle breed controller");
+  }
+};
+
 exports.deleteUserCtrl = async (req, res) => {
     log('in deleteUserCtrl');
   try {

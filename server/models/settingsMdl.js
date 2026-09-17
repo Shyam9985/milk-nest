@@ -610,7 +610,8 @@ exports.getPositionBranchesMdl = (user, dairy_farm_id = null) => {
 // fetches an active branch by id, used to validate the position's branch before saving
 exports.getActiveBranchByIdMdl = (branch_id) => {
     log('in getActiveBranchByIdMdl');
-    const qry = 'select branch_id, branch_name, dairy_farm_id, is_main_branch from branches_lst_t where is_active = 1 and branch_id = ?';
+    // branch_code is selected because generated child codes (e.g. cattle tags) build on it
+    const qry = 'select branch_id, branch_name, branch_code, dairy_farm_id, is_main_branch from branches_lst_t where is_active = 1 and branch_id = ?';
     return dbutils.executeQuery(qry, [branch_id], 'get active branch by id model');
 }
 
@@ -705,6 +706,56 @@ exports.countActivePositionsByBranchMdl = (branch_id) => {
     log('in countActivePositionsByBranchMdl');
     const qry = 'select count(*) as cnt from position_lst_t where is_active = 1 and location_ref_id = ?';
     return dbutils.executeQuery(qry, [branch_id], 'count active positions by branch model');
+}
+
+// counts active cattle housed at a branch, used to block deleting a branch that is in use.
+// soft deletes never trip the foreign key, so this check is the only real protection
+exports.countActiveCattleByBranchMdl = (branch_id) => {
+    log('in countActiveCattleByBranchMdl');
+    const qry = 'select count(*) as cnt from cattle_lst_t where is_active = 1 and branch_id = ?';
+    return dbutils.executeQuery(qry, [branch_id], 'count active cattle by branch model');
+}
+
+// counts active branches located in a village, used to block deleting a village that is in use
+exports.countActiveBranchesByVillageMdl = (village_sachivalayam_id) => {
+    log('in countActiveBranchesByVillageMdl');
+    const qry = 'select count(*) as cnt from branches_lst_t where is_active = 1 and village_sachivalayam_id = ?';
+    return dbutils.executeQuery(qry, [village_sachivalayam_id], 'count active branches by village model');
+}
+
+// counts active positions pinned to a village, used to block deleting a village that is in use
+exports.countActivePositionsByVillageMdl = (village_sachivalayam_id) => {
+    log('in countActivePositionsByVillageMdl');
+    const qry = 'select count(*) as cnt from position_lst_t where is_active = 1 and village_sachivalayam_id = ?';
+    return dbutils.executeQuery(qry, [village_sachivalayam_id], 'count active positions by village model');
+}
+
+// counts active positions attached to a dairy farm, used to block deleting a farm that is in use
+exports.countActivePositionsByDairyFarmMdl = (dairy_farm_id) => {
+    log('in countActivePositionsByDairyFarmMdl');
+    const qry = 'select count(*) as cnt from position_lst_t where is_active = 1 and dairy_farm_id = ?';
+    return dbutils.executeQuery(qry, [dairy_farm_id], 'count active positions by dairy farm model');
+}
+
+// counts active positions granting a role, used to block deleting a role that is in use
+exports.countActivePositionsByRoleMdl = (role_id) => {
+    log('in countActivePositionsByRoleMdl');
+    const qry = 'select count(*) as cnt from position_lst_t where is_active = 1 and role_id = ?';
+    return dbutils.executeQuery(qry, [role_id], 'count active positions by role model');
+}
+
+// counts active cattle recorded with a gender, used to block deleting a gender that is in use
+exports.countActiveCattleByGenderMdl = (gender_id) => {
+    log('in countActiveCattleByGenderMdl');
+    const qry = 'select count(*) as cnt from cattle_lst_t where is_active = 1 and gender_id = ?';
+    return dbutils.executeQuery(qry, [gender_id], 'count active cattle by gender model');
+}
+
+// counts active users recorded with a gender, used to block deleting a gender that is in use
+exports.countActiveUsersByGenderMdl = (gender_id) => {
+    log('in countActiveUsersByGenderMdl');
+    const qry = 'select count(*) as cnt from users_lst_t where is_active = 1 and gender_id = ?';
+    return dbutils.executeQuery(qry, [gender_id], 'count active users by gender model');
 }
 
 // soft deletes a sub branch, stamping who deleted it and when
@@ -1365,4 +1416,248 @@ exports.softDeleteUserMdl = (user_id) => {
     log('in softDeleteUserMdl');
     const qry = 'update users_lst_t set is_active = 0 where is_active = 1 and user_id = ?';
     return dbutils.executeQuery(qry, [user_id], 'soft delete user model');
+}
+
+// ===================== CATTLE TYPE MASTER =====================
+// cattle_types_mstr_lst_t / cattle_breeds_mstr_lst_t name their timestamps
+// created_time / updated_time, aliased here so the client renders every master alike
+
+// fetches all active cattle types
+exports.getCattleTypeListMdl = () => {
+    log('in getCattleTypeListMdl');
+    const qry = `select cattle_type_id, cattle_type_name, description, is_active,
+        DATE_FORMAT(created_time, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        from cattle_types_mstr_lst_t where is_active = 1 order by cattle_type_name asc`;
+    return dbutils.executeQuery(qry, [], 'get cattle type list model');
+}
+
+// finds cattle types matching the given name (active and inactive), optionally excluding one record.
+// the name carries a unique key, so a soft deleted match MUST be reactivated, never re-inserted
+exports.getDuplicateCattleTypesMdl = (cattle_type_name, excludeId = null) => {
+    log('in getDuplicateCattleTypesMdl');
+    let qry = `select cattle_type_id, cattle_type_name, is_active from cattle_types_mstr_lst_t
+        where lower(cattle_type_name) = lower(?)`;
+    const params = [cattle_type_name];
+
+    if (excludeId) {
+        qry += ' and cattle_type_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate cattle types model');
+}
+
+// inserts a new cattle type
+exports.insertCattleTypeMdl = (data) => {
+    log('in insertCattleTypeMdl');
+    const qry = 'insert into cattle_types_mstr_lst_t (cattle_type_name, description) values (?, ?)';
+    return dbutils.executeQuery(qry, [data.cattle_type_name, data.description], 'insert cattle type model');
+}
+
+// updates an active cattle type
+exports.updateCattleTypeMdl = (cattle_type_id, data) => {
+    log('in updateCattleTypeMdl');
+    const qry = `update cattle_types_mstr_lst_t set cattle_type_name = ?, description = ?
+        where is_active = 1 and cattle_type_id = ?`;
+    return dbutils.executeQuery(qry, [data.cattle_type_name, data.description, cattle_type_id], 'update cattle type model');
+}
+
+// brings back a soft deleted cattle type with the latest details
+exports.reactivateCattleTypeMdl = (cattle_type_id, data) => {
+    log('in reactivateCattleTypeMdl');
+    const qry = `update cattle_types_mstr_lst_t set cattle_type_name = ?, description = ?, deleted_time = null, is_active = 1
+        where cattle_type_id = ?`;
+    return dbutils.executeQuery(qry, [data.cattle_type_name, data.description, cattle_type_id], 'reactivate cattle type model');
+}
+
+// fetches an active cattle type by id, used to validate the parent before saving a breed
+exports.getActiveCattleTypeByIdMdl = (cattle_type_id) => {
+    log('in getActiveCattleTypeByIdMdl');
+    const qry = 'select cattle_type_id, cattle_type_name from cattle_types_mstr_lst_t where is_active = 1 and cattle_type_id = ?';
+    return dbutils.executeQuery(qry, [cattle_type_id], 'get active cattle type by id model');
+}
+
+// counts active breeds under a cattle type, used to block deleting a type that is in use
+exports.countActiveBreedsByCattleTypeMdl = (cattle_type_id) => {
+    log('in countActiveBreedsByCattleTypeMdl');
+    const qry = 'select count(*) as cnt from cattle_breeds_mstr_lst_t where is_active = 1 and cattle_type_id = ?';
+    return dbutils.executeQuery(qry, [cattle_type_id], 'count active breeds by cattle type model');
+}
+
+// counts active cattle of a type, used to block deleting a type that is in use
+exports.countActiveCattleByTypeMdl = (cattle_type_id) => {
+    log('in countActiveCattleByTypeMdl');
+    const qry = 'select count(*) as cnt from cattle_lst_t where is_active = 1 and cattle_type_id = ?';
+    return dbutils.executeQuery(qry, [cattle_type_id], 'count active cattle by type model');
+}
+
+// soft deletes a cattle type
+exports.softDeleteCattleTypeMdl = (cattle_type_id) => {
+    log('in softDeleteCattleTypeMdl');
+    const qry = `update cattle_types_mstr_lst_t set is_active = 0, deleted_time = current_timestamp
+        where is_active = 1 and cattle_type_id = ?`;
+    return dbutils.executeQuery(qry, [cattle_type_id], 'soft delete cattle type model');
+}
+
+// ===================== CATTLE BREED MASTER =====================
+
+// fetches active breeds along with their parent cattle type name,
+// optionally only those under one cattle type (feeds the cattle form's cascade)
+exports.getCattleBreedListMdl = (cattle_type_id = null) => {
+    log('in getCattleBreedListMdl');
+    let qry = `select b.breed_id, b.breed_name, b.cattle_type_id, b.description, b.is_active,
+        t.cattle_type_name,
+        DATE_FORMAT(b.created_time, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(b.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        from cattle_breeds_mstr_lst_t b
+        join cattle_types_mstr_lst_t t on t.cattle_type_id = b.cattle_type_id
+        where b.is_active = 1`;
+    const params = [];
+
+    if (cattle_type_id) {
+        qry += ' and b.cattle_type_id = ?';
+        params.push(cattle_type_id);
+    }
+
+    qry += ' order by t.cattle_type_name asc, b.breed_name asc';
+    return dbutils.executeQuery(qry, params, 'get cattle breed list model');
+}
+
+// finds breeds clashing on name within the same cattle type, optionally excluding one record
+exports.getDuplicateCattleBreedsMdl = (cattle_type_id, breed_name, excludeId = null) => {
+    log('in getDuplicateCattleBreedsMdl');
+    let qry = `select breed_id, breed_name, cattle_type_id, is_active from cattle_breeds_mstr_lst_t
+        where cattle_type_id = ? and lower(breed_name) = lower(?)`;
+    const params = [cattle_type_id, breed_name];
+
+    if (excludeId) {
+        qry += ' and breed_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate cattle breeds model');
+}
+
+// inserts a new breed
+exports.insertCattleBreedMdl = (data) => {
+    log('in insertCattleBreedMdl');
+    const qry = 'insert into cattle_breeds_mstr_lst_t (cattle_type_id, breed_name, description) values (?, ?, ?)';
+    return dbutils.executeQuery(qry, [data.cattle_type_id, data.breed_name, data.description], 'insert cattle breed model');
+}
+
+// updates an active breed
+exports.updateCattleBreedMdl = (breed_id, data) => {
+    log('in updateCattleBreedMdl');
+    const qry = `update cattle_breeds_mstr_lst_t set cattle_type_id = ?, breed_name = ?, description = ?
+        where is_active = 1 and breed_id = ?`;
+    return dbutils.executeQuery(qry, [data.cattle_type_id, data.breed_name, data.description, breed_id], 'update cattle breed model');
+}
+
+// brings back a soft deleted breed with the latest details
+exports.reactivateCattleBreedMdl = (breed_id, data) => {
+    log('in reactivateCattleBreedMdl');
+    const qry = `update cattle_breeds_mstr_lst_t set cattle_type_id = ?, breed_name = ?, description = ?, deleted_time = null, is_active = 1
+        where breed_id = ?`;
+    return dbutils.executeQuery(qry, [data.cattle_type_id, data.breed_name, data.description, breed_id], 'reactivate cattle breed model');
+}
+
+// fetches an active breed by id
+exports.getActiveCattleBreedByIdMdl = (breed_id) => {
+    log('in getActiveCattleBreedByIdMdl');
+    const qry = 'select breed_id, breed_name, cattle_type_id from cattle_breeds_mstr_lst_t where is_active = 1 and breed_id = ?';
+    return dbutils.executeQuery(qry, [breed_id], 'get active cattle breed by id model');
+}
+
+// counts active cattle of a breed, used to block deleting a breed that is in use
+exports.countActiveCattleByBreedMdl = (breed_id) => {
+    log('in countActiveCattleByBreedMdl');
+    const qry = 'select count(*) as cnt from cattle_lst_t where is_active = 1 and breed_id = ?';
+    return dbutils.executeQuery(qry, [breed_id], 'count active cattle by breed model');
+}
+
+// soft deletes a breed
+exports.softDeleteCattleBreedMdl = (breed_id) => {
+    log('in softDeleteCattleBreedMdl');
+    const qry = `update cattle_breeds_mstr_lst_t set is_active = 0, deleted_time = current_timestamp
+        where is_active = 1 and breed_id = ?`;
+    return dbutils.executeQuery(qry, [breed_id], 'soft delete cattle breed model');
+}
+
+// ===================== CATTLE REGISTER =====================
+// cattle belong to a branch, so the list is restricted to the user's scope through it.
+// dates come back as YYYY-MM-DD so the edit form's date inputs can load them
+
+exports.getCattleListMdl = (user) => {
+    log('in getCattleListMdl');
+    const scope = scopeutils.getScopeFilter(user, 'b');
+
+    const qry = `select c.cattle_id, c.cattle_unique_code, c.branch_id, c.cattle_type_id, c.breed_id, c.gender_id,
+        c.weight, c.color, c.purchase_cost, c.health_status, c.remarks, c.is_active,
+        b.branch_name, b.dairy_farm_id, df.dairy_farm_name,
+        t.cattle_type_name, br.breed_name, g.gender_nm,
+        DATE_FORMAT(c.date_of_birth, '%Y-%m-%d') as date_of_birth,
+        DATE_FORMAT(c.purchase_date, '%Y-%m-%d') as purchase_date,
+        DATE_FORMAT(c.created_time, '%d-%m-%Y %h:%i %p') as created_at,
+        DATE_FORMAT(c.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        from cattle_lst_t c
+        join branches_lst_t b on b.branch_id = c.branch_id
+        left join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id
+        join cattle_types_mstr_lst_t t on t.cattle_type_id = c.cattle_type_id
+        join cattle_breeds_mstr_lst_t br on br.breed_id = c.breed_id
+        left join gender_mstr_lst_t g on g.gender_id = c.gender_id
+        where c.is_active = 1${scope.clause}
+        order by c.cattle_unique_code asc`;
+    return dbutils.executeQuery(qry, scope.params, 'get cattle list model');
+}
+
+// checks whether a generated cattle code is already taken (the column is unique)
+exports.getCattleByCodeMdl = (cattle_unique_code) => {
+    log('in getCattleByCodeMdl');
+    const qry = 'select cattle_id from cattle_lst_t where cattle_unique_code = ?';
+    return dbutils.executeQuery(qry, [cattle_unique_code], 'get cattle by code model');
+}
+
+// counts cattle ever recorded at a branch, used to seed the generated code sequence
+exports.countCattleByBranchMdl = (branch_id) => {
+    log('in countCattleByBranchMdl');
+    const qry = 'select count(*) as cnt from cattle_lst_t where branch_id = ?';
+    return dbutils.executeQuery(qry, [branch_id], 'count cattle by branch model');
+}
+
+// inserts a new cattle record
+exports.insertCattleMdl = (data, user_id) => {
+    log('in insertCattleMdl');
+    const qry = `insert into cattle_lst_t (branch_id, cattle_unique_code, cattle_type_id, breed_id, gender_id,
+        date_of_birth, weight, color, purchase_date, purchase_cost, health_status, remarks, created_by)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.branch_id, data.cattle_unique_code, data.cattle_type_id, data.breed_id, data.gender_id,
+        data.date_of_birth, data.weight, data.color, data.purchase_date, data.purchase_cost,
+        data.health_status, data.remarks, user_id], 'insert cattle model');
+}
+
+// updates an active cattle record; the generated code never changes once assigned
+exports.updateCattleMdl = (cattle_id, data, user_id) => {
+    log('in updateCattleMdl');
+    const qry = `update cattle_lst_t set branch_id = ?, cattle_type_id = ?, breed_id = ?, gender_id = ?,
+        date_of_birth = ?, weight = ?, color = ?, purchase_date = ?, purchase_cost = ?,
+        health_status = ?, remarks = ?, updated_by = ?
+        where is_active = 1 and cattle_id = ?`;
+    return dbutils.executeQuery(qry, [data.branch_id, data.cattle_type_id, data.breed_id, data.gender_id,
+        data.date_of_birth, data.weight, data.color, data.purchase_date, data.purchase_cost,
+        data.health_status, data.remarks, user_id, cattle_id], 'update cattle model');
+}
+
+// fetches an active cattle record by id
+exports.getActiveCattleByIdMdl = (cattle_id) => {
+    log('in getActiveCattleByIdMdl');
+    const qry = `select cattle_id, cattle_unique_code, branch_id from cattle_lst_t
+        where is_active = 1 and cattle_id = ?`;
+    return dbutils.executeQuery(qry, [cattle_id], 'get active cattle by id model');
+}
+
+// soft deletes a cattle record, stamping who removed it and when
+exports.softDeleteCattleMdl = (cattle_id, user_id) => {
+    log('in softDeleteCattleMdl');
+    const qry = `update cattle_lst_t set is_active = 0, deleted_by = ?, deleted_time = current_timestamp
+        where is_active = 1 and cattle_id = ?`;
+    return dbutils.executeQuery(qry, [user_id, cattle_id], 'soft delete cattle model');
 }

@@ -318,6 +318,16 @@ exports.deleteVillageSrvc = async (village_sachivalayam_id) => {
         resutils.createError('recordNotFound', 'Village/Sachivalayam not found or already deleted.');
     }
 
+    const [{ cnt: branchCount }] = await settingsMdl.countActiveBranchesByVillageMdl(village_sachivalayam_id);
+    if (branchCount) {
+        resutils.createError('recordInUse', `Village/Sachivalayam cannot be deleted. ${branchCount} active branch(es) are located in it. Move those branches first.`);
+    }
+
+    const [{ cnt: positionCount }] = await settingsMdl.countActivePositionsByVillageMdl(village_sachivalayam_id);
+    if (positionCount) {
+        resutils.createError('recordInUse', `Village/Sachivalayam cannot be deleted. ${positionCount} active position(s) are pinned to it. Move those positions first.`);
+    }
+
     const result = await settingsMdl.softDeleteVillageMdl(village_sachivalayam_id);
     if (!result.affectedRows) {
         resutils.createError('recordNotFound', 'Village/Sachivalayam not found or already deleted.');
@@ -475,6 +485,14 @@ exports.deleteRoleSrvc = async (role_id) => {
         resutils.createError('recordInUse', `Role cannot be deleted. ${userCount} active user(s) are mapped to it. Reassign those users first.`);
     }
 
+    const [{ cnt: positionCount }] = await settingsMdl.countActivePositionsByRoleMdl(role_id);
+    if (positionCount) {
+        resutils.createError('recordInUse', `Role cannot be deleted. ${positionCount} active position(s) grant it. Reassign those positions first.`);
+    }
+
+    // menu mappings and permission rows are role owned configuration, not independent
+    // records - they stay put so a reactivated role comes back with its setup intact
+
     const result = await settingsMdl.softDeleteRoleMdl(role_id);
     if (!result.affectedRows) {
         resutils.createError('recordNotFound', 'Role not found or already deleted.');
@@ -539,6 +557,16 @@ exports.deleteGenderSrvc = async (gender_id) => {
     const [record] = await settingsMdl.getActiveGenderByIdMdl(gender_id);
     if (!record) {
         resutils.createError('recordNotFound', 'Gender not found or already deleted.');
+    }
+
+    const [{ cnt: cattleCount }] = await settingsMdl.countActiveCattleByGenderMdl(gender_id);
+    if (cattleCount) {
+        resutils.createError('recordInUse', `Gender cannot be deleted. ${cattleCount} active cattle are recorded with it.`);
+    }
+
+    const [{ cnt: userCount }] = await settingsMdl.countActiveUsersByGenderMdl(gender_id);
+    if (userCount) {
+        resutils.createError('recordInUse', `Gender cannot be deleted. ${userCount} active user(s) are recorded with it.`);
     }
 
     const result = await settingsMdl.softDeleteGenderMdl(gender_id);
@@ -1061,6 +1089,11 @@ exports.deleteDairyFarmSrvc = async (dairy_farm_id, user_id) => {
         resutils.createError('recordInUse', `Dairy farm cannot be deleted. ${subBranchCount} active branch(es) are mapped to it. Delete those branches first.`);
     }
 
+    const [{ cnt: positionCount }] = await settingsMdl.countActivePositionsByDairyFarmMdl(dairy_farm_id);
+    if (positionCount) {
+        resutils.createError('recordInUse', `Dairy farm cannot be deleted. ${positionCount} active position(s) are attached to it. Move those positions first.`);
+    }
+
     // the main branch belongs to the farm and goes down with it, in one transaction
     await settingsMdl.softDeleteDairyFarmWithMainBranchMdl(dairy_farm_id, user_id);
 
@@ -1194,6 +1227,11 @@ exports.deleteBranchSrvc = async (branch_id, user_id) => {
     }
     if (record.is_main_branch) {
         resutils.createError('recordInUse', 'The main branch cannot be deleted on its own - it is deactivated together with its dairy farm.');
+    }
+
+    const [{ cnt: cattleCount }] = await settingsMdl.countActiveCattleByBranchMdl(branch_id);
+    if (cattleCount) {
+        resutils.createError('recordInUse', `Branch cannot be deleted. ${cattleCount} active cattle are housed at it. Move or remove those cattle first.`);
     }
 
     const [{ cnt: positionCount }] = await settingsMdl.countActivePositionsByBranchMdl(branch_id);
@@ -1712,4 +1750,333 @@ exports.deleteUserSrvc = async (user_id, requestingUserId) => {
         resutils.createError('recordNotFound', 'User not found or already deleted.');
     }
     return { user_id: Number(user_id), user_nm: record.user_nm };
+}
+
+// ===================== CATTLE TYPE MASTER =====================
+
+// fetches all active cattle types
+exports.getCattleTypeListSrvc = async () => {
+    log('in getCattleTypeListSrvc');
+    return settingsMdl.getCattleTypeListMdl();
+}
+
+// pulls the normalized cattle type fields out of a request payload
+const normalizeCattleTypePayload = (payload) => ({
+    cattle_type_name: normalizeName(payload.cattle_type_name),
+    description: emptyToNull(payload.description)
+});
+
+// creates a cattle type, reusing a soft deleted record when the same name comes back
+// (the name carries a unique key, so re-inserting would violate it)
+exports.createCattleTypeSrvc = async (payload) => {
+    log('in createCattleTypeSrvc');
+    const data = normalizeCattleTypePayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicateCattleTypesMdl(data.cattle_type_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Cattle type already exists with the same name (${activeDuplicate.cattle_type_name}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateCattleTypeMdl(inactiveDuplicate.cattle_type_id, data);
+        return { cattle_type_id: inactiveDuplicate.cattle_type_id, reactivated: true, cattle_type_name: data.cattle_type_name };
+    }
+
+    const result = await settingsMdl.insertCattleTypeMdl(data);
+    return { cattle_type_id: result.insertId, reactivated: false, cattle_type_name: data.cattle_type_name };
+}
+
+// updates a cattle type after making sure the new name is not taken by another record
+exports.updateCattleTypeSrvc = async (cattle_type_id, payload) => {
+    log('in updateCattleTypeSrvc');
+    const data = normalizeCattleTypePayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicateCattleTypesMdl(data.cattle_type_name, cattle_type_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another cattle type already exists with the same name (${duplicates[0].cattle_type_name}).`);
+    }
+
+    const result = await settingsMdl.updateCattleTypeMdl(cattle_type_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Cattle type not found or already deleted.');
+    }
+    return { cattle_type_id: Number(cattle_type_id), cattle_type_name: data.cattle_type_name };
+}
+
+// soft deletes a cattle type after making sure no active breed or cattle depends on it
+exports.deleteCattleTypeSrvc = async (cattle_type_id) => {
+    log('in deleteCattleTypeSrvc');
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveCattleTypeByIdMdl(cattle_type_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Cattle type not found or already deleted.');
+    }
+
+    const [{ cnt: breedCount }] = await settingsMdl.countActiveBreedsByCattleTypeMdl(cattle_type_id);
+    if (breedCount) {
+        resutils.createError('recordInUse', `Cattle type cannot be deleted. ${breedCount} active breed(s) are mapped to it. Delete those breeds first.`);
+    }
+
+    const [{ cnt: cattleCount }] = await settingsMdl.countActiveCattleByTypeMdl(cattle_type_id);
+    if (cattleCount) {
+        resutils.createError('recordInUse', `Cattle type cannot be deleted. ${cattleCount} active cattle are recorded under it.`);
+    }
+
+    const result = await settingsMdl.softDeleteCattleTypeMdl(cattle_type_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Cattle type not found or already deleted.');
+    }
+    return { cattle_type_id: Number(cattle_type_id), cattle_type_name: record.cattle_type_name };
+}
+
+// ===================== CATTLE BREED MASTER =====================
+
+// fetches active breeds with their cattle type, optionally filtered by type
+exports.getCattleBreedListSrvc = async (cattle_type_id = null) => {
+    log('in getCattleBreedListSrvc');
+    return settingsMdl.getCattleBreedListMdl(cattle_type_id);
+}
+
+// pulls the normalized breed fields out of a request payload
+const normalizeCattleBreedPayload = (payload) => ({
+    cattle_type_id: Number(payload.cattle_type_id),
+    breed_name: normalizeName(payload.breed_name),
+    description: emptyToNull(payload.description)
+});
+
+// makes sure the parent cattle type exists and is active
+const assertActiveCattleType = async (cattle_type_id) => {
+    const parent = await settingsMdl.getActiveCattleTypeByIdMdl(cattle_type_id);
+    if (!parent.length) {
+        resutils.createError('invalidParent', 'Selected cattle type does not exist or is inactive.');
+    }
+}
+
+// creates a breed under a cattle type, reusing a soft deleted record of the same name
+exports.createCattleBreedSrvc = async (payload) => {
+    log('in createCattleBreedSrvc');
+    const data = normalizeCattleBreedPayload(payload);
+
+    await assertActiveCattleType(data.cattle_type_id);
+
+    const duplicates = await settingsMdl.getDuplicateCattleBreedsMdl(data.cattle_type_id, data.breed_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Breed already exists with the same name under this cattle type (${activeDuplicate.breed_name}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateCattleBreedMdl(inactiveDuplicate.breed_id, data);
+        return { breed_id: inactiveDuplicate.breed_id, reactivated: true, breed_name: data.breed_name };
+    }
+
+    const result = await settingsMdl.insertCattleBreedMdl(data);
+    return { breed_id: result.insertId, reactivated: false, breed_name: data.breed_name };
+}
+
+// updates a breed after re-validating the parent and duplicate rules
+exports.updateCattleBreedSrvc = async (breed_id, payload) => {
+    log('in updateCattleBreedSrvc');
+    const data = normalizeCattleBreedPayload(payload);
+
+    await assertActiveCattleType(data.cattle_type_id);
+
+    const duplicates = await settingsMdl.getDuplicateCattleBreedsMdl(data.cattle_type_id, data.breed_name, breed_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another breed already exists with the same name under this cattle type (${duplicates[0].breed_name}).`);
+    }
+
+    const result = await settingsMdl.updateCattleBreedMdl(breed_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Breed not found or already deleted.');
+    }
+    return { breed_id: Number(breed_id), breed_name: data.breed_name };
+}
+
+// soft deletes a breed after making sure no active cattle depends on it
+exports.deleteCattleBreedSrvc = async (breed_id) => {
+    log('in deleteCattleBreedSrvc');
+    // record is fetched first so the success message can carry its name
+    const [record] = await settingsMdl.getActiveCattleBreedByIdMdl(breed_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Breed not found or already deleted.');
+    }
+
+    const [{ cnt: cattleCount }] = await settingsMdl.countActiveCattleByBreedMdl(breed_id);
+    if (cattleCount) {
+        resutils.createError('recordInUse', `Breed cannot be deleted. ${cattleCount} active cattle are recorded under it.`);
+    }
+
+    const result = await settingsMdl.softDeleteCattleBreedMdl(breed_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Breed not found or already deleted.');
+    }
+    return { breed_id: Number(breed_id), breed_name: record.breed_name };
+}
+
+// ===================== CATTLE REGISTER =====================
+
+// fetches cattle visible to the logged in user's scope
+exports.getCattleListSrvc = async (user) => {
+    log('in getCattleListSrvc');
+    return settingsMdl.getCattleListMdl(user);
+}
+
+// the static dropdown lists the cattle form needs, in one round trip.
+// dairy farms are scope filtered, so a branch user only ever picks their own farm
+exports.getCattleFormOptionsSrvc = async (user) => {
+    log('in getCattleFormOptionsSrvc');
+    const [dairy_farms, cattle_types, genders] = await Promise.all([
+        settingsMdl.getDairyFarmsMdl(user),
+        settingsMdl.getCattleTypeListMdl(),
+        settingsMdl.getGendersMdl()
+    ]);
+    return { dairy_farms, cattle_types, genders };
+}
+
+// optional numeric input: '' -> null, otherwise a validated positive number
+const parsePositiveNumber = (value, label) => {
+    const raw = emptyToNull(value);
+    if (raw === null) return null;
+
+    const parsed = Number(raw);
+    if (isNaN(parsed) || parsed < 0) {
+        resutils.createError('validationFailed', `${label} must be a positive number.`);
+    }
+    return parsed;
+}
+
+// optional YYYY-MM-DD input that may not be in the future
+const parsePastDate = (value, label) => {
+    const raw = emptyToNull(value);
+    if (raw === null) return null;
+
+    if (!DATE_FORMAT_RE.test(raw) || isNaN(new Date(raw).getTime())) {
+        resutils.createError('validationFailed', `${label} must be a valid date (YYYY-MM-DD).`);
+    }
+    if (raw > new Date().toISOString().slice(0, 10)) {
+        resutils.createError('validationFailed', `${label} cannot be in the future.`);
+    }
+    return raw;
+}
+
+// pulls the normalized cattle fields out of a request payload; the unique code is
+// generated server-side on create and never changes afterwards
+const normalizeCattlePayload = (payload) => {
+    const date_of_birth = parsePastDate(payload.date_of_birth, 'Date of Birth');
+    const purchase_date = parsePastDate(payload.purchase_date, 'Purchase Date');
+
+    // ISO date strings compare correctly as plain strings
+    if (date_of_birth && purchase_date && purchase_date < date_of_birth) {
+        resutils.createError('validationFailed', 'Purchase Date cannot be earlier than the Date of Birth.');
+    }
+
+    return {
+        branch_id: Number(payload.branch_id),
+        cattle_type_id: Number(payload.cattle_type_id),
+        breed_id: Number(payload.breed_id),
+        gender_id: payload.gender_id ? Number(payload.gender_id) : null,
+        date_of_birth,
+        purchase_date,
+        weight: parsePositiveNumber(payload.weight, 'Weight'),
+        purchase_cost: parsePositiveNumber(payload.purchase_cost, 'Purchase Cost'),
+        color: emptyToNull(payload.color),
+        health_status: emptyToNull(payload.health_status),
+        remarks: emptyToNull(payload.remarks)
+    };
+}
+
+// every parent must exist and be active, and the breed must belong to the chosen type
+const assertCattleParents = async (data) => {
+    const [branch] = await settingsMdl.getActiveBranchByIdMdl(data.branch_id);
+    if (!branch) {
+        resutils.createError('invalidParent', 'Selected branch does not exist or is inactive.');
+    }
+
+    const [cattleType] = await settingsMdl.getActiveCattleTypeByIdMdl(data.cattle_type_id);
+    if (!cattleType) {
+        resutils.createError('invalidParent', 'Selected cattle type does not exist or is inactive.');
+    }
+
+    const [breed] = await settingsMdl.getActiveCattleBreedByIdMdl(data.breed_id);
+    if (!breed) {
+        resutils.createError('invalidParent', 'Selected breed does not exist or is inactive.');
+    }
+    if (breed.cattle_type_id != data.cattle_type_id) {
+        resutils.createError('invalidParent', 'Selected breed does not belong to the selected cattle type.');
+    }
+
+    if (data.gender_id) {
+        const gender = await settingsMdl.getActiveGenderByIdMdl(data.gender_id);
+        if (!gender.length) {
+            resutils.createError('invalidParent', 'Selected gender does not exist or is inactive.');
+        }
+    }
+
+    return branch;
+}
+
+// builds a unique tag under the branch code, e.g. 'SDF-3210-HOB' -> 'SDF-3210-HOB-C001'
+const generateCattleCode = async (branch_id, branch_code) => {
+    const [{ cnt }] = await settingsMdl.countCattleByBranchMdl(branch_id);
+
+    for (let sequence = Number(cnt) + 1; sequence < Number(cnt) + 500; sequence++) {
+        const candidate = `${branch_code}-C${String(sequence).padStart(3, '0')}`;
+        const existing = await settingsMdl.getCattleByCodeMdl(candidate);
+        if (!existing.length) return candidate;
+    }
+    resutils.createError('duplicateRecord', 'Unable to generate a unique cattle code. Please try again.');
+}
+
+// records a new animal at a branch
+exports.createCattleSrvc = async (payload, user_id) => {
+    log('in createCattleSrvc');
+    const data = normalizeCattlePayload(payload);
+
+    const branch = await assertCattleParents(data);
+
+    data.cattle_unique_code = await generateCattleCode(data.branch_id, branch.branch_code);
+
+    const result = await settingsMdl.insertCattleMdl(data, user_id);
+    return { cattle_id: result.insertId, cattle_unique_code: data.cattle_unique_code };
+}
+
+// updates an animal's details; its tag stays with it for life
+exports.updateCattleSrvc = async (cattle_id, payload, user_id) => {
+    log('in updateCattleSrvc');
+    const data = normalizeCattlePayload(payload);
+
+    const [record] = await settingsMdl.getActiveCattleByIdMdl(cattle_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+    }
+
+    await assertCattleParents(data);
+
+    const result = await settingsMdl.updateCattleMdl(cattle_id, data, user_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+    }
+    return { cattle_id: Number(cattle_id), cattle_unique_code: record.cattle_unique_code };
+}
+
+// soft deletes a cattle record
+exports.deleteCattleSrvc = async (cattle_id, user_id) => {
+    log('in deleteCattleSrvc');
+    // record is fetched first so the success message can carry its tag
+    const [record] = await settingsMdl.getActiveCattleByIdMdl(cattle_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+    }
+
+    const result = await settingsMdl.softDeleteCattleMdl(cattle_id, user_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+    }
+    return { cattle_id: Number(cattle_id), cattle_unique_code: record.cattle_unique_code };
 }

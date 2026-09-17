@@ -68,6 +68,28 @@ router.post('/master/branch', authmdlwre.isAuthenticated, authmdlwre.isAuthorize
 router.put('/master/branch/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'update'), settingsCtrl.updateBranchCtrl);
 router.delete('/master/branch/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('dairy-farm', 'delete'), settingsCtrl.deleteBranchCtrl);
 
+// cattle register routes (the animals themselves; dropdown feeds sit under the same key)
+router.get('/master/cattle', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleListCtrl);
+router.get('/master/cattle/form-options', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleFormOptionsCtrl);
+router.get('/master/cattle/branch', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleBranchOptionsCtrl);
+router.get('/master/cattle/breed', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleBreedOptionsCtrl);
+router.post('/master/cattle', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'create'), settingsCtrl.createCattleCtrl);
+router.put('/master/cattle/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'update'), settingsCtrl.updateCattleCtrl);
+router.delete('/master/cattle/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle', 'delete'), settingsCtrl.deleteCattleCtrl);
+
+// cattle type master routes - its own key, like every other master ('cattle' stays for cattle records)
+router.get('/master/cattle-type', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-type', 'read'), settingsCtrl.getCattleTypeListCtrl);
+router.post('/master/cattle-type', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-type', 'create'), settingsCtrl.createCattleTypeCtrl);
+router.put('/master/cattle-type/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-type', 'update'), settingsCtrl.updateCattleTypeCtrl);
+router.delete('/master/cattle-type/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-type', 'delete'), settingsCtrl.deleteCattleTypeCtrl);
+
+// cattle breed master routes (cattle type list feeds the breed form dropdown)
+router.get('/master/cattle-breed', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-breed', 'read'), settingsCtrl.getCattleBreedListCtrl);
+router.get('/master/cattle-breed/cattle-type', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-breed', 'read'), settingsCtrl.getCattleBreedTypeOptionsCtrl);
+router.post('/master/cattle-breed', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-breed', 'create'), settingsCtrl.createCattleBreedCtrl);
+router.put('/master/cattle-breed/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-breed', 'update'), settingsCtrl.updateCattleBreedCtrl);
+router.delete('/master/cattle-breed/:id', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('cattle-breed', 'delete'), settingsCtrl.deleteCattleBreedCtrl);
+
 // role permission routes (role list feeds the form dropdown)
 router.get('/security/role-permission', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionListCtrl);
 router.get('/security/role-permission/role', authmdlwre.isAuthenticated, authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionRolesCtrl);
