@@ -11,6 +11,7 @@ process.on("uncaughtException", (error) => {
 const server = require("./node");
 const dbutils = require("./server/utils/db.utils");
 const dbconfig = require("./server/config/db.config");
+const { closeMetrics } = require("./server/middleware/requestLoggerMdlwre");
 
 const port = process.env.PORT || 4901;
 
@@ -18,7 +19,7 @@ const serverVar = server.app.listen(port, "localhost", () => {
   console.log(`Server is up and listening on ${port} to the requests...`);
 });
 
-// closes the http server, then every db pool. mysql2/promise pools have no
+// closes the http server, then the metrics log file and every db pool. mysql2/promise pools have no
 // close() — the method is end(), and it returns a Promise, not a callback
 const shutdown = (exitCode) => {
   serverVar.close(async () => {
@@ -26,11 +27,12 @@ const shutdown = (exitCode) => {
 
     try {
       await Promise.allSettled([
+        closeMetrics(),
         dbConfig.pool.end(),
         dbConfig.operatorPool.end(),
         dbConfig.viewerPool.end(),
       ]);
-      console.log("Database connections closed");
+      console.log("Metrics log and database connections closed");
     } finally {
       process.exit(exitCode);
     }

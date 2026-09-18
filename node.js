@@ -2,7 +2,8 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
-const logger = require('./server/middleware/logger');
+const logger = require('./server/middleware/loggerMdlwre');
+const { requestId, requestLogger } = require('./server/middleware/requestLoggerMdlwre');
 const cookieParser = require('cookie-parser');
 const response = require('./server/utils/response.utils');
 const RESPONSE_STATUS = require('./server/utils/standard.messages');
@@ -14,6 +15,11 @@ require('./server/utils/schedule.utils');
 
 // creating express app
 const app = express();
+
+// request id + metrics log come first so EVERY request is tagged and logged,
+// including ones rejected later by cors, body parsing or the 404 handler
+app.use(requestId);
+app.use(requestLogger);
 
 // content security policy 
 app.use(
@@ -47,8 +53,8 @@ const corsOptions = {
         }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'access-token', 'x-file-name'],
-    exposedHeaders: ['access-token', 'new-access-token'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'access-token', 'x-file-name', 'x-request-id'],
+    exposedHeaders: ['access-token', 'new-access-token', 'x-request-id'],
     credentials: true,
     maxAge: 18000 // 30 minutes
 };
@@ -116,6 +122,8 @@ app.all('*splat', (req, res) => {
 // global error handling
 app.use((error, req, res, next) => {
     console.log('In Global error handler : ', error);
+    // real error message goes to the metrics log; the client only sees the generic message below
+    res.locals.error = error?.message || String(error);
     response.sendErrorResponse(req, res, 'Unable to process request. please try after some time !', RESPONSE_STATUS.INTERNAL_SERVER_ERROR, { location: 'Global error' })
 });
 

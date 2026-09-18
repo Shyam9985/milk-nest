@@ -2,19 +2,8 @@ const resutils = require('../utils/response.utils');
 const validutils = require('../utils/validate.utils');
 const RESPONSE_STATUS = require('../utils/standard.messages');
 const authService = require('../services/authService');
-const UAParser = require('ua-parser-js');
+const { getRequestContext } = require('../utils/request.utils');
 const { log } = require('../utils/log.utils');
-
-// extracts ip and device details from the request
-const getRequestContext = (req) => {
-    const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || req._remoteAddress || null;
-
-    const parser = new UAParser(req.headers['user-agent']);
-    const result = parser.getResult();
-    const deviceInfo = [result?.ua, result.browser.name, result.browser.version, result.os.name].filter(Boolean).join(' | ');
-
-    return { ipAddress, deviceInfo };
-}
 
 // destroys the express session bound to the request
 const destroySession = (req) => {
