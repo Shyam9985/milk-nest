@@ -1,6 +1,6 @@
 import About from '../pages/About';
 import authRouter from '../pages/auth/auth.router'
-import Dashboard from '../pages/Dashboard';
+import Dashboard from '../pages/dashboard/Dashboard';
 import LandingRedirect from './LandingRedirect';
 import MilkProduction from '../pages/milk-production/MilkProduction';
 import PageNotFound from '../pages/PageNotFound';

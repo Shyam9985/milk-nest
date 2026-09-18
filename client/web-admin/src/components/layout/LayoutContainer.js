@@ -5,7 +5,6 @@ import Maincontent from "./Maincontent";
 import Sidemenu from "./Sidemenu";
 import Header from "./Header";
 import ThemeContext from "../../contexts/ThemeContext";
-import Dashboard from "../../pages/Dashboard";
 import About from "../../pages/About";
 import PageNotFound from "../../pages/PageNotFound";
 import { Outlet } from "react-router-dom";

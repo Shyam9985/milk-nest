@@ -107,6 +107,19 @@
     --toggle-active-bg: var(--brand-primary);
     --toggle-active-text: #ffffff;
 
+    /* Charts - categorical slots in a fixed, CVD-validated order (never cycled),
+       plus the recessive chrome. Validated against --card-bg with the dataviz checks */
+    --chart-1: #2a78d6;
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
+    --chart-5: #e87ba4;
+    --chart-6: #4a3aa7;
+    --chart-other: #9ca3af;
+    --chart-previous: #9ca3af;
+    --chart-grid: #e5e7eb;
+    --chart-axis-text: #6b7280;
+
 }
 
 /* Drak theme */
@@ -209,4 +222,16 @@
     --toggle-active-bg: var(--brand-primary);
     --toggle-active-text: #ffffff;
 
+
+    /* Charts - the same hues stepped for the dark card surface */
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #9085e9;
+    --chart-other: #6b7280;
+    --chart-previous: #6b7280;
+    --chart-grid: #374151;
+    --chart-axis-text: #9ca3af;
 }
