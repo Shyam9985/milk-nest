@@ -1,11 +1,13 @@
 const { applyCacheHeaders, CACHE_TYPES } = require('./cache.utils');
 const RESPONSE_STATUS = require('./standard.messages');
+const auditService = require('../services/auditService');
 
 // success response function
 const sendSuccessResponse = (req, res, data = null, status = RESPONSE_STATUS.SUCCESS, meta = {}) => {
 
     applyCacheHeaders(res, meta.cacheType || CACHE_TYPES.NO_STORE);
     res.locals.statusKey = status.statusKey;   // picked up by the request logger
+    auditService.log(req, res, auditService.AUDIT_STATUS.SUCCESS, { message: status.message, data });   // only when the route is marked with audit()
 
     return res.status(status.code).json({
         success: true, code: status.code, statusKey: status.statusKey, message: status.message, data
@@ -18,6 +20,7 @@ const sendErrorResponse = (req, res, error = null, status = RESPONSE_STATUS.INTE
     applyCacheHeaders(res, meta.cacheType || CACHE_TYPES.NO_STORE);
     res.locals.statusKey = status.statusKey;
     if (!res.locals.error) res.locals.error = error;
+    auditService.log(req, res, auditService.AUDIT_STATUS.FAILED, { message: status.message, error });   // only when the route is marked with audit()
 
     return res.status(status.code).json({ success: false, code: status.code, statusKey: status.statusKey, message: status.message, error });
 };

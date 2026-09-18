@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+// how long each type stays on screen (ms). errors and warnings stay longest so the
+// reason can be read; the progress bar at the bottom runs over the same time
+const DISPLAY_TIME = { success: 3000, info: 4000, warning: 5000, error: 6000 };
+
 const styles = {
 
     success: {
@@ -31,7 +35,7 @@ function AlertMessage({ id, show, message, type = "success", duration = 1000, on
     const [visible, setVisible] = useState(false);
     const [progress, setProgress] = useState(100);
 
-    duration = type == "error" ? 3000 : type == "warning" ? 2000 : type == "info" ? 1500 : 1000;
+    duration = DISPLAY_TIME[type] || DISPLAY_TIME.info;
 
     useEffect(() => {
         if (!show) return;

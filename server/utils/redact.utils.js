@@ -7,7 +7,9 @@
 const SENSITIVE_KEYS = [
     'password', 'password_hash', 'password_txt', 'password_salt', 'pwd',
     'otp', 'token', 'access-token', 'new-access-token', 'refresh_token',
-    'authorization', 'cookie', 'secret'
+    'authorization', 'cookie', 'secret',
+    // camelCase / other spellings used by the password routes
+    'newpassword', 'new_password', 'oldpassword', 'old_password', 'confirmpassword', 'confirm_password', 'otpkey'
 ];
 
 // returns a COPY with sensitive fields replaced by '[REDACTED]'. the original is not
