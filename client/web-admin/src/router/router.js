@@ -1,6 +1,7 @@
 import About from '../pages/About';
 import authRouter from '../pages/auth/auth.router'
 import Dashboard from '../pages/Dashboard';
+import LandingRedirect from './LandingRedirect';
 import MilkProduction from '../pages/milk-production/MilkProduction';
 import PageNotFound from '../pages/PageNotFound';
 import settingsRouter from '../pages/settings/settings.router';
@@ -13,6 +14,8 @@ export const publicRoutes = [
 
 export const protectedRoutes = [
     ...settingsRouter,
+    // the bare root redirects to the role's landing url
+    { path: "/", component: LandingRedirect, lazy: false },
     // operational screens live at the top level, not under /settings
     { path: "/milk-production", component: MilkProduction, lazy: true },
     { path: "/dashboard", component: Dashboard, lazy: false },

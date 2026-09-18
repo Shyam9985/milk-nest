@@ -18,6 +18,7 @@ export function AuthContextProvider(props) {
         localStorage.setItem('isLoggedIn', false);
         localStorage.removeItem('user-data');
         localStorage.removeItem('access-token');
+        localStorage.removeItem('landing-url');
     }
 
     useEffect(() => {
