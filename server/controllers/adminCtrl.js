@@ -55,6 +55,6 @@ exports.getSetupMenusCtrl = async (req, res) => {
 
     } catch (error) {
         return sendAdminError(req, res, error, 'get setup menus controller',
-            'We could not load the setup menus right now. Please refresh the page or try again in a moment.');
+            'We could not load the settings menus right now. Please refresh the page or try again in a moment.');
     }
 }

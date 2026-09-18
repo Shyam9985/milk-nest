@@ -4,7 +4,7 @@ const { log } = require('../utils/log.utils');
 // fetches the profile details for a logged in user by id (no credential/lock columns)
 exports.getUserProfileById = (user_id) => {
     log('in getUserProfileById');
-    const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, u.profile_photo_url, DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login,
+    const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, u.profile_photo_url, DATE_FORMAT(u.last_login, '%d-%m-%Y %H:%i:%s') as last_login,
         r.role_id, r.role_nm, r.role_hndlr, r.hierarchy_id, r.landing_url, h.hierarchy_nm , h.parent_hirrarchy_id, h.level_type,
         p.position_id, p.position_nm,
         p.dairy_farm_id, p.location_ref_id, p.district_id, p.mandal_ulb_id, p.village_sachivalayam_id

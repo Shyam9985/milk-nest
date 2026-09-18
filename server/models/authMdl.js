@@ -1,5 +1,5 @@
 const dbutils = require('../utils/db.utils');
-const dateFns = require('date-fns');
+const { displayDateTime } = require('../utils/date.utils');
 const { log, logBlock } = require('../utils/log.utils');
 
 // sign up controller
@@ -14,8 +14,8 @@ exports.signUp = async (data, user) => {
 // retrieves the user data
 exports.getUserDetails = async (data, user) => {
     log('in getUserDetails');
-    const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login, 
-        u.is_locked, u.login_attempts, u.password_hash, u.password_salt, DATE_FORMAT(u.locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
+    const qry = `select u.user_id, u.user_nm , u.first_nm , u.last_nm, u.mobile_no, u.email, DATE_FORMAT(u.last_login, '%d-%m-%Y %H:%i:%s') as last_login, 
+        u.is_locked, u.login_attempts, u.password_hash, u.password_salt, DATE_FORMAT(u.locked_until, '%d-%m-%Y %H:%i:%s') as locked_until, 
         r.role_id, r.role_nm, r.role_hndlr, r.description, r.hierarchy_id, h.hierarchy_nm , h.parent_hirrarchy_id , h.level_type,
         p.position_id, p.position_nm, p.end_date, r.landing_url,
         p.dairy_farm_id, p.location_ref_id, p.district_id, p.mandal_ulb_id, p.village_sachivalayam_id
@@ -85,7 +85,7 @@ exports.markOTPVerified = async (key, user) => {
 // gets latest mail audit by mail and used for
 exports.getLatestMailByRequest = async (body, usedFor = 'forgot-password') => {
     log('in getLatestMailByRequest');
-    const qry = `select email_audit_id, recipient_email, verify_key, email_status, DATE_FORMAT(expires_at, '%d-%m-%Y %h:%i %p') as expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, is_used
+    const qry = `select email_audit_id, recipient_email, verify_key, email_status, DATE_FORMAT(expires_at, '%d-%m-%Y %H:%i:%s') as expires_at, ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired, is_used
          from email_audit_logs_t where is_active = 1 and email_status = 'SUCCESS' and recipient_email = ? and used_for = ? order by email_audit_id desc limit 1;`
     return dbutils.executeQuery(qry, [body.email, usedFor], 'get latest mail request');
 }
@@ -131,7 +131,7 @@ exports.checkIfSessionAlive = async (sessionId) => {
     log('in checkIfSessionAlive');
 
     const qry = `select id, session_id, u.user_id, login_timestamp, last_activity_timestamp, expires_at, destroyed_at, user_nm , first_nm , last_nm, mobile_no, 
-            email, last_login, is_locked, login_attempts, DATE_FORMAT(locked_until, '%d-%m-%Y %h:%i %p') as locked_until, 
+            email, last_login, is_locked, login_attempts, DATE_FORMAT(locked_until, '%d-%m-%Y %H:%i:%s') as locked_until, 
             ifnull(expires_at <= CURRENT_TIMESTAMP(), 1) as is_expired
             from user_sessions as u
             join users_lst_t as ul on u.user_id = ul.user_id and ul.is_active = 1
@@ -156,7 +156,7 @@ exports.slideExpressSession = (sessionId) => {
 // unlock locked users
 exports.unlockUsers = () => {
     log('in unlockUsers');
-    logBlock('[unlock users] unlocking the users at:', dateFns.format(new Date(), 'dd-MM-yyyy hh:mm:ss a'));
+    logBlock('[unlock users] unlocking the users at:', displayDateTime(new Date()));
     const query = 'update users_lst_t set is_locked = 0 , login_attempts = 0 , locked_until = null where is_active = 1 and locked_until < current_timestamp();';
     return dbutils.executeQuery(query, [], 'unlock users');
 }

@@ -52,11 +52,11 @@ function Settings() {
                 }, {});
                 setExpandedCategories(initialState);
             } else {
-                setError(result?.message || 'Unable to load setup menus.');
+                setError(result?.message || 'Unable to load settings menus.');
             }
         } catch (err) {
             if (isMounted) {
-                setError(err?.message || 'Unable to load setup menus.');
+                setError(err?.message || 'Unable to load settings menus.');
             }
         } finally {
             if (isMounted) {
@@ -111,8 +111,8 @@ function Settings() {
             <div className="space-y-4 p-4 sm:p-6" style={{ fontSize: 'var(--app-font-size)' }}>
                 <div className="flex flex-col gap-3 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-4 text-[var(--text-primary)] sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">Setup menus</h1>
-                        <p className="text-sm text-[var(--text-secondary)]">Browse the available setup actions grouped by category.</p>
+                        <h1 className="text-2xl font-semibold">Settings</h1>
+                        <p className="text-sm text-[var(--text-secondary)]">Browse the available settings grouped by category.</p>
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">
                         <div className="flex items-center gap-2 rounded-full border border-[var(--border-secondary)] bg-[var(--bg-tertiary)] px-3 py-2 text-sm text-[var(--text-secondary)]">
@@ -121,7 +121,7 @@ function Settings() {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search setup items"
+                                placeholder="Search settings"
                                 className="w-48 bg-transparent text-sm text-[var(--input-text)] outline-none placeholder:text-[var(--input-placeholder)]"
                             />
                         </div>
@@ -130,7 +130,7 @@ function Settings() {
 
                 {filteredCategories.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6 text-sm text-[var(--text-secondary)]">
-                        {searchTerm.trim() ? 'No setup items match your search.' : 'No setup menus are available right now.'}
+                        {searchTerm.trim() ? 'No settings match your search.' : 'No settings are available right now.'}
                     </div>
                 ) : (
                     <div className="grid gap-4">

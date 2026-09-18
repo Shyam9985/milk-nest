@@ -2,7 +2,7 @@ import MasterForm from '../components/MasterForm';
 
 const MENU_ITEM_CATEGORY_OPTIONS = [
     { value: 'mnu', label: 'Main Menu (mnu) - sidebar navigation' },
-    { value: 'stp', label: 'Setup (stp) - settings hub tiles' },
+    { value: 'stp', label: 'Settings (stp) - settings hub tiles' },
     { value: 'rpt', label: 'Report (rpt) - reports' }
 ];
 

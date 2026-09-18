@@ -16,7 +16,7 @@ exports.getMilkProductionSheetMdl = (branch_id, production_date) => {
     const qry = `select c.cattle_id, c.cattle_unique_code, t.cattle_type_name, br.breed_name, g.gender_nm,
         mp.milk_production_id, mp.morning_quantity, mp.evening_quantity, mp.total_quantity,
         mp.fat_percentage, mp.snf_percentage, mp.remarks,
-        DATE_FORMAT(mp.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(mp.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from cattle_lst_t c
         join cattle_types_mstr_lst_t t on t.cattle_type_id = c.cattle_type_id
         join cattle_breeds_mstr_lst_t br on br.breed_id = c.breed_id
@@ -39,8 +39,8 @@ exports.getMilkProductionListMdl = (user, from_date, to_date, branch_id = null) 
         c.cattle_unique_code, t.cattle_type_name, br.breed_name,
         b.branch_name, df.dairy_farm_name,
         DATE_FORMAT(mp.production_date, '%Y-%m-%d') as production_date,
-        DATE_FORMAT(mp.created_time, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(mp.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(mp.created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(mp.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from milk_production_lst_t mp
         join branches_lst_t b on b.branch_id = mp.branch_id
         left join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id

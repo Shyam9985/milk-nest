@@ -1,6 +1,7 @@
 const scheduler = require('node-schedule');
 const authMdl = require('../models/authMdl');
-const dateFns = require('date-fns');
+const { formatDistanceToNowStrict } = require('date-fns');
+const { displayDateTime } = require('./date.utils');
 const { log, logBlock } = require('./log.utils');
 
 // schedulers
@@ -14,7 +15,7 @@ if (process.env.SCHEDULE_RUN === 'true') {
 function logUpcomingJobTime(jobName, job) {
     const nextRun = job.nextInvocation().toDate();
 
-    log(`Scheduler : ${jobName}  || Next Run  : ${dateFns.format(nextRun, 'dd-MM-yyyy hh:mm:ss a')} || Remaining : ${dateFns.formatDistanceToNowStrict(nextRun)}`);
+    log(`Scheduler : ${jobName}  || Next Run  : ${displayDateTime(nextRun)} || Remaining : ${formatDistanceToNowStrict(nextRun)}`);
 }
 
 //schedulers rigistry

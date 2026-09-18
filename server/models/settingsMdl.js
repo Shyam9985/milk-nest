@@ -6,8 +6,8 @@ const { log } = require('../utils/log.utils');
 exports.getStatesMdl = () => {
     log('in getStatesMdl');
     const qry = `select state_id, state_name, state_code, is_active,
-        DATE_FORMAT(created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from state_mstr_lst_t where is_active = 1 order by state_name asc`;
     return dbutils.executeQuery(qry, [], 'get states model');
 }
@@ -74,8 +74,8 @@ exports.countActiveDistrictsByStateMdl = (state_id) => {
 exports.getDistrictsMdl = (state_id = null) => {
     log('in getDistrictsMdl');
     let qry = `select d.district_id, d.district_name, d.district_code, d.state_id, s.state_name, d.is_active,
-        DATE_FORMAT(d.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(d.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(d.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(d.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from district_mstr_lst_t d
         join state_mstr_lst_t s on s.state_id = d.state_id
         where d.is_active = 1`;
@@ -160,8 +160,8 @@ exports.getMandalsMdl = (district_id = null) => {
     log('in getMandalsMdl');
     let qry = `select m.mandal_ulb_id, m.mandal_ulb_nm, m.mandal_ulb_code, m.district_id, m.is_ulb, m.is_active,
         d.district_name, s.state_id, s.state_name,
-        DATE_FORMAT(m.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(m.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(m.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(m.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from mandal_ulb_mstr_lst_t m
         join district_mstr_lst_t d on d.district_id = m.district_id
         join state_mstr_lst_t s on s.state_id = d.state_id
@@ -243,8 +243,8 @@ exports.getVillagesMdl = (district_id = null, mandal_ulb_id = null) => {
     let qry = `select v.village_sachivalayam_id, v.village_sachivalayam_nm, v.village_sachivalayam_code,
         v.district_id, v.mandal_ulb_id, v.is_sachivalayam, v.is_active,
         d.state_id, d.district_name, m.mandal_ulb_nm,
-        DATE_FORMAT(v.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(v.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(v.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(v.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from village_sachivalayam_mst_lst_t v
         join district_mstr_lst_t d on d.district_id = v.district_id
         left join mandal_ulb_mstr_lst_t m on m.mandal_ulb_id = v.mandal_ulb_id
@@ -326,8 +326,8 @@ exports.getRolesMdl = () => {
     log('in getRolesMdl');
     const qry = `select r.role_id, r.role_nm, r.role_hndlr, r.description, r.landing_url, r.hierarchy_id,
         h.hierarchy_nm, r.is_active,
-        DATE_FORMAT(r.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(r.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(r.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(r.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from roles_lst_t r
         left join hierarchy_lst_t h on h.hirrarchy_id = r.hierarchy_id and h.is_active = 1
         where r.is_active = 1 order by r.role_nm asc`;
@@ -413,8 +413,8 @@ exports.softDeleteRoleMdl = (role_id) => {
 exports.getGendersMdl = () => {
     log('in getGendersMdl');
     const qry = `select gender_id, gender_nm, gender_code, is_active,
-        DATE_FORMAT(created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from gender_mstr_lst_t where is_active = 1 order by gender_nm asc`;
     return dbutils.executeQuery(qry, [], 'get genders model');
 }
@@ -475,8 +475,8 @@ exports.getHierarchyListMdl = () => {
     log('in getHierarchyListMdl');
     const qry = `select h.hirrarchy_id as hierarchy_id, h.hierarchy_nm, h.level_type, h.parent_hirrarchy_id,
         p.hierarchy_nm as parent_hierarchy_nm, h.is_active,
-        DATE_FORMAT(h.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(h.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(h.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(h.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from hierarchy_lst_t h
         left join hierarchy_lst_t p on p.hirrarchy_id = h.parent_hirrarchy_id
         where h.is_active = 1 order by h.hierarchy_nm asc`;
@@ -571,8 +571,8 @@ exports.getPositionsMdl = (user) => {
         ifnull(nullif(trim(concat(ifnull(u.first_nm, ''), ' ', ifnull(u.last_nm, ''))), ''), u.user_nm) as assigned_user,
         DATE_FORMAT(p.start_date, '%Y-%m-%d') as start_date,
         DATE_FORMAT(p.end_date, '%Y-%m-%d') as end_date,
-        DATE_FORMAT(p.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(p.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(p.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(p.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from position_lst_t p
         join roles_lst_t r on r.role_id = p.role_id
         join hierarchy_lst_t h on h.hirrarchy_id = p.hierarchy_id
@@ -625,8 +625,8 @@ exports.getBranchListMdl = (user) => {
     const qry = `select b.branch_id, b.branch_name, b.branch_code, b.is_main_branch, b.dairy_farm_id,
         b.state_id, b.district_id, b.mandal_ulb_id, b.village_sachivalayam_id, b.contact_number, b.email, b.address, b.is_active,
         df.dairy_farm_name, s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm,
-        DATE_FORMAT(b.created_time, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(b.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(b.created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(b.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from branches_lst_t b
         join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id
         left join state_mstr_lst_t s on s.state_id = b.state_id
@@ -893,8 +893,8 @@ exports.getDairyFarmsMdl = (user) => {
         b.branch_id as main_branch_id, b.branch_code as main_branch_code, b.branch_name as main_branch_name,
         b.state_id, b.district_id, b.mandal_ulb_id, b.village_sachivalayam_id,
         s.state_name, d.district_name, m.mandal_ulb_nm, v.village_sachivalayam_nm,
-        DATE_FORMAT(df.created_time, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(df.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(df.created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(df.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from dairy_farm_lst_t df
         left join branches_lst_t b on b.dairy_farm_id = df.dairy_farm_id and b.is_main_branch = 1 and b.is_active = 1
         left join state_mstr_lst_t s on s.state_id = b.state_id
@@ -1015,8 +1015,8 @@ exports.getRolePermissionListMdl = () => {
     const qry = `select p.role_permission_id, p.role_id, p.permission_key,
         p.can_view, p.can_insert, p.can_update, p.can_delete, p.is_active,
         r.role_nm, r.role_hndlr,
-        DATE_FORMAT(p.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(p.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(p.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(p.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from role_permissions_t p
         join roles_lst_t r on r.role_id = p.role_id
         where p.is_active = 1 order by r.role_nm asc, p.permission_key asc`;
@@ -1086,8 +1086,8 @@ exports.getMenuItemListMdl = () => {
     const qry = `select m.menu_item_id, m.menu_name, m.menu_url, m.icon, m.is_main_item, m.is_quick_menu,
         m.parent_item_id, m.quick_menu_ctgry_id, m.menu_item_category, m.is_active,
         pm.menu_name as parent_menu_name, c.ctgry_nm,
-        DATE_FORMAT(m.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(m.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(m.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(m.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from menu_items_t m
         left join menu_items_t pm on pm.menu_item_id = m.parent_item_id
         left join quick_menu_category_lst_t c on c.quick_menu_ctgry_id = m.quick_menu_ctgry_id
@@ -1177,8 +1177,8 @@ exports.softDeleteMenuItemMdl = (menu_item_id) => {
 exports.getMenuCategoryListMdl = () => {
     log('in getMenuCategoryListMdl');
     const qry = `select quick_menu_ctgry_id, ctgry_nm, ctgry_cd, description, display_order, icon, is_active,
-        DATE_FORMAT(created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from quick_menu_category_lst_t where is_active = 1 order by display_order asc, ctgry_nm asc`;
     return dbutils.executeQuery(qry, [], 'get menu category list model');
 }
@@ -1249,8 +1249,8 @@ exports.getRoleMenuMapListMdl = () => {
     log('in getRoleMenuMapListMdl');
     const qry = `select rm.role_menu_id, rm.role_id, rm.menu_item_id, rm.display_order, rm.is_active,
         r.role_nm, m.menu_name, m.menu_url, m.is_quick_menu,
-        DATE_FORMAT(rm.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(rm.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(rm.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(rm.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from role_menu_map_t rm
         join roles_lst_t r on r.role_id = rm.role_id
         join menu_items_t m on m.menu_item_id = rm.menu_item_id
@@ -1340,9 +1340,9 @@ exports.getUserListMdl = (user) => {
 
     let qry = `select u.user_id, u.user_nm, u.first_nm, u.last_nm, u.mobile_no, u.email, u.role_id, u.gender_id, u.is_locked, u.is_active,
         r.role_nm, g.gender_nm,
-        DATE_FORMAT(u.last_login, '%d-%m-%Y %h:%i %p') as last_login,
-        DATE_FORMAT(u.created_at, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(u.updated_at, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(u.last_login, '%d-%m-%Y %H:%i:%s') as last_login,
+        DATE_FORMAT(u.created_at, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(u.updated_at, '%d-%m-%Y %H:%i:%s') as updated_at
         from users_lst_t u
         left join roles_lst_t r on r.role_id = u.role_id
         left join gender_mstr_lst_t g on g.gender_id = u.gender_id
@@ -1426,8 +1426,8 @@ exports.softDeleteUserMdl = (user_id) => {
 exports.getCattleTypeListMdl = () => {
     log('in getCattleTypeListMdl');
     const qry = `select cattle_type_id, cattle_type_name, description, is_active,
-        DATE_FORMAT(created_time, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from cattle_types_mstr_lst_t where is_active = 1 order by cattle_type_name asc`;
     return dbutils.executeQuery(qry, [], 'get cattle type list model');
 }
@@ -1507,8 +1507,8 @@ exports.getCattleBreedListMdl = (cattle_type_id = null) => {
     log('in getCattleBreedListMdl');
     let qry = `select b.breed_id, b.breed_name, b.cattle_type_id, b.description, b.is_active,
         t.cattle_type_name,
-        DATE_FORMAT(b.created_time, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(b.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(b.created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(b.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from cattle_breeds_mstr_lst_t b
         join cattle_types_mstr_lst_t t on t.cattle_type_id = b.cattle_type_id
         where b.is_active = 1`;
@@ -1596,8 +1596,8 @@ exports.getCattleListMdl = (user) => {
         t.cattle_type_name, br.breed_name, g.gender_nm,
         DATE_FORMAT(c.date_of_birth, '%Y-%m-%d') as date_of_birth,
         DATE_FORMAT(c.purchase_date, '%Y-%m-%d') as purchase_date,
-        DATE_FORMAT(c.created_time, '%d-%m-%Y %h:%i %p') as created_at,
-        DATE_FORMAT(c.updated_time, '%d-%m-%Y %h:%i %p') as updated_at
+        DATE_FORMAT(c.created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(c.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from cattle_lst_t c
         join branches_lst_t b on b.branch_id = c.branch_id
         left join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id
