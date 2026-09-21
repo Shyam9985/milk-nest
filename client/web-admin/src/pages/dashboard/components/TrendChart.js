@@ -7,6 +7,7 @@ import SectionCard from './SectionCard';
 import ChartTooltip from './ChartTooltip';
 import EmptyState from './EmptyState';
 import { shortDate, displayDate, formatNumber } from '../dashboard.utils';
+import SimpleTable from '../../../components/table/SimpleTable';
 
 // the series painted on the chart, in fixed slot order. the previous period is a neutral
 // dashed line so it reads as context, never as a third category
@@ -64,33 +65,18 @@ function TrendChart({ trend, period }) {
         { label: 'Evening', current: data[0].evening, previous: previous[0]?.evening ?? 0 }
     ] : [];
 
+    // day-by-day grid twin of the chart: searchable by displayed date, paged like every grid
+    const tableRows = data.map((point) => ({ ...point, dateLabel: displayDate(point.date) }));
     const table = () => (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
-                        <th className="py-2 pr-3 font-medium">Date</th>
-                        <th className="py-2 pr-3 text-right font-medium">Morning (L)</th>
-                        <th className="py-2 pr-3 text-right font-medium">Evening (L)</th>
-                        <th className="py-2 pr-3 text-right font-medium">Total (L)</th>
-                        <th className="py-2 pr-3 text-right font-medium">Animals</th>
-                        <th className="py-2 text-right font-medium">Previous (L)</th>
-                    </tr>
-                </thead>
-                <tbody className="tabular-nums text-[var(--text-primary)]">
-                    {data.map((point) => (
-                        <tr key={point.date} className="border-t border-[var(--table-cell-border)]">
-                            <td className="py-2 pr-3">{displayDate(point.date)}</td>
-                            <td className="py-2 pr-3 text-right">{formatNumber(point.morning)}</td>
-                            <td className="py-2 pr-3 text-right">{formatNumber(point.evening)}</td>
-                            <td className="py-2 pr-3 text-right font-medium">{formatNumber(point.total)}</td>
-                            <td className="py-2 pr-3 text-right">{point.cattle}</td>
-                            <td className="py-2 text-right text-[var(--text-secondary)]">{formatNumber(point.prevTotal)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        <SimpleTable rows={tableRows} rowKey="date" pageSize={10} searchPlaceholder="Search by date..."
+            columns={[
+                { label: 'Date', field: 'dateLabel', className: 'whitespace-nowrap' },
+                { label: 'Morning (L)', field: 'morning', align: 'right', searchable: false, className: 'tabular-nums', render: (value) => formatNumber(value) },
+                { label: 'Evening (L)', field: 'evening', align: 'right', searchable: false, className: 'tabular-nums', render: (value) => formatNumber(value) },
+                { label: 'Total (L)', field: 'total', align: 'right', searchable: false, className: 'tabular-nums font-medium', render: (value) => formatNumber(value) },
+                { label: 'Animals', field: 'cattle', align: 'right', searchable: false, className: 'tabular-nums' },
+                { label: 'Previous (L)', field: 'prevTotal', align: 'right', searchable: false, className: 'tabular-nums text-[var(--text-secondary)]', render: (value) => formatNumber(value) },
+            ]} />
     );
 
     return (

@@ -3,6 +3,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import SectionCard from './SectionCard';
 import ChartTooltip from './ChartTooltip';
 import EmptyState from './EmptyState';
+import SimpleTable from '../../../components/table/SimpleTable';
 
 // categorical slots in fixed order; "Other" always takes the neutral so it never looks like a breed
 const SLOT_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)'];
@@ -90,25 +91,15 @@ function HerdComposition({ composition, herdTotal }) {
     const byType = composition?.by_type || [];
     const byBreed = composition?.by_breed || [];
 
+    // two small grids side by side; the breed list grows with the herd, so both are paged
     const table = () => (
         <div className="grid gap-4 sm:grid-cols-2">
             {[['By type', byType], ['By breed', byBreed]].map(([title, items]) => (
-                <table key={title} className="w-full text-sm">
-                    <thead>
-                        <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
-                            <th className="py-2 pr-3 font-medium">{title}</th>
-                            <th className="py-2 text-right font-medium">Animals</th>
-                        </tr>
-                    </thead>
-                    <tbody className="tabular-nums text-[var(--text-primary)]">
-                        {items.map((item) => (
-                            <tr key={item.name} className="border-t border-[var(--table-cell-border)]">
-                                <td className="py-2 pr-3">{item.name}</td>
-                                <td className="py-2 text-right">{item.value}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <SimpleTable key={title} rows={items} rowKey="name" pageSize={5} dense searchPlaceholder={`Search ${title.toLowerCase()}...`}
+                    columns={[
+                        { label: title, field: 'name' },
+                        { label: 'Animals', field: 'value', align: 'right', searchable: false, className: 'tabular-nums' },
+                    ]} />
             ))}
         </div>
     );

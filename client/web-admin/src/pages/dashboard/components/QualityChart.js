@@ -4,6 +4,7 @@ import SectionCard from './SectionCard';
 import ChartTooltip from './ChartTooltip';
 import EmptyState from './EmptyState';
 import { shortDate, displayDate, formatNumber } from '../dashboard.utils';
+import SimpleTable from '../../../components/table/SimpleTable';
 
 /*
  * Milk quality over the period: the daily average fat % and SNF %, the two figures milk is
@@ -30,27 +31,17 @@ function QualityChart({ trend, quality }) {
     const sampled = data.filter((point) => point.fat !== null || point.snf !== null);
     const hasData = sampled.length > 0;
 
+    // the table twin is a real day-by-day grid, so it gets the same search and paging as
+    // every other grid; dates are searched by their displayed form, not the raw ISO value
+    const tableRows = sampled.map((point) => ({ ...point, dateLabel: displayDate(point.date) }));
     const table = () => (
-        <table className="w-full text-sm">
-            <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
-                    <th className="py-2 pr-3 font-medium">Date</th>
-                    <th className="py-2 pr-3 text-right font-medium">Fat %</th>
-                    <th className="py-2 pr-3 text-right font-medium">SNF %</th>
-                    <th className="py-2 text-right font-medium">Readings</th>
-                </tr>
-            </thead>
-            <tbody className="tabular-nums text-[var(--text-primary)]">
-                {sampled.map((point) => (
-                    <tr key={point.date} className="border-t border-[var(--table-cell-border)]">
-                        <td className="py-2 pr-3">{displayDate(point.date)}</td>
-                        <td className="py-2 pr-3 text-right">{point.fat === null ? '-' : formatNumber(point.fat)}</td>
-                        <td className="py-2 pr-3 text-right">{point.snf === null ? '-' : formatNumber(point.snf)}</td>
-                        <td className="py-2 text-right">{point.fat_readings}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
+        <SimpleTable rows={tableRows} rowKey="date" pageSize={10} searchPlaceholder="Search by date..."
+            columns={[
+                { label: 'Date', field: 'dateLabel', className: 'whitespace-nowrap' },
+                { label: 'Fat %', field: 'fat', align: 'right', searchable: false, className: 'tabular-nums', render: (value) => value === null ? '-' : formatNumber(value) },
+                { label: 'SNF %', field: 'snf', align: 'right', searchable: false, className: 'tabular-nums', render: (value) => value === null ? '-' : formatNumber(value) },
+                { label: 'Readings', field: 'fat_readings', align: 'right', searchable: false, className: 'tabular-nums' },
+            ]} />
     );
 
     return (

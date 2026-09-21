@@ -16,7 +16,9 @@ function DataTable({ data = [], columns = [], config = {} }) {
     const [searchText, setSearchText] = useState('');
     const [sortConfig, setSortConfig] = useState(null);
 
-    const enableSearch = config.search ?? false;
+    // search and pagination are on unless a screen switches them off: every grid in the
+    // app must be searchable and paged, so the safe default is the feature present
+    const enableSearch = config.search ?? true;
     const enablePagination = config.pagination ?? true;
     const enableSorting = config.sorting ?? true;
     const enableSelection = config.selection ?? false;
@@ -113,7 +115,7 @@ function DataTable({ data = [], columns = [], config = {} }) {
 
                     {enableSearch && (
 
-                        <TextField size="small" placeholder="Search..." value={searchText}
+                        <TextField size="small" placeholder={config.searchPlaceholder || "Search..."} value={searchText}
                             onChange={(event) => {
                                 const value = event.target.value;
                                 setSearchText(value);
