@@ -8,9 +8,11 @@ const { log } = require('../utils/log.utils');
  * Cattle belong to a branch, so every list is scope filtered through branches_lst_t.
  */
 
-// the day sheet for a branch: every active animal there, with its entry for the chosen
-// date when one exists. the LEFT JOIN keeps un-milked animals in the list, which is what
-// makes this a fill-in register rather than an add-one-at-a-time form
+// the day sheet for a branch: every active milking animal there, with its entry for the
+// chosen date when one exists. the LEFT JOIN keeps un-milked animals in the list, which is
+// what makes this a fill-in register rather than an add-one-at-a-time form.
+// males are left out here on purpose: the save path validates submitted cattle against
+// this same sheet, so excluding bulls once covers both the screen and the server
 exports.getMilkProductionSheetMdl = (branch_id, production_date) => {
     log('in getMilkProductionSheetMdl');
     const qry = `select c.cattle_id, c.cattle_unique_code, t.cattle_type_name, br.breed_name, g.gender_nm,
@@ -24,6 +26,7 @@ exports.getMilkProductionSheetMdl = (branch_id, production_date) => {
         left join milk_production_lst_t mp on mp.cattle_id = c.cattle_id
             and mp.production_date = ? and mp.is_active = 1
         where c.is_active = 1 and c.branch_id = ?
+            and (g.gender_nm is null or lower(g.gender_nm) <> 'male')
         order by c.cattle_unique_code asc`;
     return dbutils.executeQuery(qry, [production_date, branch_id], 'get milk production sheet model');
 }

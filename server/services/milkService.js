@@ -90,13 +90,15 @@ exports.saveMilkProductionSheetSrvc = async (payload, user_id) => {
 
     const entries = payload.entries.map(normalizeMilkEntry);
 
-    // every animal must belong to this branch - the sheet is built from the branch's own
-    // cattle, so a mismatch means a tampered or stale submission
+    // every animal must be on this branch's milking sheet - the sheet is built from the
+    // branch's own female cattle, so a mismatch means a bull, another branch's animal, or a
+    // stale submission. the check is against the sheet, not the raw cattle table, so the
+    // rule "bulls are never milked" lives in exactly one query
     const sheet = await milkMdl.getMilkProductionSheetMdl(branch_id, production_date);
     const allowed = new Set(sheet.map((row) => Number(row.cattle_id)));
 
     if (entries.some((entry) => !allowed.has(entry.cattle_id))) {
-        resutils.createError('invalidParent', 'One or more cattle do not belong to the selected branch. Please reload the sheet.');
+        resutils.createError('invalidParent', 'One or more cattle are not on the milking sheet for this branch (bulls cannot be milked). Please reload the sheet.');
     }
 
     const result = await milkMdl.saveMilkProductionSheetMdl(branch_id, production_date, entries, user_id);
