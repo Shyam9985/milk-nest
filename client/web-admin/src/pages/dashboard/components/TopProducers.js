@@ -2,9 +2,10 @@ import * as Icons from 'lucide-react';
 import SectionCard from './SectionCard';
 import EmptyState from './EmptyState';
 import { formatNumber } from '../dashboard.utils';
+import EntityLink from '../../profiles/components/EntityLink';
 
 // the five best animals of the period, ranked by litres with their per-day average
-function TopProducers({ producers, showBranch }) {
+function TopProducers({ producers, showBranch, onOpenProfile }) {
 
     const rows = producers || [];
     const best = rows[0]?.total || 0;
@@ -28,7 +29,9 @@ function TopProducers({ producers, showBranch }) {
                                     {index + 1}
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">{row.cattle_unique_code}</p>
+                                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                                        <EntityLink type="cattle" id={row.cattle_id} onNavigate={onOpenProfile}>{row.cattle_unique_code}</EntityLink>
+                                    </p>
                                     <p className="truncate text-xs text-[var(--text-tertiary)]">
                                         {row.cattle_type_name} · {row.breed_name}{showBranch ? ` · ${row.branch_name}` : ''}
                                     </p>

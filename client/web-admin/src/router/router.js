@@ -1,4 +1,5 @@
 import About from '../pages/About';
+import Cattle from '../pages/cattle/Cattle';
 import authRouter from '../pages/auth/auth.router'
 import Dashboard from '../pages/dashboard/Dashboard';
 import LandingRedirect from './LandingRedirect';
@@ -18,6 +19,7 @@ export const protectedRoutes = [
     { path: "/", component: LandingRedirect, lazy: false },
     // operational screens live at the top level, not under /settings
     { path: "/milk-production", component: MilkProduction, lazy: true },
+    { path: "/cattle", component: Cattle, lazy: true },
     { path: "/dashboard", component: Dashboard, lazy: false },
     { path: "/about", component: About, lazy: true },
     { path: "*", component: PageNotFound, lazy: false },

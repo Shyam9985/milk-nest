@@ -8,6 +8,7 @@ const milkRtr = require('./milkRtr');
 const dashboardRtr = require('./dashboardRtr');
 const filesRouter = require('./filesRtr');
 const profileRtr = require('./profileRtr');
+const profilesRtr = require('./profilesRtr');
 
 router.use('/auth', authRtr);
 router.use('/admin', adminRtr);
@@ -16,5 +17,6 @@ router.use('/milk-production', milkRtr);
 router.use('/dashboard', dashboardRtr);
 router.use('/files', filesRouter);
 router.use('/profile', profileRtr);
+router.use('/profiles', profilesRtr);
 
 module.exports = router;

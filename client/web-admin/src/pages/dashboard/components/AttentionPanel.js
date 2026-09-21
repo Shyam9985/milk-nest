@@ -3,6 +3,7 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SectionCard from './SectionCard';
 import { displayDate } from '../dashboard.utils';
+import EntityLink from '../../profiles/components/EntityLink';
 
 /*
  * The "what should I do about it" section. Each item is a plain sentence with a count, a
@@ -55,7 +56,7 @@ function AttentionItem({ severity, title, detail, items, renderItem, action }) {
     );
 }
 
-function AttentionPanel({ attention, period, canRecordMilk }) {
+function AttentionPanel({ attention, period, canRecordMilk, onOpenProfile }) {
 
     const navigate = useNavigate();
     const silent = attention?.silent_branches || [];
@@ -76,7 +77,8 @@ function AttentionPanel({ attention, period, canRecordMilk }) {
                 items={silent}
                 renderItem={(branch) => (
                     <>
-                        <span className="truncate text-[var(--text-primary)]">{branch.branch_name}
+                        <span className="truncate text-[var(--text-primary)]">
+                            <EntityLink type="branch" id={branch.branch_id} onNavigate={onOpenProfile}>{branch.branch_name}</EntityLink>
                             <span className="text-[var(--text-tertiary)]"> · {branch.dairy_farm_name}</span></span>
                         <span className="shrink-0">{branch.cattle_count} cattle · last {branch.last_entry ? displayDate(branch.last_entry) : 'never'}</span>
                     </>
@@ -93,7 +95,8 @@ function AttentionPanel({ attention, period, canRecordMilk }) {
                 items={notMilked}
                 renderItem={(animal) => (
                     <>
-                        <span className="truncate text-[var(--text-primary)]">{animal.cattle_unique_code}
+                        <span className="truncate text-[var(--text-primary)]">
+                            <EntityLink type="cattle" id={animal.cattle_id} onNavigate={onOpenProfile}>{animal.cattle_unique_code}</EntityLink>
                             <span className="text-[var(--text-tertiary)]"> · {animal.branch_name}</span></span>
                         <span className="shrink-0">last {displayDate(animal.last_entry)} · {animal.days_since} d ago</span>
                     </>

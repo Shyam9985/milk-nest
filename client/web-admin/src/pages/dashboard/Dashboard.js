@@ -14,6 +14,8 @@ import TopProducers from './components/TopProducers';
 import AttentionPanel from './components/AttentionPanel';
 import QualityChart from './components/QualityChart';
 import { PERIOD_PRESETS, compactNumber, formatNumber, displayDate } from './dashboard.utils';
+import ProfileDrawer from '../profiles/ProfileDrawer';
+import useProfileDrawer from '../profiles/useProfileDrawer';
 
 /*
  * The business at a glance. One request returns every section for the chosen scope and
@@ -94,6 +96,7 @@ function Dashboard() {
     const navigate = useNavigate();
     const [state, dispatch] = useReducer(reducer, initialState);
     const requestSeq = useRef(0);   // only the latest request may update the screen
+    const profileDrawer = useProfileDrawer();   // any code on the page opens its profile in a side drawer
     const { dairyFarms, branches, filtersLoaded, canRecordMilk, dairyFarmId, branchId, period, data, loading, refreshing, error } = state;
 
     useEffect(() => {
@@ -240,22 +243,26 @@ function Dashboard() {
                     </div>
 
                     {/* branches (only when there is something to compare) */}
-                    {multiBranch && <BranchPanel branches={data.branches} period={periodInfo} showFarm={multiFarm} />}
+                    {multiBranch && <BranchPanel branches={data.branches} period={periodInfo} showFarm={multiFarm} onOpenProfile={profileDrawer.open} />}
 
                     {/* by type + top producers */}
                     <div className="grid gap-4 xl:grid-cols-2">
                         <YieldByType byType={data.by_type} />
-                        <TopProducers producers={data.top_producers} showBranch={multiBranch} />
+                        <TopProducers producers={data.top_producers} showBranch={multiBranch} onOpenProfile={profileDrawer.open} />
                     </div>
 
                     {/* attention + quality */}
                     <div className="grid gap-4 xl:grid-cols-2">
-                        <AttentionPanel attention={data.attention} period={periodInfo} canRecordMilk={canRecordMilk} />
+                        <AttentionPanel attention={data.attention} period={periodInfo} canRecordMilk={canRecordMilk} onOpenProfile={profileDrawer.open} />
                         <QualityChart trend={data.trend} quality={kpis.quality} />
                     </div>
 
                 </div>
             )}
+
+            {/* ---------------- Entity profile drawer ---------------- */}
+
+            <ProfileDrawer {...profileDrawer.props} />
 
         </div>
     );
