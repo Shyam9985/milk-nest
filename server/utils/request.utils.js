@@ -6,14 +6,11 @@
 
 const UAParser = require('ua-parser-js');
 
-// client ip - first hop of x-forwarded-for when behind a proxy, else the socket address
+// client ip. req.ip already resolves x-forwarded-for, but ONLY when app.set('trust proxy')
+// is on (node.js, production). reading the header directly instead would let any client
+// send a fake x-forwarded-for and get a new rate limit bucket per request
 const getClientIp = (req) =>
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-    || req.ip
-    || req.socket?.remoteAddress
-    || req.connection?.remoteAddress
-    || req._remoteAddress
-    || null;
+    req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || null;
 
 // raw user-agent header, capped so a bogus header cannot bloat a log line
 const getUserAgent = (req, maxChars = 512) => String(req.headers['user-agent'] || '').slice(0, maxChars) || null;

@@ -105,7 +105,10 @@ const sessionConfig = {
 }
 
 if (process.env.NODE_ENV === 'production') {
-    app.set('trust-proxy', 1);
+    // the setting name has a SPACE - 'trust-proxy' is silently ignored by express.
+    // with it on, req.ip is taken from x-forwarded-for (one proxy hop). only turn it
+    // on when a proxy really is in front, otherwise clients can fake their ip
+    app.set('trust proxy', 1);
     sessionConfig.cookie.secure = true;
 }
 
