@@ -168,6 +168,12 @@ const RESPONSE_STATUS = {
         message: "Too many wrong attempts. Please try after 24 hours or contact support."
     },
 
+    TOOMANY_REQUESTS: {
+        code: 429,
+        statusKey: "TOOMANY_REQUESTS",
+        message: "Too many requests. Please try after sometime."
+    },
+
     SESSION_EXPIRED: {
         code: 401,
         statusKey: "SESSION_EXPIRED",

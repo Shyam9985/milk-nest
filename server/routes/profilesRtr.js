@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authmdlwre = require('../middleware/authMdlwre');
+const { checkRateLimit } = require('../middleware/rateLimitmdlwre');
 const profilesCtrl = require('../controllers/profilesCtrl');
 
 // each profile type reads under the permission key of the register that owns the entity,
@@ -19,6 +20,6 @@ const authorizeProfile = (req, res, next) => {
     return authmdlwre.isAuthorized(key, 'read')(req, res, next);
 };
 
-router.get('/:type/:id', authmdlwre.isAuthenticated, authorizeProfile, profilesCtrl.getProfileCtrl);
+router.get('/:type/:id', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authorizeProfile, profilesCtrl.getProfileCtrl);
 
 module.exports = router;
