@@ -1,4 +1,5 @@
 const express = require('express');
+const os = require('os');
 const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,6 +12,33 @@ const apiRoutes = require('./server/routes/apiRoutes');
 const dbConfig = require('./server/config/db.config');
 const expressSession = require('express-session');
 const mySqlStore = require('express-mysql-session')(expressSession);
+const { logBlock } = require('./server/utils/log.utils');
+
+// startup banner: the machine facts a bug report from another box can't be read without.
+// gated by SHOW_LOG like every other debug line
+const toGb = (bytes) => (bytes / 1024 ** 3).toFixed(2);
+
+const logSystemInfo = () => {
+    console.log('========================= System information =========================\n');
+    
+    // what the code runs on; pid is what you kill when nodemon leaves a stray process
+    logBlock('[system] runtime:', `node ${process.version} | pid ${process.pid} | ${os.type()} ${os.platform()} ${os.arch()}`);
+
+    // what the pool (7 connections) and the 50mb body limit are sized against. cpus() reports
+    // the host inside a container, availableParallelism what we may actually use
+    logBlock('[system] capacity:', `${os.availableParallelism()} of ${os.cpus().length} cpus usable | memory ${toGb(os.freemem())} GB free of ${toGb(os.totalmem())} GB`);
+
+    // cwd matters: db.config reads './certs/ca.pem' relative to it, so the wrong start folder
+    // fails on the cert, not the database. uptime tells a reboot from a restart
+    logBlock('[system] location:', `host ${os.hostname()} | cwd ${process.cwd()} | machine up ${(os.uptime() / 3600).toFixed(1)} h`);
+        
+    console.log('\n========================= End of system information =========================');
+
+};
+
+logSystemInfo();
+
+// schedule module
 require('./server/utils/schedule.utils');
 
 // creating express app
