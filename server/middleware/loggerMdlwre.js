@@ -1,10 +1,6 @@
 const morgan = require("morgan");
 const chalk = require("chalk");
 
-const error  = chalk.bold.red;
-const warning = chalk.keyword("orange");
-const info = chalk.blue;
-const success = chalk.green;
 
 morgan.token("colored-status", (req, res) => {
     const status = res.statusCode;
