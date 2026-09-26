@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: process.env.REACT_APP_SERVER_URL + '/apiv1/',
+    // vite exposes VITE_* vars on import.meta.env; process.env does not exist in the browser
+    baseURL: import.meta.env.VITE_SERVER_URL + '/apiv1/',
     headers: {
         "Content-Type": "application/json",
         "Accept": "application/json"

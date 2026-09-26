@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="/images/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="MilkNest - dairy farm management" />
+  <link rel="apple-touch-icon" href="/images/logo.png" />
+  <!-- metadata used when the app is installed to a home screen -->
+  <link rel="manifest" href="/manifest.json" />
+  <title>Milknest</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+
+  <!-- the app mounts on #root; the other three are portal targets for drawers,
+       the full screen loader and toasts, so they must stay in the document -->
+  <div id="root"></div>
+  <div id="modal-root"></div>
+  <div id="loader-root"></div>
+  <div id="toast-root"></div>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
