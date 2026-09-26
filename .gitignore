@@ -10,8 +10,10 @@ dist/
 server/uploads/
 
 public/
-# server/public is build output, but the public website's static assets are source
+# server/public is build output, but the clients' public folders are source: they hold the
+# index.html, favicon, manifest and images the apps are served with
 !client/public-website/public/
+!client/web-admin/public/
 
 *.log
 
