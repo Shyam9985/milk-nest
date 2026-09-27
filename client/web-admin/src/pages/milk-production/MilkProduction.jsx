@@ -3,10 +3,13 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SearchDropdown from '../../components/SearchDropdown';
 import Skeleton from '../../utils/Skeleton';
+import Modal from '../../utils/ModelComponent';
 import {
     getCattleFormOptions, getCattleBranchOptions,
     getMilkProductionSheet, saveMilkProductionSheet
 } from '../../services/settings.service';
+import { markDryOff } from '../../services/breeding.service';
+import { markManualDryOff } from '../../services/milkEligibility.service';
 import { useToast } from '../../contexts/MessageContext';
 
 /*
@@ -14,6 +17,10 @@ import { useToast } from '../../contexts/MessageContext';
  * fill in the morning and evening yields. Unlike the master screens this is a batch
  * editor - the whole day is saved in one request, and re-opening the same day loads
  * the saved figures back for correction.
+ *
+ * It is also where a cow stopping is actually noticed - the incharge is standing in front of
+ * an empty bucket - so drying her off is a row action here rather than a trip to the breeding
+ * register. Two different things can happen behind that one button, see handleMarkDry.
  *
  * All of its state moves together (rows, edits, dirty flag), so it lives in one reducer.
  */
@@ -28,7 +35,11 @@ const initialState = {
     loadedFor: null,  // which branch/date the rows belong to
     loading: false,
     saving: false,
-    dirty: false
+    dirty: false,
+    marking: null,    // the row being taken off the sheet
+    markDate: new Date().toLocaleDateString('en-CA'),
+    markRemarks: '',
+    markSubmitting: false
 };
 
 // the editable columns, in grid order
@@ -89,10 +100,29 @@ function reducer(state, action) {
         case 'SAVE_FINISHED':
             return { ...state, saving: false };
 
+        // the dry-off date defaults to today, which is almost always the right answer
+        case 'MARK_REQUESTED':
+            return { ...state, marking: action.row, markDate: state.productionDate, markRemarks: '' };
+
+        case 'MARK_FIELD_CHANGED':
+            return { ...state, [action.field]: action.value };
+
+        case 'MARK_CANCELLED':
+            return { ...state, marking: null, markRemarks: '' };
+
+        case 'MARK_SUBMITTING':
+            return { ...state, markSubmitting: true };
+
+        case 'MARK_FINISHED':
+            return { ...state, markSubmitting: false, marking: action.keepOpen ? state.marking : null };
+
         default:
             return state;
     }
 }
+
+// the badges under the cattle code. only an animal with a pregnancy in flight has any
+const TONE_COLOR = { warning: 'var(--warning)', info: 'var(--info)' };
 
 // the running totals shown under the grid
 const sumColumn = (entries, field) => Object.values(entries)
@@ -104,7 +134,8 @@ function MilkProduction() {
     const navigate = useNavigate();
     const [state, dispatch] = useReducer(reducer, initialState);
     const { dairyFarmOptions, branchOptions, dairyFarmId, branchId, productionDate,
-        rows, entries, loadedFor, loading, saving, dirty } = state;
+        rows, entries, loadedFor, loading, saving, dirty,
+        marking, markDate, markRemarks, markSubmitting } = state;
 
     const today = new Date().toLocaleDateString('en-CA');
 
@@ -188,6 +219,40 @@ function MilkProduction() {
             loadSheet(); // reload so generated totals and timestamps are the stored ones
         } else {
             toast.error(result?.error || result?.message || 'Unable to save the day sheet.');
+        }
+    };
+
+    /*
+     * Taking an animal off the sheet. Which endpoint is called depends on WHY she stopped:
+     *
+     *   - she is pregnant  -> this is her dry-off, so it belongs on the pregnancy record. The
+     *                         breeding endpoint stores the actual dry-off date and the server
+     *                         blocks her milk in the same transaction.
+     *   - she is not       -> nothing in the data explains it, so it is recorded as a manual
+     *                         block. That is the one reason no rule can derive, and it is
+     *                         deliberately never overridden by one.
+     *
+     * Either way the server owns the flag - the screen never decides eligibility itself.
+     */
+    const handleMarkDry = async () => {
+
+        // the modal's primary button stays enabled, so a double click is guarded here
+        if (!marking || markSubmitting) return;
+
+        dispatch({ type: 'MARK_SUBMITTING' });
+
+        const result = marking.pregnancy_id
+            ? await markDryOff(marking.pregnancy_id, { actual_dry_off_date: markDate })
+            : await markManualDryOff(marking.cattle_id, { remarks: markRemarks || undefined });
+
+        if (result?.success) {
+            dispatch({ type: 'MARK_FINISHED' });
+            toast.success(result?.message || `${marking.cattle_unique_code} marked as dry.`);
+            loadSheet(); // she is off the sheet now, so the grid has to come back from the server
+        } else {
+            // kept open so the message can be read against the animal it is about
+            dispatch({ type: 'MARK_FINISHED', keepOpen: true });
+            toast.error(result?.error || result?.message || 'Unable to mark her as dry.');
         }
     };
 
@@ -316,6 +381,7 @@ function MilkProduction() {
                                     <th className="min-w-[6rem] whitespace-nowrap border-b border-[var(--table-header-border)] px-4 py-3 text-right font-semibold">Fat %</th>
                                     <th className="min-w-[6rem] whitespace-nowrap border-b border-[var(--table-header-border)] px-4 py-3 text-right font-semibold">SNF %</th>
                                     <th className="min-w-[12rem] whitespace-nowrap border-b border-[var(--table-header-border)] px-4 py-3 text-left font-semibold">Remarks</th>
+                                    <th className="whitespace-nowrap border-b border-[var(--table-header-border)] px-4 py-3 text-center font-semibold">Actions</th>
                                 </tr>
                             </thead>
 
@@ -336,6 +402,17 @@ function MilkProduction() {
                                             <td className="border-b border-[var(--table-header-border)] px-4 py-2 text-[var(--text-primary)]">
                                                 <span className="font-medium">{row.cattle_unique_code}</span>
                                                 {row.gender_nm && <span className="ml-2 text-xs text-[var(--text-secondary)]">{row.gender_nm}</span>}
+
+                                                {/* she is still being milked while carrying - the badge is the nudge to dry her off */}
+                                                {!!row.pregnancy_id && (
+                                                    <span className="mt-0.5 flex items-center gap-1.5 text-xs font-medium"
+                                                        style={{ color: TONE_COLOR[Number(row.dry_off_due) ? 'warning' : 'info'] }}>
+                                                        {Number(row.dry_off_due)
+                                                            ? <><Icons.TriangleAlert size={13} /> Dry-off due</>
+                                                            : <><Icons.Baby size={13} /> Pregnant</>}
+                                                        {row.days_pregnant != null && ` · ${row.days_pregnant}d`}
+                                                    </span>
+                                                )}
                                             </td>
 
                                             <td className="border-b border-[var(--table-header-border)] px-4 py-2 text-[var(--text-secondary)]">
@@ -372,6 +449,18 @@ function MilkProduction() {
                                                     className={`${cellClass} text-left`} placeholder="Optional" />
                                             </td>
 
+                                            <td className="border-b border-[var(--table-header-border)] px-4 py-2 text-center">
+                                                <button type="button" title="She has stopped giving milk"
+                                                    onClick={() => dirty
+                                                        ? toast.warning('Save the day sheet first - marking her dry reloads the grid.')
+                                                        : dispatch({ type: 'MARK_REQUESTED', row })}
+                                                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-xs
+                                                        font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)]
+                                                        hover:text-[var(--text-primary)]">
+                                                    <Icons.MoonStar size={14} /> Mark dry
+                                                </button>
+                                            </td>
+
                                         </tr>
                                     );
                                 })}
@@ -384,7 +473,7 @@ function MilkProduction() {
                                     <td className="px-4 py-3 text-right">{morningTotal.toFixed(2)}</td>
                                     <td className="px-4 py-3 text-right">{eveningTotal.toFixed(2)}</td>
                                     <td className="px-4 py-3 text-right">{(morningTotal + eveningTotal).toFixed(2)}</td>
-                                    <td className="px-4 py-3" colSpan={3}></td>
+                                    <td className="px-4 py-3" colSpan={4}></td>
                                 </tr>
                             </tfoot>
 
@@ -394,6 +483,61 @@ function MilkProduction() {
 
                 </div>
             )}
+
+            {/* ---------------- Mark dry ---------------- */}
+
+            <Modal isOpen={!!marking} onClose={() => !markSubmitting && dispatch({ type: 'MARK_CANCELLED' })}
+                onSubmit={handleMarkDry} title="Mark as Dry"
+                primaryButtonName={markSubmitting ? 'Saving...' : 'Mark Dry'} secondaryButtonName="Cancel">
+
+                <div className="space-y-3 text-sm text-[var(--text-secondary)]">
+
+                    <p>
+                        <strong className="text-[var(--text-primary)]">{marking?.cattle_unique_code}</strong> will be
+                        removed from the milking sheet from tomorrow. Today's figures stay as recorded.
+                    </p>
+
+                    {marking?.pregnancy_id ? (
+                        <>
+                            <p className="text-xs">
+                                This is recorded against her current pregnancy, so the breeding register shows when
+                                she was dried off and she comes back automatically once you record the calving.
+                            </p>
+
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-[var(--text-primary)]">
+                                    Dry-off Date *
+                                </label>
+                                <input type="date" value={markDate} max={today} disabled={markSubmitting}
+                                    onChange={(e) => dispatch({ type: 'MARK_FIELD_CHANGED', field: 'markDate', value: e.target.value })}
+                                    className="w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2
+                                        text-[var(--input-text)] outline-none focus:border-[var(--brand-primary)]" />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-xs">
+                                She has no pregnancy on record, so this is saved as a manual mark. She stays off the
+                                sheet until someone puts her back - no rule will undo it.
+                            </p>
+
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-[var(--text-primary)]">Reason</label>
+                                <input type="text" value={markRemarks} maxLength={500} disabled={markSubmitting}
+                                    placeholder="e.g. yield dropped to nothing over the last week"
+                                    onChange={(e) => dispatch({ type: 'MARK_FIELD_CHANGED', field: 'markRemarks', value: e.target.value })}
+                                    className="w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2
+                                        text-[var(--input-text)] outline-none focus:border-[var(--brand-primary)]" />
+                                <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                                    Kept in the audit trail against your name and the time.
+                                </p>
+                            </div>
+                        </>
+                    )}
+
+                </div>
+
+            </Modal>
 
         </div>
     );

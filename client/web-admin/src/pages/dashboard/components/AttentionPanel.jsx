@@ -10,6 +10,9 @@ import EntityLink from '../../profiles/components/EntityLink';
  * severity icon (never colour alone) and, where there is an obvious next step, a link to the
  * screen that fixes it. Groups expand to show the specific branches / animals / days.
  */
+// alerts whose fix lives on the breeding register
+const LIFECYCLE_ACTION_KEYS = ['dry_off_due', 'calving_due', 'calf_not_registered'];
+
 const SEVERITY = {
     critical: { icon: Icons.OctagonAlert, color: 'var(--danger)' },
     warning: { icon: Icons.TriangleAlert, color: 'var(--warning)' },
@@ -56,7 +59,7 @@ function AttentionItem({ severity, title, detail, items, renderItem, action }) {
     );
 }
 
-function AttentionPanel({ attention, period, canRecordMilk, onOpenProfile }) {
+function AttentionPanel({ attention, period, canRecordMilk, onOpenProfile, cattleAlerts = [] }) {
 
     const navigate = useNavigate();
     const silent = attention?.silent_branches || [];
@@ -113,6 +116,31 @@ function AttentionPanel({ attention, period, canRecordMilk, onOpenProfile }) {
                 items={missingDays}
                 renderItem={(date) => <span className="text-[var(--text-primary)]">{displayDate(date)}{date === period.today ? ' (today)' : ''}</span>}
                 action={hasEarlierDays ? recordAction('Fill in') : null} />
+        );
+    }
+
+    // lifecycle alerts (dry-off due, calving due, withdrawal breaches, drift) come from
+    // /cattle-alerts already shaped as { key, severity, title, detail, items }, so a new alert
+    // added on the server renders here with no change to this component
+    for (const alert of cattleAlerts) {
+        items.push(
+            <AttentionItem key={alert.key} severity={alert.severity}
+                title={alert.title}
+                detail={alert.detail}
+                items={alert.items}
+                renderItem={(item) => (
+                    <>
+                        <span className="truncate text-[var(--text-primary)]">
+                            <EntityLink type="cattle" id={item.cattle_id} onNavigate={onOpenProfile}>{item.cattle_unique_code}</EntityLink>
+                            {item.branch_name && <span className="text-[var(--text-tertiary)]"> · {item.branch_name}</span>}
+                            {item.label && <span className="text-[var(--text-tertiary)]"> · {item.label}</span>}
+                        </span>
+                        <span className="shrink-0">{item.note}</span>
+                    </>
+                )}
+                action={LIFECYCLE_ACTION_KEYS.includes(alert.key)
+                    ? { label: 'Open register', onClick: () => navigate('/breeding') }
+                    : null} />
         );
     }
 

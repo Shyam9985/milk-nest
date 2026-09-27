@@ -11,22 +11,31 @@ const { log } = require('../utils/log.utils');
 // the day sheet for a branch: every active milking animal there, with its entry for the
 // chosen date when one exists. the LEFT JOIN keeps un-milked animals in the list, which is
 // what makes this a fill-in register rather than an add-one-at-a-time form.
-// males are left out here on purpose: the save path validates submitted cattle against
-// this same sheet, so excluding bulls once covers both the screen and the server
+// eligibility is read from the can_produce_milk flag, which covers bulls, calves, dried-off
+// pregnancies, animals under milk withdrawal and sold animals in a single indexed column
+// (idx_cattle_milk_sheet). the save path validates submitted cattle against this same sheet,
+// so the rule lives in exactly one query. milkEligibilityService is what keeps the flag true.
+// the pregnancy join carries her breeding context onto each row, so the incharge can mark her
+// dry from the sheet - which is where a cow stopping is actually noticed
 exports.getMilkProductionSheetMdl = (branch_id, production_date) => {
     log('in getMilkProductionSheetMdl');
     const qry = `select c.cattle_id, c.cattle_unique_code, t.cattle_type_name, br.breed_name, g.gender_nm,
         mp.milk_production_id, mp.morning_quantity, mp.evening_quantity, mp.total_quantity,
         mp.fat_percentage, mp.snf_percentage, mp.remarks,
-        DATE_FORMAT(mp.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
+        DATE_FORMAT(mp.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at,
+        p.pregnancy_id,
+        DATE_FORMAT(p.expected_dry_off_date, '%Y-%m-%d') as expected_dry_off_date,
+        (p.expected_dry_off_date is not null and p.expected_dry_off_date <= curdate()) as dry_off_due,
+        datediff(curdate(), p.conception_date) as days_pregnant
         from cattle_lst_t c
         join cattle_types_mstr_lst_t t on t.cattle_type_id = c.cattle_type_id
         join cattle_breeds_mstr_lst_t br on br.breed_id = c.breed_id
         left join gender_mstr_lst_t g on g.gender_id = c.gender_id
         left join milk_production_lst_t mp on mp.cattle_id = c.cattle_id
             and mp.production_date = ? and mp.is_active = 1
-        where c.is_active = 1 and c.branch_id = ?
-            and (g.gender_nm is null or lower(g.gender_nm) <> 'male')
+        left join cattle_pregnancy_lst_t p on p.cattle_id = c.cattle_id and p.is_active = 1
+            and p.pregnancy_status = 'active' and p.actual_dry_off_date is null
+        where c.branch_id = ? and c.can_produce_milk = 1 and c.is_active = 1
         order by c.cattle_unique_code asc`;
     return dbutils.executeQuery(qry, [production_date, branch_id], 'get milk production sheet model');
 }

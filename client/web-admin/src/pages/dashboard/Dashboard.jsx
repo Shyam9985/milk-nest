@@ -3,6 +3,7 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Skeleton from '../../utils/Skeleton';
 import { getDashboardFilters, getDashboard } from '../../services/dashboard.service';
+import { getCattleAlerts } from '../../services/cattleAlerts.service';
 import { useToast } from '../../contexts/MessageContext';
 import ScopeBar from './components/ScopeBar';
 import KpiTile from './components/KpiTile';
@@ -35,6 +36,7 @@ const initialState = {
     branchId: '',
     period: { preset: defaultPeriod.key, ...defaultPeriod.range() },
     data: null,
+    cattleAlerts: [],   // lifecycle alerts, fetched alongside the dashboard
     loading: true,      // first load - skeleton
     refreshing: false,  // later loads - keep the previous render, dimmed
     error: null
@@ -77,7 +79,7 @@ function reducer(state, action) {
             return { ...state, loading: !state.data, refreshing: !!state.data, error: null };
 
         case 'LOADED':
-            return { ...state, data: action.data, loading: false, refreshing: false, error: null };
+            return { ...state, data: action.data, cattleAlerts: action.cattleAlerts, loading: false, refreshing: false, error: null };
 
         case 'LOAD_FAILED':
             return { ...state, loading: false, refreshing: false, error: action.error };
@@ -97,7 +99,7 @@ function Dashboard() {
     const [state, dispatch] = useReducer(reducer, initialState);
     const requestSeq = useRef(0);   // only the latest request may update the screen
     const profileDrawer = useProfileDrawer();   // any code on the page opens its profile in a side drawer
-    const { dairyFarms, branches, filtersLoaded, canRecordMilk, dairyFarmId, branchId, period, data, loading, refreshing, error } = state;
+    const { dairyFarms, branches, filtersLoaded, canRecordMilk, dairyFarmId, branchId, period, data, cattleAlerts, loading, refreshing, error } = state;
 
     useEffect(() => {
         (async () => {
@@ -119,17 +121,29 @@ function Dashboard() {
     const load = async () => {
         const seq = ++requestSeq.current;
         dispatch({ type: 'LOADING' });
-        const result = await getDashboard({
-            from_date: period.from, to_date: period.to,
+
+        const scope = {
             ...(dairyFarmId ? { dairy_farm_id: dairyFarmId } : {}),
             ...(branchId ? { branch_id: branchId } : {})
-        });
+        };
+
+        // two independent requests in parallel: the alerts need the 'cattle' permission while the
+        // dashboard needs 'dashboard', so a user may hold one and not the other. a failed alerts
+        // call leaves the dashboard fully working rather than blanking the page.
+        const [result, alertsResult] = await Promise.all([
+            getDashboard({ from_date: period.from, to_date: period.to, ...scope }),
+            getCattleAlerts(scope)
+        ]);
 
         // a slower, older response must not overwrite the one for the current selection
         if (seq !== requestSeq.current) return;
 
         if (result?.success) {
-            dispatch({ type: 'LOADED', data: result.data });
+            dispatch({
+                type: 'LOADED',
+                data: result.data,
+                cattleAlerts: alertsResult?.success ? (alertsResult?.data?.alerts || []) : []
+            });
         } else {
             const message = result?.error || result?.message || 'Unable to load the dashboard.';
             dispatch({ type: 'LOAD_FAILED', error: message });
@@ -253,7 +267,8 @@ function Dashboard() {
 
                     {/* attention + quality */}
                     <div className="grid gap-4 xl:grid-cols-2">
-                        <AttentionPanel attention={data.attention} period={periodInfo} canRecordMilk={canRecordMilk} onOpenProfile={profileDrawer.open} />
+                        <AttentionPanel attention={data.attention} period={periodInfo} canRecordMilk={canRecordMilk}
+                            onOpenProfile={profileDrawer.open} cattleAlerts={cattleAlerts} />
                         <QualityChart trend={data.trend} quality={kpis.quality} />
                     </div>
 
