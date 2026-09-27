@@ -197,9 +197,17 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
         <form onSubmit={handleSubmit} noValidate className="flex h-full flex-col">
 
-            <div className="flex-1">
+            {/* Two columns from sm upwards, one below. The drawer is full width on a phone and at
+                least half the viewport above md, so there is room to pair fields up - and a form
+                that fits on one screen beats one the user has to scroll. */}
+            <div className="flex-1 grid grid-cols-1 gap-x-4 sm:grid-cols-2">
 
                 {fields.map((field) => {
+
+                    // a field that accepts a paragraph gets a row to itself - remarks and the like
+                    // read badly squeezed into half a column. anything else can opt in explicitly.
+                    const spanClass = (field.fullWidth || (field.maxLength ?? 0) >= 1000)
+                        ? 'sm:col-span-2' : '';
 
                     if (field.type === 'select') {
 
@@ -223,7 +231,7 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                             || (!!field.dependsOn && !values[field.dependsOn]);
 
                         return (
-                            <div key={field.name}>
+                            <div key={field.name} className={spanClass}>
 
                                 <SearchDropdown name={field.name} label={field.label}
                                     value={values[field.name] ?? ''} options={options} onChange={handleChange}
@@ -240,17 +248,20 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
                     if (field.type === 'password') {
                         return (
-                            <PasswordInput key={field.name} name={field.name}
-                                label={field.required ? `${field.label} *` : field.label}
-                                value={values[field.name] ?? ''} error={errors[field.name]}
-                                placeholder={field.placeholder} onChange={handleChange} disabled={submitting} />
+                            <div key={field.name} className={spanClass}>
+                                <PasswordInput name={field.name}
+                                    label={field.required ? `${field.label} *` : field.label}
+                                    value={values[field.name] ?? ''} error={errors[field.name]}
+                                    placeholder={field.placeholder} onChange={handleChange} disabled={submitting} />
+                            </div>
                         );
                     }
 
                     if (field.type === 'checkbox') {
                         return (
 
-                            <label key={field.name} className="mb-3 flex items-center gap-3 text-sm font-medium text-[var(--text-primary)]">
+                            <label key={field.name}
+                                className={`mb-3 flex items-center gap-3 text-sm font-medium text-[var(--text-primary)] ${spanClass}`}>
 
                                 <input type="checkbox" name={field.name} checked={!!values[field.name]} onChange={handleChange}
                                     disabled={submitting} className="h-4 w-4 accent-[var(--brand-primary)]" />
@@ -262,7 +273,7 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                     }
 
                     return (
-                        <div key={field.name}>
+                        <div key={field.name} className={spanClass}>
 
                             <AuthInput name={field.name} type={field.type || 'text'}
                                 label={field.required ? `${field.label} *` : field.label}

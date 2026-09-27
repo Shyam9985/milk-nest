@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+/*
+ * Drawer widths, from md upwards. Below md the drawer is full width - a form squeezed into a
+ * sliver of a phone screen is unusable - and from md up it never goes below half the viewport,
+ * which is the floor 'xs' now sits at. The keys are kept so existing callers still work; 'xs'
+ * and 'sm' simply both land on that floor.
+ */
 const drawerSizes = {
-    xs: "sm:w-[40vw]",
-    sm: "sm:w-[50vw]",
-    md: "sm:w-[65vw]",
-    lg: "sm:w-[75vw]",
-    xl: "sm:w-[85vw]",
-    full: "sm:w-[100vw]",
+    xs: "md:w-[50vw]",
+    sm: "md:w-[50vw]",
+    md: "md:w-[65vw]",
+    lg: "md:w-[75vw]",
+    xl: "md:w-[85vw]",
+    full: "md:w-[100vw]",
 };
 
 function SideDrawer({ isOpen, onClose, children, title = "Drawer", drawerSize = "lg", direction = "right", }) {
@@ -84,7 +90,7 @@ function SideDrawer({ isOpen, onClose, children, title = "Drawer", drawerSize = 
             <div onClick={(e) => e.stopPropagation()}
 
                 className={`bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-2xl transition-all duration-300 ease-in-out 
-                    ${current.class} ${isHorizontal ? `w-full h-full sm:min-w-[21.875rem] ${drawerSizes[drawerSize] || drawerSizes.lg}` : "w-full"}
+                    ${current.class} ${isHorizontal ? `w-full h-full md:min-w-[50vw] ${drawerSizes[drawerSize] || drawerSizes.lg}` : "w-full"}
                     ${direction === "left" || direction === "right" ? "w-full sm:w-auto h-full" : "w-full"}
                      ${direction === "right" ? "border-l border-[var(--border-primary)]" :
                         direction === "left" ? "border-r border-[var(--border-primary)]" :
