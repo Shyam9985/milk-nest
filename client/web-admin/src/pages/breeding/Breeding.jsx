@@ -35,6 +35,7 @@ const STATUS_TABS = [
 const initialState = {
     records: [],
     breedable: [],
+    genders: [],
     permissions: {},
     status: 'active',
     loading: true,
@@ -55,7 +56,8 @@ function reducer(state, action) {
         case 'LOADED':
             return {
                 ...state, records: action.records, breedable: action.breedable,
-                permissions: action.permissions, loading: false, refreshing: false
+                genders: action.genders, permissions: action.permissions,
+                loading: false, refreshing: false
             };
 
         case 'LOAD_FAILED':
@@ -113,7 +115,7 @@ function Breeding() {
     const navigate = useNavigate();
     const [state, dispatch] = useReducer(reducer, initialState);
     const profileDrawer = useProfileDrawer();
-    const { records, breedable, permissions, status, loading, refreshing, drawer, activeRecord, dryOffDate, confirming, submitting } = state;
+    const { records, breedable, genders, permissions, status, loading, refreshing, drawer, activeRecord, dryOffDate, confirming, submitting } = state;
 
     const today = todayLocal();
 
@@ -126,6 +128,7 @@ function Breeding() {
                 type: 'LOADED',
                 records: result?.data?.records || [],
                 breedable: result?.data?.breedable || [],
+                genders: result?.data?.genders || [],
                 permissions: result?.data?.permissions || {}
             });
         } else {
@@ -420,6 +423,7 @@ function Breeding() {
                 {activeRecord && (
                     <CalvingForm
                         pregnancy={activeRecord}
+                        genders={genders}
                         submitting={submitting}
                         onSubmit={handleCalving}
                         onCancel={() => dispatch({ type: 'DRAWER_CLOSED' })}

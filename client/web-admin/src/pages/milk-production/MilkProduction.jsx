@@ -4,10 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import SearchDropdown from '../../components/SearchDropdown';
 import Skeleton from '../../utils/Skeleton';
 import Modal from '../../utils/ModelComponent';
-import {
-    getCattleFormOptions, getCattleBranchOptions,
-    getMilkProductionSheet, saveMilkProductionSheet
-} from '../../services/settings.service';
+import { getCattleFormOptions, getCattleBranchOptions } from '../../services/cattle.service';
+import { getMilkProductionSheet, saveMilkProductionSheet } from '../../services/settings.service';
 import { markDryOff } from '../../services/breeding.service';
 import { markManualDryOff } from '../../services/milkEligibility.service';
 import { useToast } from '../../contexts/MessageContext';

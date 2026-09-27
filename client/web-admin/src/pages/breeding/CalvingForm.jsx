@@ -1,9 +1,7 @@
-import { useEffect, useReducer } from 'react';
+import { useMemo, useReducer } from 'react';
 import * as Icons from 'lucide-react';
 import SearchDropdown from '../../components/SearchDropdown';
 import AuthInput from '../../components/AuthInput';
-import { getGenderOptions } from '../../services/auth.service';
-import { useToast } from '../../contexts/MessageContext';
 import { todayLocal, displayDate } from '../dashboard/dashboard.utils';
 
 /*
@@ -16,6 +14,10 @@ import { todayLocal, displayDate } from '../dashboard/dashboard.utils';
  *
  * Calving date plus a variable number of calves means this state moves together, so it lives in
  * one reducer rather than a pile of useState calls.
+ *
+ * The genders arrive as a prop from the breeding register's own response. They are NOT fetched here:
+ * the admin/genders endpoint is gated on the 'users' permission, which an incharge who records
+ * calvings does not hold, so fetching them would 403 for exactly the person using this form.
  */
 const emptyCalf = () => ({ gender_id: '', weight: '', color: '', remarks: '' });
 
@@ -23,15 +25,11 @@ const initialState = {
     actual_calving_date: todayLocal(),
     remarks: '',
     calves: [emptyCalf()],
-    genderOptions: [],
     errors: {}
 };
 
 function reducer(state, action) {
     switch (action.type) {
-
-        case 'GENDER_OPTIONS_LOADED':
-            return { ...state, genderOptions: action.options };
 
         case 'FIELD_CHANGED':
             return { ...state, [action.field]: action.value, errors: { ...state.errors, [action.field]: null } };
@@ -57,27 +55,14 @@ function reducer(state, action) {
     }
 }
 
-function CalvingForm({ pregnancy, submitting = false, onSubmit, onCancel }) {
+function CalvingForm({ pregnancy, genders = [], submitting = false, onSubmit, onCancel }) {
 
-    const toast = useToast();
     const [state, dispatch] = useReducer(reducer, initialState);
-    const { actual_calving_date, remarks, calves, genderOptions, errors } = state;
+    const { actual_calving_date, remarks, calves, errors } = state;
 
-    useEffect(() => {
-        (async () => {
-            const result = await getGenderOptions();
-            if (result?.success) {
-                dispatch({
-                    type: 'GENDER_OPTIONS_LOADED',
-                    options: (result?.data?.records || result?.data || []).map((gender) => ({
-                        value: gender.gender_id, label: gender.gender_nm
-                    }))
-                });
-            } else {
-                toast.error(result?.error || result?.message || 'Unable to load gender options.');
-            }
-        })();
-    }, []);
+    const genderOptions = useMemo(
+        () => genders.map((gender) => ({ value: gender.gender_id, label: gender.gender_nm })),
+        [genders]);
 
     const handleSubmit = (event) => {
         event.preventDefault();

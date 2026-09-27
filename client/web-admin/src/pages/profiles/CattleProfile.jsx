@@ -21,7 +21,12 @@ const num = (value) => value === null || value === undefined ? '-' : Number(valu
 function CattleProfile({ profile, onNavigate }) {
 
     const isMale = /^male$/i.test(profile.gender_nm || '');
-    const healthy = /healthy/i.test(profile.health_status || '');
+
+    // health comes from her OPEN treatment episodes, not from a stored column - see CattleForm
+    const openTreatments = Number(profile.open_treatments) || 0;
+    const healthLabel = openTreatments
+        ? (profile.open_illness || 'Under treatment')
+        : 'No open illness';
 
     return (
         <div className="space-y-5">
@@ -33,7 +38,10 @@ function CattleProfile({ profile, onNavigate }) {
                     <EntityLink type="dairy-farm" id={profile.dairy_farm_id} onNavigate={onNavigate}>{profile.dairy_farm_name}</EntityLink>
                 </>}
                 badges={<>
-                    <ProfileBadge tone={healthy ? 'success' : 'warning'}>{profile.health_status || 'Health unknown'}</ProfileBadge>
+                    <ProfileBadge tone={openTreatments ? 'warning' : 'success'}>{healthLabel}</ProfileBadge>
+                    {profile.milk_withdrawal_until && (
+                        <ProfileBadge tone="warning">Milk held to {profile.milk_withdrawal_until}</ProfileBadge>
+                    )}
                     {profile.gender_nm && <ProfileBadge tone="neutral">{profile.gender_nm}</ProfileBadge>}
                     {isMale && <ProfileBadge tone="neutral">Not milked</ProfileBadge>}
                 </>} />

@@ -69,15 +69,9 @@ router.get('/master/branch', authmdlwre.isAuthenticated, checkRateLimit(1, 60), 
 router.post('/master/branch', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('dairy-farm', 'create'), audit('BRANCH', 'CREATE', 'branches_lst_t', 'branch_id'), settingsCtrl.createBranchCtrl);
 router.put('/master/branch/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('dairy-farm', 'update'), audit('BRANCH', 'UPDATE', 'branches_lst_t', 'branch_id'), settingsCtrl.updateBranchCtrl);
 router.delete('/master/branch/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('dairy-farm', 'delete'), audit('BRANCH', 'DELETE', 'branches_lst_t', 'branch_id'), settingsCtrl.deleteBranchCtrl);
+// cattle records moved to routes/cattleRtr.js (mounted at /apiv1/cattle): the animals are
+// operational data. cattle TYPE and BREED below remain settings masters.
 
-// cattle register routes (the animals themselves; dropdown feeds sit under the same key)
-router.get('/master/cattle', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleListCtrl);
-router.get('/master/cattle/form-options', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleFormOptionsCtrl);
-router.get('/master/cattle/branch', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleBranchOptionsCtrl);
-router.get('/master/cattle/breed', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleBreedOptionsCtrl);
-router.post('/master/cattle', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle', 'create'), audit('CATTLE', 'CREATE', 'cattle_lst_t', 'cattle_id'), settingsCtrl.createCattleCtrl);
-router.put('/master/cattle/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle', 'update'), audit('CATTLE', 'UPDATE', 'cattle_lst_t', 'cattle_id'), settingsCtrl.updateCattleCtrl);
-router.delete('/master/cattle/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle', 'delete'), audit('CATTLE', 'DELETE', 'cattle_lst_t', 'cattle_id'), settingsCtrl.deleteCattleCtrl);
 
 // cattle type master routes - its own key, like every other master ('cattle' stays for cattle records)
 router.get('/master/cattle-type', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle-type', 'read'), settingsCtrl.getCattleTypeListCtrl);

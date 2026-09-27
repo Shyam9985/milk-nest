@@ -92,17 +92,21 @@ const readEligibility = async (cattle_id) => {
 
 /**********************************************
 * name : getPregnancyListSrvc
-* description : the breeding register for the caller's scope, plus the dropdown of animals that
-*               can still be bred, so the screen needs one round trip rather than two.
+* description : the breeding register for the caller's scope, plus both dropdowns the screen needs -
+*               the animals still available to breed, and the genders for registering a calf - so it
+*               is ONE round trip rather than three.
+*               the genders come from here deliberately: admin/genders is gated on the 'users'
+*               permission, which an incharge who records calvings does not hold.
 ************************************************/
 exports.getPregnancyListSrvc = async (user, filters = {}) => {
     log('in getPregnancyListSrvc');
 
-    const [records, breedable] = await Promise.all([
+    const [records, breedable, genders] = await Promise.all([
         breedingMdl.getPregnancyListMdl(user, filters),
-        breedingMdl.getBreedableCattleMdl(user, filters.branch_id)
+        breedingMdl.getBreedableCattleMdl(user, filters.branch_id),
+        breedingMdl.getGenderOptionsMdl()
     ]);
-    return { records, breedable, today: todayLocal() };
+    return { records, breedable, genders, today: todayLocal() };
 }
 
 /**********************************************

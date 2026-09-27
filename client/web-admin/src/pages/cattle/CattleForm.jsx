@@ -1,5 +1,13 @@
-import MasterForm from '../components/MasterForm';
+import MasterForm from '../settings/components/MasterForm';
 
+/*
+ * There is no health field here on purpose. An animal's health is DERIVED from her open treatment
+ * episodes in the Health register - that is where the illness, the medicines, the cost and the milk
+ * withdrawal already live. A stored copy on the cattle row went stale immediately: two animals read
+ * 'Under Treatment' with no treatment on record, while the one actually on Milk Fever read blank.
+ *
+ * Anything that is not an illness - a poor doer, a difficult temperament - goes in Remarks.
+ */
 function CattleForm({ initialValues = null, dairyFarmOptions = [], cattleTypeOptions = [], genderOptions = [],
     loadBranchOptions, loadBreedOptions, submitting = false, onSubmit, onCancel }) {
 
@@ -18,7 +26,6 @@ function CattleForm({ initialValues = null, dairyFarmOptions = [], cattleTypeOpt
         { name: 'color', label: 'Colour', type: 'text', maxLength: 100, placeholder: 'e.g. White with black patches' },
         { name: 'purchase_date', label: 'Purchase Date', type: 'date', max: today },
         { name: 'purchase_cost', label: 'Purchase Cost', type: 'number', placeholder: 'e.g. 45000' },
-        { name: 'health_status', label: 'Health Status', type: 'text', maxLength: 255, placeholder: 'e.g. Healthy, Under treatment' },
         { name: 'remarks', label: 'Remarks', type: 'text', maxLength: 1000, placeholder: 'Anything worth noting about this animal' }
     ];
 

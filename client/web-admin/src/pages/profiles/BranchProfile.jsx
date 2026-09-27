@@ -43,8 +43,11 @@ function BranchProfile({ profile, onNavigate }) {
                         { label: 'Type', field: 'cattle_type_name', className: 'text-[var(--text-secondary)]' },
                         { label: 'Breed', field: 'breed_name', className: 'text-[var(--text-secondary)]' },
                         { label: 'Gender', field: 'gender_nm', className: 'text-[var(--text-secondary)]' },
-                        { label: 'Health', field: 'health_status', sortable: false,
-                          render: (value) => <ProfileBadge tone={/healthy/i.test(value || '') ? 'success' : 'warning'}>{value || 'Unknown'}</ProfileBadge> },
+                        // derived from open treatment episodes, not a stored column
+                        { label: 'Health', field: 'open_treatments', sortable: false,
+                          render: (value, animal) => (Number(value) > 0
+                              ? <ProfileBadge tone="warning">{animal.open_illness || 'Under treatment'}</ProfileBadge>
+                              : <ProfileBadge tone="success">Well</ProfileBadge>) },
                     ]} />
             </ProfileSection>
 

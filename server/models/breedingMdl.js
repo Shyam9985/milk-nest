@@ -161,6 +161,19 @@ exports.getBreedableCattleMdl = (user, branch_id = null) => {
     return dbutils.executeQuery(qry, params, 'get breedable cattle model');
 }
 
+/**********************************************
+* name : getGenderOptionsMdl
+* description : the gender dropdown for registering a calf. it is served from HERE rather than from
+*               admin/genders, because that route is gated on the 'users' permission - it exists for
+*               user management - and an incharge who can record a calving does not hold it.
+************************************************/
+exports.getGenderOptionsMdl = () => {
+    log('in getGenderOptionsMdl');
+    const qry = `select gender_id, gender_nm from gender_mstr_lst_t
+        where is_active = 1 order by gender_nm asc`;
+    return dbutils.executeQuery(qry, [], 'get gender options model');
+}
+
 // calves registered against a pregnancy; the guard that stops it being deleted and orphaning them
 exports.countCalvesByPregnancyMdl = (pregnancy_id) => {
     log('in countCalvesByPregnancyMdl');
@@ -283,13 +296,13 @@ exports.recordCalvingMdl = async (pregnancy, data, user_id) => {
             if (!cattle_unique_code) return { affectedRows: 0, calves: [], codeExhausted: true };
 
             // type, breed and branch are inherited from the mother; date of birth IS the calving
-            // date. this insert mirrors settingsMdl.insertCattleMdl - the SQL is repeated so that
+            // date. this insert mirrors cattleMdl.insertCattleMdl - the SQL is repeated so that
             // the whole calving stays one self-contained transaction
             const [calfResult] = await connection.execute(
                 `insert into cattle_lst_t (branch_id, cattle_unique_code, cattle_type_id, breed_id, gender_id,
-                    date_of_birth, weight, color, purchase_date, purchase_cost, health_status, remarks,
+                    date_of_birth, weight, color, purchase_date, purchase_cost, remarks,
                     mother_cattle_id, pregnancy_id, created_by)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, null, null, null, ?, ?, ?, ?)`,
+                    values (?, ?, ?, ?, ?, ?, ?, ?, null, null, ?, ?, ?, ?)`,
                 [pregnancy.branch_id, cattle_unique_code, pregnancy.cattle_type_id, pregnancy.breed_id,
                     calf.gender_id, data.actual_calving_date, calf.weight ?? null, calf.color ?? null,
                     calf.remarks ?? null, pregnancy.cattle_id, pregnancy.pregnancy_id, user_id ?? null]

@@ -93,7 +93,16 @@ exports.getBranchCattleMdl = (user, branch_id) => {
     log('in getBranchCattleMdl');
     const scope = scopeutils.getScopeFilter(user, 'b');
 
-    const qry = `select c.cattle_id, c.cattle_unique_code, t.cattle_type_name, br.breed_name, g.gender_nm, c.health_status
+    // health is DERIVED from open treatment episodes, never from a stored column - a stored one
+    // goes stale the moment a treatment is opened or cured anywhere else
+    const qry = `select c.cattle_id, c.cattle_unique_code, t.cattle_type_name, br.breed_name, g.gender_nm,
+        c.can_produce_milk, c.milk_block_reason,
+        (select count(*) from cattle_treatment_lst_t ot
+            where ot.cattle_id = c.cattle_id and ot.is_active = 1 and ot.cure_date is null) as open_treatments,
+        (select i.illness_name from cattle_treatment_lst_t ot
+            join illness_mstr_lst_t i on i.illness_id = ot.illness_id
+            where ot.cattle_id = c.cattle_id and ot.is_active = 1 and ot.cure_date is null
+            order by ot.start_date desc limit 1) as open_illness
         from cattle_lst_t c
         join branches_lst_t b on b.branch_id = c.branch_id
         join cattle_types_mstr_lst_t t on t.cattle_type_id = c.cattle_type_id
@@ -111,7 +120,17 @@ exports.getCattleProfileMdl = (user, cattle_id) => {
     log('in getCattleProfileMdl');
     const scope = scopeutils.getScopeFilter(user, 'b');
 
-    const qry = `select c.cattle_id, c.cattle_unique_code, c.weight, c.color, c.purchase_cost, c.health_status, c.remarks, c.is_active,
+    const qry = `select c.cattle_id, c.cattle_unique_code, c.weight, c.color, c.purchase_cost, c.remarks, c.is_active,
+        c.can_produce_milk, c.milk_block_reason,
+        (select count(*) from cattle_treatment_lst_t ot
+            where ot.cattle_id = c.cattle_id and ot.is_active = 1 and ot.cure_date is null) as open_treatments,
+        (select i.illness_name from cattle_treatment_lst_t ot
+            join illness_mstr_lst_t i on i.illness_id = ot.illness_id
+            where ot.cattle_id = c.cattle_id and ot.is_active = 1 and ot.cure_date is null
+            order by ot.start_date desc limit 1) as open_illness,
+        (select DATE_FORMAT(max(ot.milk_withdrawal_until), '%d-%m-%Y') from cattle_treatment_lst_t ot
+            where ot.cattle_id = c.cattle_id and ot.is_active = 1
+              and ot.milk_withdrawal_until >= curdate()) as milk_withdrawal_until,
         t.cattle_type_name, br.breed_name, g.gender_nm,
         b.branch_id, b.branch_name, b.branch_code, b.dairy_farm_id, df.dairy_farm_name, df.dairy_farm_code,
         DATE_FORMAT(c.date_of_birth, '%d-%m-%Y') as date_of_birth,

@@ -149,7 +149,7 @@ function AttentionPanel({ attention, period, canRecordMilk, onOpenProfile, cattl
             <AttentionItem key="incomplete" severity="info"
                 title={`${incomplete} cattle ${incomplete === 1 ? 'record is' : 'records are'} missing basic details`}
                 detail="Gender, date of birth or weight is blank. Complete them for better per-animal insights."
-                action={{ label: 'Open register', onClick: () => navigate('/settings/master/cattle-management') }} />
+                action={{ label: 'Open register', onClick: () => navigate('/cattle') }} />
         );
     }
 
