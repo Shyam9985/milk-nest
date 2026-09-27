@@ -217,13 +217,24 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                             options = field.options || [];
                         }
 
-                        const isLocked = submitting || isLoading || (!!field.dependsOn && !values[field.dependsOn]);
+                        // field.disabled locks a dropdown outright - used where a value is fixed once
+                        // the record exists, such as the animal on an existing pregnancy
+                        const isLocked = submitting || isLoading || !!field.disabled
+                            || (!!field.dependsOn && !values[field.dependsOn]);
 
                         return (
-                            <SearchDropdown key={field.name} name={field.name} label={field.label}
-                                value={values[field.name] ?? ''} options={options} onChange={handleChange}
-                                placeholder={isLoading ? 'Loading...' : (field.placeholder || `Select ${field.label}`)}
-                                disabled={isLocked} required={!!field.required} error={errors[field.name]} />
+                            <div key={field.name}>
+
+                                <SearchDropdown name={field.name} label={field.label}
+                                    value={values[field.name] ?? ''} options={options} onChange={handleChange}
+                                    placeholder={isLoading ? 'Loading...' : (field.placeholder || `Select ${field.label}`)}
+                                    disabled={isLocked} required={!!field.required} error={errors[field.name]} />
+
+                                {field.hint && !errors[field.name] && (
+                                    <p className="-mt-2 mb-3 text-xs text-[var(--text-tertiary)]">{field.hint}</p>
+                                )}
+
+                            </div>
                         );
                     }
 
@@ -251,12 +262,22 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                     }
 
                     return (
-                        <AuthInput key={field.name} name={field.name} type={field.type || 'text'}
-                            label={field.required ? `${field.label} *` : field.label}
-                            value={values[field.name] ?? ''} error={errors[field.name]}
-                            placeholder={field.placeholder} onChange={handleChange}
-                            disabled={submitting} readOnly={!!field.readOnly} autoComplete={field.autoComplete}
-                            min={field.min} max={field.max} />
+                        <div key={field.name}>
+
+                            <AuthInput name={field.name} type={field.type || 'text'}
+                                label={field.required ? `${field.label} *` : field.label}
+                                value={values[field.name] ?? ''} error={errors[field.name]}
+                                placeholder={field.placeholder} onChange={handleChange}
+                                disabled={submitting} readOnly={!!field.readOnly} autoComplete={field.autoComplete}
+                                min={field.min} max={field.max} />
+
+                            {/* optional one-line explanation under a field, for rules the label cannot
+                                carry on its own. hidden while an error is showing, so the two never stack */}
+                            {field.hint && !errors[field.name] && (
+                                <p className="-mt-2 mb-3 text-xs text-[var(--text-tertiary)]">{field.hint}</p>
+                            )}
+
+                        </div>
                     );
 
                 })}

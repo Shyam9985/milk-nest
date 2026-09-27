@@ -2077,3 +2077,155 @@ exports.deleteCattleSrvc = async (cattle_id, user_id) => {
     }
     return { cattle_id: Number(cattle_id), cattle_unique_code: record.cattle_unique_code };
 }
+
+// ===================== ILLNESS MASTER =====================
+
+exports.getIllnessListSrvc = async () => {
+    log('in getIllnessListSrvc');
+    return settingsMdl.getIllnessListMdl();
+}
+
+const normalizeIllnessPayload = (payload) => ({
+    illness_name: normalizeName(payload.illness_name),
+    description: emptyToNull(payload.description)
+});
+
+// creates an illness, reusing a soft deleted record when the same name comes back
+// (the name carries a unique key, so re-inserting would violate it)
+exports.createIllnessSrvc = async (payload) => {
+    log('in createIllnessSrvc');
+    const data = normalizeIllnessPayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicateIllnessesMdl(data.illness_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Illness already exists with the same name (${activeDuplicate.illness_name}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateIllnessMdl(inactiveDuplicate.illness_id, data);
+        return { illness_id: inactiveDuplicate.illness_id, reactivated: true, illness_name: data.illness_name };
+    }
+
+    const result = await settingsMdl.insertIllnessMdl(data);
+    return { illness_id: result.insertId, reactivated: false, illness_name: data.illness_name };
+}
+
+exports.updateIllnessSrvc = async (illness_id, payload) => {
+    log('in updateIllnessSrvc');
+    const data = normalizeIllnessPayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicateIllnessesMdl(data.illness_name, illness_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another illness already exists with the same name (${duplicates[0].illness_name}).`);
+    }
+
+    const result = await settingsMdl.updateIllnessMdl(illness_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Illness not found or already deleted.');
+    }
+    return { illness_id: Number(illness_id), illness_name: data.illness_name };
+}
+
+// soft deletes an illness after making sure no treatment episode refers to it
+exports.deleteIllnessSrvc = async (illness_id) => {
+    log('in deleteIllnessSrvc');
+    const [record] = await settingsMdl.getActiveIllnessByIdMdl(illness_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Illness not found or already deleted.');
+    }
+
+    const [{ cnt: treatmentCount }] = await settingsMdl.countActiveTreatmentsByIllnessMdl(illness_id);
+    if (treatmentCount) {
+        resutils.createError('recordInUse', `Illness cannot be deleted. ${treatmentCount} treatment record(s) refer to it.`);
+    }
+
+    const result = await settingsMdl.softDeleteIllnessMdl(illness_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Illness not found or already deleted.');
+    }
+    return { illness_id: Number(illness_id), illness_name: record.illness_name };
+}
+
+// ===================== PURCHASE MODE MASTER =====================
+
+exports.getPurchaseModeListSrvc = async () => {
+    log('in getPurchaseModeListSrvc');
+    return settingsMdl.getPurchaseModeListMdl();
+}
+
+// keys are lowercase snake_case so they stay usable as identifiers in code and in seeds
+const normalizePurchaseModeKey = (value) => String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+const normalizePurchaseModePayload = (payload) => ({
+    purchase_mode_key: normalizePurchaseModeKey(payload.purchase_mode_key),
+    purchase_mode_name: normalizeName(payload.purchase_mode_name),
+    description: emptyToNull(payload.description)
+});
+
+exports.createPurchaseModeSrvc = async (payload) => {
+    log('in createPurchaseModeSrvc');
+    const data = normalizePurchaseModePayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicatePurchaseModesMdl(data.purchase_mode_key, data.purchase_mode_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        const clash = activeDuplicate.purchase_mode_key === data.purchase_mode_key ? 'key' : 'name';
+        resutils.createError('duplicateRecord', `Purchase mode already exists with the same ${clash} (${activeDuplicate.purchase_mode_name}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivatePurchaseModeMdl(inactiveDuplicate.purchase_mode_id, data);
+        return { purchase_mode_id: inactiveDuplicate.purchase_mode_id, reactivated: true, purchase_mode_name: data.purchase_mode_name };
+    }
+
+    const result = await settingsMdl.insertPurchaseModeMdl(data);
+    return { purchase_mode_id: result.insertId, reactivated: false, purchase_mode_name: data.purchase_mode_name };
+}
+
+// only the name and description are updatable - the key is referenced by seeded rows and by
+// service code, so changing it would silently break whatever branches on it
+exports.updatePurchaseModeSrvc = async (purchase_mode_id, payload) => {
+    log('in updatePurchaseModeSrvc');
+    const [record] = await settingsMdl.getActivePurchaseModeByIdMdl(purchase_mode_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
+    }
+
+    const data = normalizePurchaseModePayload({ ...payload, purchase_mode_key: record.purchase_mode_key });
+
+    const duplicates = await settingsMdl.getDuplicatePurchaseModesMdl(record.purchase_mode_key, data.purchase_mode_name, purchase_mode_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another purchase mode already exists with the same name (${duplicates[0].purchase_mode_name}).`);
+    }
+
+    const result = await settingsMdl.updatePurchaseModeMdl(purchase_mode_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
+    }
+    return { purchase_mode_id: Number(purchase_mode_id), purchase_mode_name: data.purchase_mode_name };
+}
+
+// soft deletes a purchase mode after making sure no ownership record refers to it
+exports.deletePurchaseModeSrvc = async (purchase_mode_id) => {
+    log('in deletePurchaseModeSrvc');
+    const [record] = await settingsMdl.getActivePurchaseModeByIdMdl(purchase_mode_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
+    }
+
+    const [{ cnt: ownershipCount }] = await settingsMdl.countActiveOwnershipsByPurchaseModeMdl(purchase_mode_id);
+    if (ownershipCount) {
+        resutils.createError('recordInUse', `Purchase mode cannot be deleted. ${ownershipCount} cattle ownership record(s) use it.`);
+    }
+
+    const result = await settingsMdl.softDeletePurchaseModeMdl(purchase_mode_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
+    }
+    return { purchase_mode_id: Number(purchase_mode_id), purchase_mode_name: record.purchase_mode_name };
+}

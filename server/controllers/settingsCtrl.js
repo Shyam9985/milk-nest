@@ -2548,3 +2548,153 @@ exports.deleteUserCtrl = async (req, res) => {
     return sendSettingsError(req, res, error, "delete user controller");
   }
 };
+
+// ===================== ILLNESS MASTER =====================
+
+const ILLNESS_PAYLOAD_SCHEMA = {
+  illness_name: { required: true, type: "string", minLength: 2, maxLength: 150, label: "Illness Name" },
+  description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+};
+
+exports.getIllnessListCtrl = async (req, res) => {
+  log('in getIllnessListCtrl');
+  try {
+    const records = await settingsService.getIllnessListSrvc();
+
+    return resutils.sendSuccessResponse(req, res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get illnesses", cacheType: CACHE_TYPES.NO_STORE });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get illnesses controller");
+  }
+};
+
+exports.createIllnessCtrl = async (req, res) => {
+  log('in createIllnessCtrl');
+  try {
+    const validation = await validutils.validatePayload(req.body, ILLNESS_PAYLOAD_SCHEMA);
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createIllnessSrvc(req.body);
+
+    return resutils.sendSuccessResponse(req, res, result,
+      { ...RESPONSE_STATUS.CREATED, message: `Illness '${result.illness_name}' ${result.reactivated ? "restored" : "added"} successfully.` },
+      { function: "create illness" });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create illness controller");
+  }
+};
+
+exports.updateIllnessCtrl = async (req, res) => {
+  log('in updateIllnessCtrl');
+  try {
+    const illnessId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(req.body, ILLNESS_PAYLOAD_SCHEMA);
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updateIllnessSrvc(illnessId, req.body);
+
+    return resutils.sendSuccessResponse(req, res, result,
+      { ...RESPONSE_STATUS.UPDATED, message: `Illness '${result.illness_name}' updated successfully.` },
+      { function: "update illness" });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update illness controller");
+  }
+};
+
+exports.deleteIllnessCtrl = async (req, res) => {
+  log('in deleteIllnessCtrl');
+  try {
+    const illnessId = parseRecordId(req);
+    const result = await settingsService.deleteIllnessSrvc(illnessId);
+
+    return resutils.sendSuccessResponse(req, res, result,
+      { ...RESPONSE_STATUS.DELETED, message: `Illness '${result.illness_name}' deleted successfully.` },
+      { function: "delete illness" });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete illness controller");
+  }
+};
+
+// ===================== PURCHASE MODE MASTER =====================
+// purchase_mode_key is required on create and ignored on update: service code and seeded rows
+// reference it, so it is deliberately immutable once a record exists
+
+const PURCHASE_MODE_CREATE_SCHEMA = {
+  purchase_mode_key: { required: true, type: "string", minLength: 2, maxLength: 50, label: "Purchase Mode Key" },
+  purchase_mode_name: { required: true, type: "string", minLength: 2, maxLength: 100, label: "Purchase Mode Name" },
+  description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+};
+
+const PURCHASE_MODE_UPDATE_SCHEMA = {
+  purchase_mode_name: { required: true, type: "string", minLength: 2, maxLength: 100, label: "Purchase Mode Name" },
+  description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+};
+
+exports.getPurchaseModeListCtrl = async (req, res) => {
+  log('in getPurchaseModeListCtrl');
+  try {
+    const records = await settingsService.getPurchaseModeListSrvc();
+
+    return resutils.sendSuccessResponse(req, res,
+      { records: records || [], permissions: req.permissions },
+      RESPONSE_STATUS.SUCCESS,
+      { function: "get purchase modes", cacheType: CACHE_TYPES.NO_STORE });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "get purchase modes controller");
+  }
+};
+
+exports.createPurchaseModeCtrl = async (req, res) => {
+  log('in createPurchaseModeCtrl');
+  try {
+    const validation = await validutils.validatePayload(req.body, PURCHASE_MODE_CREATE_SCHEMA);
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.createPurchaseModeSrvc(req.body);
+
+    return resutils.sendSuccessResponse(req, res, result,
+      { ...RESPONSE_STATUS.CREATED, message: `Purchase mode '${result.purchase_mode_name}' ${result.reactivated ? "restored" : "added"} successfully.` },
+      { function: "create purchase mode" });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "create purchase mode controller");
+  }
+};
+
+exports.updatePurchaseModeCtrl = async (req, res) => {
+  log('in updatePurchaseModeCtrl');
+  try {
+    const purchaseModeId = parseRecordId(req);
+
+    const validation = await validutils.validatePayload(req.body, PURCHASE_MODE_UPDATE_SCHEMA);
+    if (!validation?.validationStatus)
+      resutils.createError("validationFailed", validation.errors[0]);
+
+    const result = await settingsService.updatePurchaseModeSrvc(purchaseModeId, req.body);
+
+    return resutils.sendSuccessResponse(req, res, result,
+      { ...RESPONSE_STATUS.UPDATED, message: `Purchase mode '${result.purchase_mode_name}' updated successfully.` },
+      { function: "update purchase mode" });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "update purchase mode controller");
+  }
+};
+
+exports.deletePurchaseModeCtrl = async (req, res) => {
+  log('in deletePurchaseModeCtrl');
+  try {
+    const purchaseModeId = parseRecordId(req);
+    const result = await settingsService.deletePurchaseModeSrvc(purchaseModeId);
+
+    return resutils.sendSuccessResponse(req, res, result,
+      { ...RESPONSE_STATUS.DELETED, message: `Purchase mode '${result.purchase_mode_name}' deleted successfully.` },
+      { function: "delete purchase mode" });
+  } catch (error) {
+    return sendSettingsError(req, res, error, "delete purchase mode controller");
+  }
+};

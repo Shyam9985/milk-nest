@@ -9,6 +9,8 @@ import Hierarchy from "./hierarchy/Hierarchy";
 import DairyFarm from "./dairy-farm/DairyFarm";
 import CattleType from "./cattle-type/CattleType";
 import CattleBreed from "./cattle-breed/CattleBreed";
+import Illness from "./illness/Illness";
+import PurchaseMode from "./purchase-mode/PurchaseMode";
 import CattleManagement from "./cattle-management/CattleManagement";
 import Users from "./users/Users";
 import Roles from "./roles/Roles";
@@ -31,6 +33,8 @@ export default [
     { path: '/settings/master/dairy-farm', component: DairyFarm, lazy: true },
     { path: '/settings/master/cattle-type', component: CattleType, lazy: true },
     { path: '/settings/master/cattle-breed', component: CattleBreed, lazy: true },
+    { path: '/settings/master/illness', component: Illness, lazy: true },
+    { path: '/settings/master/purchase-mode', component: PurchaseMode, lazy: true },
     { path: '/settings/master/cattle-management', component: CattleManagement, lazy: true },
 
     // ===================== SECURITY =====================

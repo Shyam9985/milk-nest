@@ -92,6 +92,18 @@ router.post('/master/cattle-breed', authmdlwre.isAuthenticated, checkRateLimit(0
 router.put('/master/cattle-breed/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle-breed', 'update'), audit('CATTLE_BREED', 'UPDATE', 'cattle_breeds_mstr_lst_t', 'breed_id'), settingsCtrl.updateCattleBreedCtrl);
 router.delete('/master/cattle-breed/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle-breed', 'delete'), audit('CATTLE_BREED', 'DELETE', 'cattle_breeds_mstr_lst_t', 'breed_id'), settingsCtrl.deleteCattleBreedCtrl);
 
+// illness master routes (feeds the treatment form's illness dropdown)
+router.get('/master/illness', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('illness-type', 'read'), settingsCtrl.getIllnessListCtrl);
+router.post('/master/illness', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('illness-type', 'create'), audit('ILLNESS', 'CREATE', 'illness_mstr_lst_t', 'illness_id'), settingsCtrl.createIllnessCtrl);
+router.put('/master/illness/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('illness-type', 'update'), audit('ILLNESS', 'UPDATE', 'illness_mstr_lst_t', 'illness_id'), settingsCtrl.updateIllnessCtrl);
+router.delete('/master/illness/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('illness-type', 'delete'), audit('ILLNESS', 'DELETE', 'illness_mstr_lst_t', 'illness_id'), settingsCtrl.deleteIllnessCtrl);
+
+// purchase mode master routes (feeds the cattle ownership form)
+router.get('/master/purchase-mode', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('purchase-mode', 'read'), settingsCtrl.getPurchaseModeListCtrl);
+router.post('/master/purchase-mode', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('purchase-mode', 'create'), audit('PURCHASE_MODE', 'CREATE', 'purchase_mode_mstr_lst_t', 'purchase_mode_id'), settingsCtrl.createPurchaseModeCtrl);
+router.put('/master/purchase-mode/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('purchase-mode', 'update'), audit('PURCHASE_MODE', 'UPDATE', 'purchase_mode_mstr_lst_t', 'purchase_mode_id'), settingsCtrl.updatePurchaseModeCtrl);
+router.delete('/master/purchase-mode/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('purchase-mode', 'delete'), audit('PURCHASE_MODE', 'DELETE', 'purchase_mode_mstr_lst_t', 'purchase_mode_id'), settingsCtrl.deletePurchaseModeCtrl);
+
 // role permission routes (role list feeds the form dropdown)
 router.get('/security/role-permission', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionListCtrl);
 router.get('/security/role-permission/role', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionRolesCtrl);
