@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SideDrawer from '../../utils/SideDrawer';
 import Modal from '../../utils/ModelComponent';
 import Skeleton from '../../utils/Skeleton';
+import RowAction from '../../components/RowAction';
 import AuthInput from '../../components/AuthInput';
 import TreatmentForm from './TreatmentForm';
 import CheckupForm from './CheckupForm';
@@ -376,12 +377,11 @@ function Health() {
                                             </td>
 
                                             <td className="whitespace-nowrap px-4 py-3 text-center">
-                                                <button type="button" onClick={() => openHistory(record)}
+                                                <RowAction tone="primary" icon={Icons.NotebookPen}
                                                     title="See every visit recorded against this illness"
-                                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium
-                                                        text-[var(--brand-primary)] transition-colors hover:bg-[var(--hover-bg)]">
-                                                    <Icons.NotebookPen size={14} /> {record.checkup_count}
-                                                </button>
+                                                    onClick={() => openHistory(record)}>
+                                                    {record.checkup_count}
+                                                </RowAction>
                                             </td>
 
                                             <td className="whitespace-nowrap px-4 py-3 text-right text-[var(--text-primary)]">
@@ -392,46 +392,42 @@ function Health() {
 
                                             {canWrite && (
                                                 <td className="whitespace-nowrap px-4 py-3 text-right">
-                                                    <div className="flex items-center justify-end gap-1">
+                                                    <div className="flex items-center justify-end gap-1.5">
 
                                                         {isOpen && permissions?.can_insert && (
-                                                            <button type="button" title="Record a vet visit or medication"
-                                                                onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'checkup', record })}
-                                                                className="rounded-md px-2 py-1 text-xs font-medium text-[var(--brand-primary)] transition-colors hover:bg-[var(--hover-bg)]">
+                                                            <RowAction tone="primary" icon={Icons.Plus}
+                                                                title="Record a vet visit or medication"
+                                                                onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'checkup', record })}>
                                                                 Add checkup
-                                                            </button>
+                                                            </RowAction>
                                                         )}
 
                                                         {isOpen && permissions?.can_update && (
-                                                            <button type="button" title="She has recovered"
-                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'cure', record } })}
-                                                                className="rounded-md px-2 py-1 text-xs font-medium text-[var(--success)] transition-colors hover:bg-[var(--hover-bg)]">
+                                                            <RowAction tone="success" icon={Icons.CircleCheck}
+                                                                title="She has recovered"
+                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'cure', record } })}>
                                                                 Cured
-                                                            </button>
+                                                            </RowAction>
                                                         )}
 
                                                         {!isOpen && permissions?.can_update && (
-                                                            <button type="button" title="Closed by mistake, or she relapsed"
-                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'reopen', record } })}
-                                                                className="rounded-md px-2 py-1 text-xs font-medium text-[var(--warning)] transition-colors hover:bg-[var(--hover-bg)]">
+                                                            <RowAction tone="warning" icon={Icons.RotateCcw}
+                                                                title="Closed by mistake, or she relapsed"
+                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'reopen', record } })}>
                                                                 Reopen
-                                                            </button>
+                                                            </RowAction>
                                                         )}
 
                                                         {permissions?.can_update && (
-                                                            <button type="button" title="Edit the dates, severity or withdrawal period"
-                                                                onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'treatment', record })}
-                                                                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)]">
-                                                                <Icons.Pencil size={14} />
-                                                            </button>
+                                                            <RowAction iconOnly icon={Icons.Pencil}
+                                                                title="Edit the dates, severity or withdrawal period"
+                                                                onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'treatment', record })} />
                                                         )}
 
                                                         {permissions?.can_delete && (
-                                                            <button type="button" title="Remove this record"
-                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'delete', record } })}
-                                                                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)] hover:text-[var(--danger)]">
-                                                                <Icons.Trash2 size={14} />
-                                                            </button>
+                                                            <RowAction iconOnly tone="danger" icon={Icons.Trash2}
+                                                                title="Remove this record"
+                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'delete', record } })} />
                                                         )}
 
                                                     </div>
@@ -527,12 +523,8 @@ function Health() {
                                 </div>
 
                                 {permissions?.can_delete && (
-                                    <button type="button" title="Remove this visit"
-                                        onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'delete-checkup', record: checkup } })}
-                                        className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--text-secondary)]
-                                            transition-colors hover:bg-[var(--hover-bg)] hover:text-[var(--danger)]">
-                                        <Icons.Trash2 size={14} />
-                                    </button>
+                                    <RowAction iconOnly tone="danger" icon={Icons.Trash2} title="Remove this visit"
+                                        onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'delete-checkup', record: checkup } })} />
                                 )}
                             </div>
 

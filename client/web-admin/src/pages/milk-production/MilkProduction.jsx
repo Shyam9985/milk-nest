@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SearchDropdown from '../../components/SearchDropdown';
 import Skeleton from '../../utils/Skeleton';
 import Modal from '../../utils/ModelComponent';
+import RowAction from '../../components/RowAction';
 import { getCattleFormOptions, getCattleBranchOptions } from '../../services/cattle.service';
 import { getMilkProductionSheet, saveMilkProductionSheet } from '../../services/settings.service';
 import { markDryOff } from '../../services/breeding.service';
@@ -448,15 +449,13 @@ function MilkProduction() {
                                             </td>
 
                                             <td className="border-b border-[var(--table-header-border)] px-4 py-2 text-center">
-                                                <button type="button" title="She has stopped giving milk"
+                                                <RowAction tone="warning" icon={Icons.MoonStar}
+                                                    title="She has stopped giving milk"
                                                     onClick={() => dirty
                                                         ? toast.warning('Save the day sheet first - marking her dry reloads the grid.')
-                                                        : dispatch({ type: 'MARK_REQUESTED', row })}
-                                                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-xs
-                                                        font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)]
-                                                        hover:text-[var(--text-primary)]">
-                                                    <Icons.MoonStar size={14} /> Mark dry
-                                                </button>
+                                                        : dispatch({ type: 'MARK_REQUESTED', row })}>
+                                                    Mark dry
+                                                </RowAction>
                                             </td>
 
                                         </tr>

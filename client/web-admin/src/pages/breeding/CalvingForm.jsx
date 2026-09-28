@@ -2,6 +2,7 @@ import { useMemo, useReducer } from 'react';
 import * as Icons from 'lucide-react';
 import SearchDropdown from '../../components/SearchDropdown';
 import AuthInput from '../../components/AuthInput';
+import RowAction from '../../components/RowAction';
 import { todayLocal, displayDate } from '../dashboard/dashboard.utils';
 
 /*
@@ -123,11 +124,11 @@ function CalvingForm({ pregnancy, genders = [], submitting = false, onSubmit, on
                 <label className="text-sm font-medium text-[var(--text-primary)]">
                     Calves {calves.length > 1 && <span className="text-[var(--text-tertiary)]">({calves.length})</span>}
                 </label>
-                <button type="button" onClick={() => dispatch({ type: 'CALF_ADDED' })} disabled={submitting}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[var(--brand-primary)]
-                        transition-colors hover:bg-[var(--hover-bg)] disabled:opacity-50">
-                    <Icons.Plus size={14} /> Add calf
-                </button>
+                <RowAction tone="primary" icon={Icons.Plus} disabled={submitting}
+                    title="Twins are ordinary - add a row per calf"
+                    onClick={() => dispatch({ type: 'CALF_ADDED' })}>
+                    Add calf
+                </RowAction>
             </div>
 
             {!calves.length && (
@@ -144,12 +145,9 @@ function CalvingForm({ pregnancy, genders = [], submitting = false, onSubmit, on
                         <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">
                             Calf {index + 1}
                         </span>
-                        <button type="button" onClick={() => dispatch({ type: 'CALF_REMOVED', index })} disabled={submitting}
+                        <RowAction iconOnly tone="danger" icon={Icons.Trash2} disabled={submitting}
                             title="Remove this calf"
-                            className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--text-secondary)]
-                                transition-colors hover:bg-[var(--hover-bg)] hover:text-[var(--danger)] disabled:opacity-50">
-                            <Icons.Trash2 size={14} />
-                        </button>
+                            onClick={() => dispatch({ type: 'CALF_REMOVED', index })} />
                     </div>
 
                     <SearchDropdown name={`calf_gender_${index}`} label="Gender" required

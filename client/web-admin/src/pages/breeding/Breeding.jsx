@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SideDrawer from '../../utils/SideDrawer';
 import Modal from '../../utils/ModelComponent';
 import Skeleton from '../../utils/Skeleton';
+import RowAction from '../../components/RowAction';
 import AuthInput from '../../components/AuthInput';
 import PregnancyForm from './PregnancyForm';
 import CalvingForm from './CalvingForm';
@@ -309,48 +310,40 @@ function Breeding() {
                                             {canWrite && (
                                                 <td className="whitespace-nowrap px-4 py-3 text-right">
                                                     {isActive ? (
-                                                        <div className="flex items-center justify-end gap-1">
+                                                        <div className="flex items-center justify-end gap-1.5">
 
                                                             {!record.actual_dry_off_date && permissions?.can_update && (
-                                                                <button type="button" title="Mark her as dry - removes her from the milking sheet"
-                                                                    onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'dry-off', record })}
-                                                                    className="rounded-md px-2 py-1 text-xs font-medium text-[var(--warning)] transition-colors hover:bg-[var(--hover-bg)]">
+                                                                <RowAction tone="warning" icon={Icons.MoonStar}
+                                                                    title="Mark her as dry - removes her from the milking sheet"
+                                                                    onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'dry-off', record })}>
                                                                     Mark dry
-                                                                </button>
+                                                                </RowAction>
                                                             )}
 
                                                             {permissions?.can_update && (
-                                                                <button type="button" title="Record the calving and register the calves"
-                                                                    onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'calving', record })}
-                                                                    className="rounded-md px-2 py-1 text-xs font-medium text-[var(--success)] transition-colors hover:bg-[var(--hover-bg)]">
+                                                                <RowAction tone="success" icon={Icons.Baby}
+                                                                    title="Record the calving and register the calves"
+                                                                    onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'calving', record })}>
                                                                     Calved
-                                                                </button>
+                                                                </RowAction>
                                                             )}
 
                                                             {permissions?.can_update && (
-                                                                <button type="button" title="Edit the conception date"
-                                                                    onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'pregnancy', record })}
-                                                                    className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)]">
-                                                                    <Icons.Pencil size={14} />
-                                                                </button>
+                                                                <RowAction iconOnly icon={Icons.Pencil} title="Edit the conception date"
+                                                                    onClick={() => dispatch({ type: 'DRAWER_OPENED', drawer: 'pregnancy', record })} />
                                                             )}
 
                                                             {permissions?.can_update && (
-                                                                <button type="button" title="Pregnancy did not reach calving"
-                                                                    onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'abort', record } })}
-                                                                    className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)] hover:text-[var(--danger)]">
-                                                                    <Icons.CircleSlash size={14} />
-                                                                </button>
+                                                                <RowAction iconOnly tone="danger" icon={Icons.CircleSlash}
+                                                                    title="Pregnancy did not reach calving"
+                                                                    onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'abort', record } })} />
                                                             )}
 
                                                         </div>
                                                     ) : (
                                                         permissions?.can_delete && (
-                                                            <button type="button" title="Remove this record"
-                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'delete', record } })}
-                                                                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--hover-bg)] hover:text-[var(--danger)]">
-                                                                <Icons.Trash2 size={14} />
-                                                            </button>
+<RowAction iconOnly tone="danger" icon={Icons.Trash2} title="Remove this record"
+                                                                onClick={() => dispatch({ type: 'CONFIRMING', confirming: { action: 'delete', record } })} />
                                                         )
                                                     )}
                                                 </td>
