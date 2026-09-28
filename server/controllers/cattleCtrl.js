@@ -25,6 +25,23 @@ const CATTLE_PAYLOAD_SCHEMA = {
   cattle_unique_code: { required: false, type: "string", maxLength: 100, label: "Cattle Code" },
 };
 
+/*
+ * Create also records how the farm came to hold her, so it takes the ownership fields on top.
+ * They are absent from the update schema on purpose: changing the arrangement is not an edit to the
+ * animal, it closes one ownership row and opens another, which is its own operation.
+ */
+const CATTLE_CREATE_SCHEMA = {
+  ...CATTLE_PAYLOAD_SCHEMA,
+  purchase_mode_id: { required: true, type: "number", min: 1, label: "Purchase Mode" },
+  partner_name: { required: false, type: "string", maxLength: 200, label: "Partner Name" },
+  partner_share_pct: { required: false, type: "number", min: 0, max: 100, label: "Partner Share %" },
+  partner_contact: { required: false, type: "string", maxLength: 20, label: "Partner Contact" },
+  // monthly care: the fee paid to her owner, and when the arrangement started. not a purchase price
+  ownership_amount: { required: false, type: "number", min: 0, label: "Monthly Payment" },
+  ownership_from: { required: false, type: "string", maxLength: 10, label: "Care Start Date" },
+  ownership_remarks: { required: false, type: "string", maxLength: 1000, label: "Ownership Remarks" },
+};
+
 const sendCattleError = (req, res, error, fname) => {
   console.log("Error in " + fname + " : ", error);
 
@@ -135,14 +152,15 @@ exports.getCattleBreedOptionsCtrl = async (req, res) => {
 exports.createCattleCtrl = async (req, res) => {
   log('in createCattleCtrl');
   try {
-    const validation = await validutils.validatePayload(req.body, CATTLE_PAYLOAD_SCHEMA);
+    const validation = await validutils.validatePayload(req.body, CATTLE_CREATE_SCHEMA);
     if (!validation?.validationStatus)
       resutils.createError("validationFailed", validation.errors[0]);
 
     const result = await cattleService.createCattleSrvc(req.body, req.user?.user_id);
 
     return resutils.sendSuccessResponse(req, res, result,
-      { ...RESPONSE_STATUS.CREATED, message: `Cattle '${result.cattle_unique_code}' added successfully.` },
+      { ...RESPONSE_STATUS.CREATED,
+        message: `Cattle '${result.cattle_unique_code}' added successfully under ${result.purchase_mode_name}.` },
       { function: "create cattle" });
   } catch (error) {
     return sendCattleError(req, res, error, "create cattle controller");

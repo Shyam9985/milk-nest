@@ -2469,11 +2469,21 @@ const PURCHASE_MODE_CREATE_SCHEMA = {
   purchase_mode_key: { required: true, type: "string", minLength: 2, maxLength: 50, label: "Purchase Mode Key" },
   purchase_mode_name: { required: true, type: "string", minLength: 2, maxLength: 100, label: "Purchase Mode Name" },
   description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+  needs_counterparty: { required: false, type: "boolean", label: "Has Another Party" },
+  needs_share_pct: { required: false, type: "boolean", label: "Has Share Percentage" },
+  amount_source: { required: false, type: "string", maxLength: 20, label: "Amount Source" },
+  counterparty_label: { required: false, type: "string", maxLength: 50, label: "Other Party Label" },
 };
 
 const PURCHASE_MODE_UPDATE_SCHEMA = {
   purchase_mode_name: { required: true, type: "string", minLength: 2, maxLength: 100, label: "Purchase Mode Name" },
   description: { required: false, type: "string", maxLength: 1000, label: "Description" },
+  needs_counterparty: { required: false, type: "boolean", label: "Has Another Party" },
+  needs_share_pct: { required: false, type: "boolean", label: "Has Share Percentage" },
+  amount_source: { required: false, type: "string", maxLength: 20, label: "Amount Source" },
+  counterparty_label: { required: false, type: "string", maxLength: 50, label: "Other Party Label" },
+  // the form submits the locked key on edit; the server keeps its own value
+  purchase_mode_key: { required: false, type: "string", maxLength: 50, label: "Purchase Mode Key" },
 };
 
 exports.getPurchaseModeListCtrl = async (req, res) => {

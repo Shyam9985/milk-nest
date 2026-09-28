@@ -111,6 +111,7 @@ function Cattle() {
     const [dairyFarmOptions, setDairyFarmOptions] = useState([]);
     const [cattleTypeOptions, setCattleTypeOptions] = useState([]);
     const [genderOptions, setGenderOptions] = useState([]);
+    const [purchaseModeOptions, setPurchaseModeOptions] = useState([]);
     const [permissions, setPermissions] = useState({});
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -152,6 +153,16 @@ function Cattle() {
             setGenderOptions((result?.data?.genders || []).map((gender) => ({
                 value: gender.gender_id,
                 label: gender.gender_nm
+            })));
+            // the behaviour flags travel with each option, so the form asks the right questions
+            // without knowing what any particular mode is called
+            setPurchaseModeOptions((result?.data?.purchase_modes || []).map((mode) => ({
+                value: mode.purchase_mode_id,
+                label: mode.purchase_mode_name,
+                needs_counterparty: Number(mode.needs_counterparty) === 1,
+                needs_share_pct: Number(mode.needs_share_pct) === 1,
+                amount_source: mode.amount_source,
+                counterparty_label: mode.counterparty_label
             })));
         } else {
             toast.error(result?.error || result?.message || 'Unable to load options for the form.');
@@ -275,6 +286,7 @@ function Cattle() {
                     dairyFarmOptions={dairyFarmOptions}
                     cattleTypeOptions={cattleTypeOptions}
                     genderOptions={genderOptions}
+                    purchaseModeOptions={purchaseModeOptions}
                     loadBranchOptions={loadBranchOptions}
                     loadBreedOptions={loadBreedOptions}
                     submitting={submitting}

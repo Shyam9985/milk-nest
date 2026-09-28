@@ -160,7 +160,11 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
 
         const nextErrors = {};
 
+        // a field hidden by showWhen is not validated: a required field the user cannot even see
+        // would block the form with an error against nothing
         fields.forEach((field) => {
+            if (typeof field.showWhen === 'function' && !field.showWhen(values)) return;
+
             const raw = values[field.name];
             const value = typeof raw === 'string' ? raw.trim() : raw;
 
@@ -193,6 +197,15 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
         onSubmit?.(payload);
     };
 
+    /*
+     * A field can be shown only when another answer makes it relevant - partner details on a
+     * partnership, say - by giving it showWhen(values). Hidden fields are not rendered AND not
+     * validated, so a required field that does not apply cannot block the form. They are still
+     * submitted, which is what lets the server clear a stale value when the answer changes.
+     */
+    const visibleFields = fields.filter((field) =>
+        typeof field.showWhen !== 'function' || field.showWhen(values));
+
     return (
 
         <form onSubmit={handleSubmit} noValidate className="flex h-full flex-col">
@@ -202,7 +215,7 @@ function MasterForm({ fields = [], initialValues = null, submitting = false, sub
                 that fits on one screen beats one the user has to scroll. */}
             <div className="flex-1 grid grid-cols-1 gap-x-4 sm:grid-cols-2">
 
-                {fields.map((field) => {
+                {visibleFields.map((field) => {
 
                     // a field that accepts a paragraph gets a row to itself - remarks and the like
                     // read badly squeezed into half a column. anything else can opt in explicitly.

@@ -74,6 +74,83 @@ const normalizeCattlePayload = (payload) => {
     };
 };
 
+/*
+ * How the farm came to hold this animal. Every animal needs a CURRENT ownership row - one without
+ * is flagged by the drift alert - so this is derived on create and never left to chance.
+ *
+ * The money field is the cattle record's purchase_cost; asking for it twice would be two numbers
+ * that can disagree. Born on farm is always zero, whatever was typed.
+ */
+/*
+ * How the farm came to hold this animal, driven ENTIRELY by the purchase mode master. Nothing here
+ * compares a mode key: a mode carries its own behaviour, so a new one added under Settings works
+ * without a code change.
+ *
+ * The three flags it reads:
+ *
+ *   amount_source       what the ownership amount means
+ *                         'purchase_cost' - the price paid, taken from the animal's purchase cost
+ *                         'recurring'     - a fee paid every period, asked for separately, because
+ *                                           the farm never bought her
+ *                         'none'          - always zero (born on the farm)
+ *   needs_counterparty  whether there is another party, and therefore a name and contact to hold.
+ *                       counterparty_label says what to call them - Partner, Owner, Lessor
+ *   needs_share_pct     whether that party holds a percentage of the animal
+ */
+const buildOwnership = (payload, data, mode) => {
+
+    const needsCounterparty = Number(mode.needs_counterparty) === 1;
+    const needsShare = Number(mode.needs_share_pct) === 1;
+    const label = emptyToNull(mode.counterparty_label) || 'Counterparty';
+
+    let partner_name = null;
+    let partner_contact = null;
+    let partner_share_pct = null;
+
+    if (needsCounterparty) {
+        partner_name = emptyToNull(payload.partner_name);
+        if (!partner_name) {
+            resutils.createError('validationFailed', `${label} name is required for ${mode.purchase_mode_name}.`);
+        }
+        partner_contact = emptyToNull(payload.partner_contact);
+    }
+
+    if (needsShare) {
+        partner_share_pct = parsePositiveNumber(payload.partner_share_pct, `${label} share %`);
+        if (partner_share_pct !== null && partner_share_pct > 100) {
+            resutils.createError('validationFailed', `${label} share % cannot be more than 100.`);
+        }
+    }
+
+    let amount;
+    let effective_from;
+
+    if (mode.amount_source === 'recurring') {
+        amount = parsePositiveNumber(payload.ownership_amount, `${mode.purchase_mode_name} amount`);
+        if (amount === null) {
+            resutils.createError('validationFailed', `A recurring amount is required for ${mode.purchase_mode_name}.`);
+        }
+        // a recurring arrangement starts when she arrives, which is not a purchase date
+        effective_from = parsePastDate(payload.ownership_from, 'Arrangement start date') || todayLocal();
+    } else if (mode.amount_source === 'none') {
+        amount = 0;
+        effective_from = data.date_of_birth || todayLocal();
+    } else {
+        amount = data.purchase_cost ?? 0;
+        effective_from = data.purchase_date || data.date_of_birth || todayLocal();
+    }
+
+    return {
+        purchase_mode_id: mode.purchase_mode_id,
+        effective_from,
+        amount,
+        partner_name,
+        partner_share_pct,
+        partner_contact,
+        ownership_remarks: emptyToNull(payload.ownership_remarks)
+    };
+};
+
 /**********************************************
 * name : assertCattleParents
 * description : every parent must exist and be ACTIVE, and the breed must belong to the chosen type.
@@ -135,12 +212,13 @@ exports.getCattleListSrvc = async (user) => {
 exports.getCattleFormOptionsSrvc = async (user) => {
     log('in getCattleFormOptionsSrvc');
 
-    const [dairy_farms, cattle_types, genders] = await Promise.all([
+    const [dairy_farms, cattle_types, genders, purchase_modes] = await Promise.all([
         settingsMdl.getDairyFarmsMdl(user),
         settingsMdl.getCattleTypeListMdl(),
-        settingsMdl.getGendersMdl()
+        settingsMdl.getGendersMdl(),
+        settingsMdl.getPurchaseModeListMdl()
     ]);
-    return { dairy_farms, cattle_types, genders };
+    return { dairy_farms, cattle_types, genders, purchase_modes };
 }
 
 // the two dependent dropdowns, loaded when their parent is chosen. both are settings masters, so
@@ -155,17 +233,34 @@ exports.getBreedOptionsSrvc = async (cattle_type_id) => {
     return settingsService.getCattleBreedListSrvc(cattle_type_id);
 }
 
-// records a new animal at a branch
+/**********************************************
+* name : createCattleSrvc
+* description : records a new animal at a branch, together with the ownership row that says how the
+*               farm holds her. The two are written in one transaction by the model, because an
+*               animal without a current ownership row is a record the drift alert immediately
+*               reports as broken.
+************************************************/
 exports.createCattleSrvc = async (payload, user_id) => {
     log('in createCattleSrvc');
 
     const data = normalizeCattlePayload(payload);
     const branch = await assertCattleParents(data);
 
+    const [mode] = await settingsMdl.getActivePurchaseModeByIdMdl(Number(payload.purchase_mode_id));
+    if (!mode) {
+        resutils.createError('invalidParent', 'Selected purchase mode does not exist or is inactive.');
+    }
+
+    Object.assign(data, buildOwnership(payload, data, mode));
+
     data.cattle_unique_code = await generateCattleCode(data.branch_id, branch.branch_code);
 
     const result = await cattleMdl.insertCattleMdl(data, user_id);
-    return { cattle_id: result.insertId, cattle_unique_code: data.cattle_unique_code };
+    return {
+        cattle_id: result.insertId,
+        cattle_unique_code: data.cattle_unique_code,
+        purchase_mode_name: mode.purchase_mode_name
+    };
 }
 
 // updates an animal's details; its tag stays with it for life

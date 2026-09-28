@@ -91,18 +91,49 @@ exports.countCattleByBranchMdl = (branch_id) => {
 
 /**********************************************
 * name : insertCattleMdl
-* description : records an animal entered by hand. mother_cattle_id and pregnancy_id are left null:
-*               those are only set on a calf, and a calf is written by the calving transaction in
-*               breedingMdl so the whole birth commits or rolls back as one.
+* description : records an animal entered by hand, WITH the ownership row that says how the farm
+*               came to hold her. TRANSACTIONAL, and it has to be: an animal with no current
+*               ownership row is flagged by the eligibility drift alert as needing a data
+*               correction, so creating one without the other produces a record that is broken the
+*               moment it is saved.
+*
+*               executeTransaction rather than executeTransactionQueries because the ownership row
+*               needs the cattle's insertId - the second statement depends on the first one's result.
+*
+*               mother_cattle_id and pregnancy_id are left null: those are only set on a calf, and a
+*               calf is written by the calving transaction in breedingMdl, which inserts its own
+*               'born_on_farm' ownership row the same way.
+* input : (data incl. ownership fields, user_id)
+* output : { insertId }
 ************************************************/
-exports.insertCattleMdl = (data, user_id) => {
+exports.insertCattleMdl = async (data, user_id) => {
     log('in insertCattleMdl');
-    const qry = `insert into cattle_lst_t (branch_id, cattle_unique_code, cattle_type_id, breed_id, gender_id,
-        date_of_birth, weight, color, purchase_date, purchase_cost, remarks, created_by)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    return dbutils.executeQuery(qry, [data.branch_id, data.cattle_unique_code, data.cattle_type_id,
-        data.breed_id, data.gender_id, data.date_of_birth, data.weight, data.color, data.purchase_date,
-        data.purchase_cost, data.remarks, user_id ?? null], 'insert cattle model');
+
+    return dbutils.executeTransaction(async (connection) => {
+
+        const [result] = await connection.execute(
+            `insert into cattle_lst_t (branch_id, cattle_unique_code, cattle_type_id, breed_id, gender_id,
+                date_of_birth, weight, color, purchase_date, purchase_cost, remarks, created_by)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [data.branch_id, data.cattle_unique_code, data.cattle_type_id, data.breed_id, data.gender_id,
+                data.date_of_birth, data.weight, data.color, data.purchase_date, data.purchase_cost,
+                data.remarks, user_id ?? null]
+        );
+
+        // the arrangement the farm holds her under. effective_to stays null - this is the CURRENT
+        // one, and a later arrangement closes it rather than overwriting it
+        await connection.execute(
+            `insert into cattle_ownership_lst_t
+                (cattle_id, purchase_mode_id, effective_from, amount, partner_name, partner_share_pct,
+                 partner_contact, remarks, created_by)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [result.insertId, data.purchase_mode_id, data.effective_from, data.amount,
+                data.partner_name, data.partner_share_pct, data.partner_contact,
+                data.ownership_remarks, user_id ?? null]
+        );
+
+        return result;
+    }, 'insert cattle');
 }
 
 // updates an animal's details; the generated code never changes once assigned

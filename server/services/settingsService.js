@@ -1999,11 +1999,37 @@ exports.getPurchaseModeListSrvc = async () => {
 // keys are lowercase snake_case so they stay usable as identifiers in code and in seeds
 const normalizePurchaseModeKey = (value) => String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 
-const normalizePurchaseModePayload = (payload) => ({
-    purchase_mode_key: normalizePurchaseModeKey(payload.purchase_mode_key),
-    purchase_mode_name: normalizeName(payload.purchase_mode_name),
-    description: emptyToNull(payload.description)
-});
+/*
+ * What a purchase mode MEANS is stored, not coded. The cattle register reads these flags to decide
+ * which ownership fields to ask for and what the amount represents, so a new mode added here works
+ * without anyone editing a service.
+ */
+const AMOUNT_SOURCES = ['purchase_cost', 'recurring', 'none'];
+
+const normalizePurchaseModePayload = (payload) => {
+    const amount_source = emptyToNull(payload.amount_source) || 'purchase_cost';
+    if (!AMOUNT_SOURCES.includes(amount_source)) {
+        resutils.createError('validationFailed', `Amount source must be one of: ${AMOUNT_SOURCES.join(', ')}.`);
+    }
+
+    const needs_counterparty = payload.needs_counterparty ? 1 : 0;
+
+    // a share percentage only means something when there IS another party to hold it
+    const needs_share_pct = (needs_counterparty && payload.needs_share_pct) ? 1 : 0;
+
+    return {
+        purchase_mode_key: normalizePurchaseModeKey(payload.purchase_mode_key),
+        purchase_mode_name: normalizeName(payload.purchase_mode_name),
+        description: emptyToNull(payload.description),
+        needs_counterparty,
+        needs_share_pct,
+        amount_source,
+        // what to call the other party on screen - 'Partner', 'Owner', 'Lessor'
+        counterparty_label: needs_counterparty
+            ? (emptyToNull(payload.counterparty_label) || 'Partner')
+            : null
+    };
+};
 
 exports.createPurchaseModeSrvc = async (payload) => {
     log('in createPurchaseModeSrvc');

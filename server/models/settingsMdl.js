@@ -1665,6 +1665,7 @@ exports.softDeleteIllnessMdl = (illness_id) => {
 exports.getPurchaseModeListMdl = () => {
     log('in getPurchaseModeListMdl');
     const qry = `select purchase_mode_id, purchase_mode_key, purchase_mode_name, description, is_active,
+        needs_counterparty, needs_share_pct, amount_source, counterparty_label,
         DATE_FORMAT(created_time, '%d-%m-%Y %H:%i:%s') as created_at,
         DATE_FORMAT(updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
         from purchase_mode_mstr_lst_t where is_active = 1 order by purchase_mode_name asc`;
@@ -1688,29 +1689,41 @@ exports.getDuplicatePurchaseModesMdl = (purchase_mode_key, purchase_mode_name, e
 
 exports.insertPurchaseModeMdl = (data) => {
     log('in insertPurchaseModeMdl');
-    const qry = 'insert into purchase_mode_mstr_lst_t (purchase_mode_key, purchase_mode_name, description) values (?, ?, ?)';
-    return dbutils.executeQuery(qry, [data.purchase_mode_key, data.purchase_mode_name, data.description], 'insert purchase mode model');
+    const qry = `insert into purchase_mode_mstr_lst_t
+        (purchase_mode_key, purchase_mode_name, description, needs_counterparty, needs_share_pct, amount_source, counterparty_label)
+        values (?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.purchase_mode_key, data.purchase_mode_name, data.description,
+        data.needs_counterparty, data.needs_share_pct, data.amount_source, data.counterparty_label],
+        'insert purchase mode model');
 }
 
-// the key is deliberately NOT updatable: service code and seeded rows reference it, so letting
-// it change would silently break whatever branches on it
+// the key stays NOT updatable - seeded rows and reports refer to it - but no service branches on
+// it any more: behaviour comes from the flag columns below
 exports.updatePurchaseModeMdl = (purchase_mode_id, data) => {
     log('in updatePurchaseModeMdl');
-    const qry = `update purchase_mode_mstr_lst_t set purchase_mode_name = ?, description = ?
+    const qry = `update purchase_mode_mstr_lst_t set purchase_mode_name = ?, description = ?,
+        needs_counterparty = ?, needs_share_pct = ?, amount_source = ?, counterparty_label = ?
         where is_active = 1 and purchase_mode_id = ?`;
-    return dbutils.executeQuery(qry, [data.purchase_mode_name, data.description, purchase_mode_id], 'update purchase mode model');
+    return dbutils.executeQuery(qry, [data.purchase_mode_name, data.description,
+        data.needs_counterparty, data.needs_share_pct, data.amount_source, data.counterparty_label,
+        purchase_mode_id], 'update purchase mode model');
 }
 
 exports.reactivatePurchaseModeMdl = (purchase_mode_id, data) => {
     log('in reactivatePurchaseModeMdl');
     const qry = `update purchase_mode_mstr_lst_t set purchase_mode_key = ?, purchase_mode_name = ?, description = ?,
+        needs_counterparty = ?, needs_share_pct = ?, amount_source = ?, counterparty_label = ?,
         deleted_time = null, is_active = 1 where purchase_mode_id = ?`;
-    return dbutils.executeQuery(qry, [data.purchase_mode_key, data.purchase_mode_name, data.description, purchase_mode_id], 'reactivate purchase mode model');
+    return dbutils.executeQuery(qry, [data.purchase_mode_key, data.purchase_mode_name, data.description,
+        data.needs_counterparty, data.needs_share_pct, data.amount_source, data.counterparty_label,
+        purchase_mode_id], 'reactivate purchase mode model');
 }
 
 exports.getActivePurchaseModeByIdMdl = (purchase_mode_id) => {
     log('in getActivePurchaseModeByIdMdl');
-    const qry = `select purchase_mode_id, purchase_mode_key, purchase_mode_name
+    // the behaviour flags come with it: the cattle service reads them instead of branching on
+    // the key, so a new mode added through Settings behaves correctly without a code change
+    const qry = `select purchase_mode_id, purchase_mode_key, purchase_mode_name, needs_counterparty, needs_share_pct, amount_source, counterparty_label
         from purchase_mode_mstr_lst_t where is_active = 1 and purchase_mode_id = ?`;
     return dbutils.executeQuery(qry, [purchase_mode_id], 'get active purchase mode by id model');
 }
