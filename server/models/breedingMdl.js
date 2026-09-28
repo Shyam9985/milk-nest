@@ -325,8 +325,8 @@ exports.recordCalvingMdl = async (pregnancy, data, user_id) => {
         }
 
         // she has calved, so the dry-off block no longer applies - back on the milking sheet
-        await connection.execute(ELIGIBILITY_SYNC_ONE_QRY,
-            eligibilitySyncOneParams(pregnancy.cattle_id, user_id));
+        const motherEligibility = milkEligibilityStep(pregnancy.cattle_id, user_id);
+        await connection.execute(motherEligibility.query, motherEligibility.params);
 
         return { affectedRows: result.affectedRows, calves: registered };
     }, 'record calving');
