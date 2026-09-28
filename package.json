@@ -38,6 +38,7 @@
     "node-schedule": "^2.1.1",
     "nodemailer": "^9.0.3",
     "npm": "^12.1.0",
+    "redis": "^6.2.1",
     "ua-parser-js": "^2.0.10"
   }
 }

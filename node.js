@@ -101,7 +101,7 @@ app.use(logger);
 async function makeSureDbConnected() {
     try {
         const connection = await dbConfig.pool.getConnection();
-        console.log('Database connected successfully and ready to use!');
+        logBlock('[db] connection:', 'Database connected successfully and ready to use!');
         connection.release();
     } catch (error) {
         console.error('Database connection failed:', error);
