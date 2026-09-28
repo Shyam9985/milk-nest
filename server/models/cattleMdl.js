@@ -1,6 +1,7 @@
 const dbutils = require('../utils/db.utils');
 const scopeutils = require('../utils/scope.utils');
 const { log } = require('../utils/log.utils');
+const { milkEligibilityStep } = require('./cattleEligibilityMdl');
 
 /*
  * The cattle register itself - the animals, not the masters behind them.
@@ -131,6 +132,11 @@ exports.insertCattleMdl = async (data, user_id) => {
                 data.partner_name, data.partner_share_pct, data.partner_contact,
                 data.ownership_remarks, user_id ?? null]
         );
+
+        // can_produce_milk defaults to 0, so without this she is off the milking sheet with no
+        // reason given until the nightly job runs. the rules decide it now, on this transaction
+        const eligibility = milkEligibilityStep(result.insertId, user_id);
+        await connection.execute(eligibility.query, eligibility.params);
 
         return result;
     }, 'insert cattle');
