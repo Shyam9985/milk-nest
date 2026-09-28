@@ -13,7 +13,7 @@ function SectionCard({ title, hint, icon: Icon, action, table, className = '', c
     return (
         <section className={`flex flex-col rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--shadow-sm)] max-h-[50rem] overflow-y-auto ${className}`}>
 
-            <header className="flex flex-wrap items-start justify-between gap-2 px-4 pt-4 sm:px-5 sticky top-0 z-10 bg-[var(--card-bg)] backdrop-blur-[2px] pb-3">
+            <header className="flex flex-wrap items-start justify-between gap-2 px-4 pt-4 sm:px-5 sticky top-0 z-10 bg-[var(--card-bg)] pb-3">
                 <div className="flex min-w-0 items-start gap-2">
                     {Icon && (
                         <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-tertiary)] text-[var(--brand-primary)]">
@@ -40,7 +40,7 @@ function SectionCard({ title, hint, icon: Icon, action, table, className = '', c
                 </div>
             </header>
 
-            <div className="flex-1 px-4 pb-4 pt-3 sm:px-5">
+            <div className="flex-1 px-4 pb-4 sm:px-5">
                 {showTable && table ? table() : children}
             </div>
 
