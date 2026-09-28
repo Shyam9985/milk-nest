@@ -28,6 +28,14 @@ function CattleProfile({ profile, onNavigate }) {
         ? (profile.open_illness || 'Under treatment')
         : 'No open illness';
 
+    // why she is or is not on the milking sheet, in the same words the cattle grid uses
+    const MILK_BLOCK_LABEL = {
+        sold: 'Not in herd', dead: 'Dead', male: 'Male', calf: 'Too young',
+        under_treatment: 'Milk on hold', pregnant_dry: 'Dried off', manual: 'Marked dry'
+    };
+    const milkable = Number(profile.can_produce_milk) === 1;
+    const milkLabel = milkable ? 'In milk' : (MILK_BLOCK_LABEL[profile.milk_block_reason] || 'Not milked');
+
     return (
         <div className="space-y-5">
 
@@ -42,8 +50,13 @@ function CattleProfile({ profile, onNavigate }) {
                     {profile.milk_withdrawal_until && (
                         <ProfileBadge tone="warning">Milk held to {profile.milk_withdrawal_until}</ProfileBadge>
                     )}
+                    {!isMale && <ProfileBadge tone={milkable ? 'success' : 'neutral'}>{milkLabel}</ProfileBadge>}
+                    {profile.pregnancy_id && (
+                        <ProfileBadge tone={Number(profile.dry_off_due) ? 'warning' : 'neutral'}>
+                            {Number(profile.dry_off_due) ? 'Dry-off due' : `Pregnant ${profile.days_pregnant}d`}
+                        </ProfileBadge>
+                    )}
                     {profile.gender_nm && <ProfileBadge tone="neutral">{profile.gender_nm}</ProfileBadge>}
-                    {isMale && <ProfileBadge tone="neutral">Not milked</ProfileBadge>}
                 </>} />
 
             {!isMale && (
@@ -85,6 +98,54 @@ function CattleProfile({ profile, onNavigate }) {
                         ]} />
                 </ProfileSection>
             )}
+
+            {/* every pregnancy she has had. acting on one happens in the Breeding register */}
+            {!isMale && (
+                <ProfileSection title="Breeding" icon={Icons.Baby}>
+                    <SimpleTable rows={profile.breeding || []} rowKey="pregnancy_id" dense
+                        searchPlaceholder="Search by date or status..."
+                        emptyMessage="No pregnancy recorded for this animal yet."
+                        columns={[
+                            { label: 'Conceived', field: 'conception_date', className: 'whitespace-nowrap' },
+                            { label: 'Stage', field: 'pregnancy_status', className: 'capitalize' },
+                            { label: 'Dried off', field: 'actual_dry_off_date', sortable: false, className: 'whitespace-nowrap text-[var(--text-secondary)]', render: (v) => v || '-' },
+                            { label: 'Calved', field: 'actual_calving_date', sortable: false, className: 'whitespace-nowrap text-[var(--text-secondary)]', render: (v, row) => v || `exp. ${row.expected_calving_date || '-'}` },
+                            { label: 'Calves', field: 'calves_registered', align: 'right', searchable: false, className: 'tabular-nums' },
+                            { label: 'Remarks', field: 'remarks', sortable: false, className: 'text-[var(--text-secondary)]' },
+                        ]} />
+                </ProfileSection>
+            )}
+
+            {/* illness episodes, open ones first. the milk column is what matters for food safety */}
+            <ProfileSection title="Health" icon={Icons.Stethoscope}>
+                <SimpleTable rows={profile.treatments || []} rowKey="treatment_id" dense
+                    searchPlaceholder="Search by illness or date..."
+                    emptyMessage="No illness recorded for this animal."
+                    columns={[
+                        { label: 'Illness', field: 'illness_name', className: 'font-medium' },
+                        { label: 'Severity', field: 'severity', className: 'capitalize text-[var(--text-secondary)]' },
+                        { label: 'Started', field: 'start_date', className: 'whitespace-nowrap' },
+                        { label: 'Cured', field: 'cure_date', sortable: false, className: 'whitespace-nowrap', render: (v, row) => v || `open ${row.days_open}d` },
+                        { label: 'Milk held to', field: 'milk_withdrawal_until', sortable: false, className: 'whitespace-nowrap', render: (v, row) => (v ? (Number(row.withdrawal_active) ? v : `${v} (passed)`) : '-') },
+                        { label: 'Visits', field: 'checkups', align: 'right', searchable: false, className: 'tabular-nums' },
+                        { label: 'Spent', field: 'total_expense', align: 'right', searchable: false, className: 'tabular-nums', render: formatMoney },
+                    ]} />
+            </ProfileSection>
+
+            {/* how the farm has held her over time - the row with no end date is the current one */}
+            <ProfileSection title="Ownership" icon={Icons.Handshake}>
+                <SimpleTable rows={profile.ownership || []} rowKey="ownership_id" dense
+                    searchPlaceholder="Search by mode or party..."
+                    emptyMessage="No ownership record. Every animal should have one - this needs a correction."
+                    columns={[
+                        { label: 'Mode', field: 'purchase_mode_name', className: 'font-medium' },
+                        { label: 'From', field: 'effective_from', className: 'whitespace-nowrap' },
+                        { label: 'To', field: 'effective_to', sortable: false, className: 'whitespace-nowrap', render: (v) => v || 'current' },
+                        { label: 'Amount', field: 'amount', align: 'right', searchable: false, className: 'tabular-nums', render: formatMoney },
+                        { label: 'Other party', field: 'partner_name', sortable: false, className: 'text-[var(--text-secondary)]', render: (v, row) => (v ? `${v}${row.partner_share_pct ? ` (${row.partner_share_pct}%)` : ''}` : '-') },
+                        { label: 'Contact', field: 'partner_contact', sortable: false, className: 'text-[var(--text-secondary)]', render: (v) => v || '-' },
+                    ]} />
+            </ProfileSection>
 
             <ProfileSection title="Record" icon={Icons.History}>
                 <ProfileGrid>

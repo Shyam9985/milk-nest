@@ -26,11 +26,20 @@ const PROFILE_LOADERS = {
         return { ...branch, cattle };
     },
 
+    // an animal's whole record: what she produced, her breeding life, her illnesses and how the
+    // farm has held her. the four lists are independent, so they are fetched together rather than
+    // one after another
     'cattle': async (user, id) => {
         const [animal] = await profilesMdl.getCattleProfileMdl(user, id);
         if (!animal) return null;
-        const recent_production = await profilesMdl.getCattleRecentProductionMdl(user, id);
-        return { ...animal, recent_production };
+
+        const [recent_production, breeding, treatments, ownership] = await Promise.all([
+            profilesMdl.getCattleRecentProductionMdl(user, id),
+            profilesMdl.getCattleBreedingHistoryMdl(user, id),
+            profilesMdl.getCattleTreatmentHistoryMdl(user, id),
+            profilesMdl.getCattleOwnershipHistoryMdl(user, id)
+        ]);
+        return { ...animal, recent_production, breeding, treatments, ownership };
     },
 };
 

@@ -25,6 +25,15 @@ function BranchProfile({ profile, onNavigate }) {
                 <ProfileStat label="Incharge" value={profile.incharge_name || '-'} hint={profile.manager_name ? `Manager: ${profile.manager_name}` : undefined} />
             </div>
 
+            {/* where the rest of the herd is, for the animals not on today's sheet. 'Milking' is the
+                can_produce_milk flag, so these four read against the same number shown above */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <ProfileStat label="Milking" value={profile.milking_count ?? 0} hint="on the day sheet" />
+                <ProfileStat label="Pregnant" value={profile.pregnant_count ?? 0} hint="pregnancy in progress" />
+                <ProfileStat label="Dry" value={profile.dry_count ?? 0} hint="dried off or marked dry" />
+                <ProfileStat label="Under treatment" value={profile.under_treatment_count ?? 0} hint="open illness" />
+            </div>
+
             <ProfileSection title="Location & contact" icon={Icons.MapPin}>
                 <ProfileGrid>
                     <ProfileField label="Location" value={location} className="sm:col-span-2" />
