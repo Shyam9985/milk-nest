@@ -56,25 +56,6 @@ function Maincontent(props) {
                 Drawer Content
             </SideDrawer>
 
-            {/* <button
-                onClick={setOpen}
-                className="px-4 py-2 rounded-md bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-border)] hover:opacity-90 transition"
-            >
-                Open Model
-            </button> 
-
-            <br />
-            <br />
-
-            <button
-                onClick={drawerOpen}
-                className="px-4 py-2 rounded-md bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] border border-[var(--btn-secondary-border)] hover:bg-[var(--bg-secondary)] transition"
-            >
-                Open Drawer
-            </button>
-            <br />*/}
-            {/* <Loader /> */}
-
             <Outlet />
 
         </div>

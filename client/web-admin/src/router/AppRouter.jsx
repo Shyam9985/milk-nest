@@ -4,7 +4,6 @@ import { PublicLayout } from "../components/layout/PublicLayout";
 import { publicRoutes, protectedRoutes } from "../router/router";
 import PublicRouteGuard from "./PublicRouterGuard";
 import ProtectedRouteGuard from "./ProtectedRouterGuard";
-import PageNotFound from "../pages/PageNotFound";
 import { Suspense } from "react";
 import Loader from "../components/Loading";
 
