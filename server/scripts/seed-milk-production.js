@@ -45,9 +45,6 @@ const QUALITY_BY_TYPE = {
     Buffalo: { fat: [6.0, 8.5], snf: [9.0, 9.8] },
 };
 
-// an animal under treatment gives markedly less and occasionally none at all
-const UNDER_TREATMENT_FACTOR = { min: 0.35, max: 0.6 };
-const UNDER_TREATMENT_DRY_CHANCE = 0.15;
 
 // one healthy animal in twenty has an off day; one in forty is not milked at a session
 const OFF_DAY_CHANCE = 0.05;
@@ -88,20 +85,16 @@ const recordedAt = (dateStr) => {
 // generates one animal's row for the day, or null when it gives nothing that day
 const generateEntry = (animal) => {
     const base = YIELD_BY_BREED[animal.breed_name] || YIELD_DEFAULT[animal.cattle_type_name] || YIELD_DEFAULT.Cow;
-    const treated = /treat|sick|ill/i.test(animal.health_status || '');
-
-    if (treated && Math.random() < UNDER_TREATMENT_DRY_CHANCE) return null;
 
     // each animal has its own day-level form so morning and evening move together
     let dayFactor = rand(0.9, 1.1);
-    if (treated) dayFactor *= rand(UNDER_TREATMENT_FACTOR.min, UNDER_TREATMENT_FACTOR.max);
-    else if (Math.random() < OFF_DAY_CHANCE) dayFactor *= rand(0.6, 0.8);
+    if (Math.random() < OFF_DAY_CHANCE) dayFactor *= rand(0.6, 0.8);
 
     const session = () => round2(rand(base.min, base.max) * dayFactor);
     let morning = session();
     let evening = round2(session() * rand(0.85, 0.97)); // evening trails the morning
 
-    if (!treated && Math.random() < MISSED_SESSION_CHANCE) {
+    if (Math.random() < MISSED_SESSION_CHANCE) {
         if (Math.random() < 0.5) morning = null; else evening = null;
     }
     if (morning == null && evening == null) return null;
@@ -115,7 +108,7 @@ const generateEntry = (animal) => {
         evening_quantity: evening,
         fat_percentage: round2(rand(q.fat[0], q.fat[1]) * richness),
         snf_percentage: round2(rand(q.snf[0], q.snf[1])),
-        remarks: treated ? 'Under treatment - reduced yield' : pick(REMARK_POOL),
+        remarks: pick(REMARK_POOL),
     };
 };
 
@@ -148,7 +141,7 @@ const generateEntry = (animal) => {
     // incharge (falling back to the manager) as the recorder. bulls are excluded here:
     // a male never gets a production row
     const [herd] = await conn.query(`
-        select c.cattle_id, c.branch_id, c.cattle_unique_code, c.health_status,
+        select c.cattle_id, c.branch_id, c.cattle_unique_code,
                t.cattle_type_name, br.breed_name, g.gender_nm,
                coalesce(
                  (select p.user_id from position_lst_t p where p.location_ref_id = c.branch_id and p.role_id = 14 and p.is_active = 1 limit 1),
