@@ -11,7 +11,7 @@ const baseConfig = {
     waitForConnections: true,
     ssl: {
         rejectUnauthorized: false,
-        ca: fs.readFileSync('./certs/ca.pem')
+        // ca: fs.readFileSync('./certs/ca.pem')
 
     }
 };

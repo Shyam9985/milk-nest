@@ -1,8 +1,73 @@
 const dbconfig = require('../config/db.config');
 const dberrors = require('./db-errors')
 const { log, logBlock } = require('./log.utils');
+const { createError } = require('./response.utils');
 const pool = dbconfig.pool;
 dbconfig.logPoolEvents(pool);
+
+const dangerousKeywords = ['create', 'alter', 'drop', 'truncate', 'rename', 'grant', 'revoke', 'commit', 'rollback', 
+    'start transaction', 'begin', 'savepoint', 'release savepoint', 'load data', 'load xml', 'shutdown','flush', 'reset', 'kill'];
+
+/**************************************************************************************************************
+ * databse validation utility functions for validating queries and executing queries with proper error handling
+ * ************************************************************************************************************/
+
+//check if query is string and not empty , values is array
+function performBasicValidations(query, values) {
+    if (typeof query !== 'string' || query.trim() === '') {
+        throw createError('InvalidQuery', 'Invalid query: Query must be a non-empty string.');
+    }
+    if (!Array.isArray(values)) {
+        throw createError('InvalidValues', 'Invalid values: Values must be an array.');
+    }
+
+    // check if values array contains only valid types (string, number, boolean, null)
+    for (const value of values) {
+        if (value !== null && typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean' && typeof value !== 'object') {
+            throw createError('InvalidValueType', `Invalid value type: ${typeof value}. Values must be string, number, boolean, object, or null.`);
+        }
+    }
+
+    //check if query contains any dangerous keywords
+     dangerousKeywords.forEach((key) => {
+        if(new RegExp(`\\b${key}\\b`, 'i').test(query.toLocaleLowerCase())) {
+            throw createError('DangerousKeyword', `Dangerous keyword detected in query: ${key}`);
+        }
+    });
+}
+
+// check if the query has only one statement
+function checkIfQueryHasSingleStatement(query) {
+    const semicolonCount = (query.match(/;/g) || []).length;
+    if (semicolonCount > 1) {
+        throw createError('MultipleStatements', 'Invalid query: Only one statement is allowed per query.');
+    }
+}
+
+// check dml query has where clause
+function checkIfDmlHasWhereClause(query) {
+    const dmlKeywords = ['update', 'delete'];
+    const lowerCaseQuery = query.toLowerCase();
+
+    const dmlKeyword = dmlKeywords.find(keyword => new RegExp(`\\b${keyword}\\b`).test(lowerCaseQuery));
+
+    if (!dmlKeyword) return;
+
+    // Find the index of the DML keyword and the WHERE clause in the query
+    const dmlKeywordIndex = lowerCaseQuery.search(new RegExp(`\\b${dmlKeyword}\\b`));
+    const whereClauseIndex = lowerCaseQuery.indexOf('where', dmlKeywordIndex);
+
+    // If the WHERE clause is not found or appears before the DML keyword, throw an error
+    if (whereClauseIndex === -1) throw createError('MissingWhereClause', 'Invalid query: DML statements must have a WHERE clause.');
+    if(whereClauseIndex < dmlKeywordIndex) throw createError('MissingWhereClause', 'Invalid query: DML statements must have a WHERE clause.');
+}
+
+// Validate query and values before executing
+function validateQueryAndValues(query, values) {
+    performBasicValidations(query, values);
+    checkIfQueryHasSingleStatement(query);
+    checkIfDmlHasWhereClause(query);
+}
 
 const getConnection = async (dbPool = pool) => {
     return await dbPool.getConnection();
@@ -12,11 +77,11 @@ const getConnection = async (dbPool = pool) => {
 const formatDbError = (error) => {
     console.error('Database Error:', error);
     const dbError = dberrors.getDatabaseError(error.code);
-    const formattedError = new Error(dbError.message);
-    formattedError.name = 'DatabaseError';
+    const formattedError = createError('DatabaseError', dbError.message);
     formattedError.code = error.code;
     return formattedError;
 }
+
 /**********************************************
 *name : executeQuery
 *description : executes multiple queries
@@ -29,6 +94,7 @@ const executeQuery = async (query, params = [], fname, dbPool = pool) => {
     logBlock(`[${fname}] query:`, query.replace(/\s+/g, ' ').trim(), '| params:', params);
 
     try {
+        validateQueryAndValues(query, params);
         const [rows] = await dbPool.execute(query, params);
         return rows;
     } catch (error) {
@@ -46,13 +112,21 @@ const executeQuery = async (query, params = [], fname, dbPool = pool) => {
 const executeMultipleQueries = async (queries = [], fname, dbPool = pool) => {
     log('in executeMultipleQueries and quries received from ' + fname);
 
-    let connection = null;
     try {
-        connection = await dbPool.getConnection();
+        // validate the inut queries array
+        if (!Array.isArray(queries) || queries.length === 0) {
+            throw createError('InvalidInput', 'Invalid input: Queries must be a non-empty array.');
+        }
+
+        // validate the queries array
+        for (const queryObj of queries) {
+            validateQueryAndValues(queryObj.query, queryObj.params || []);
+        }
+
         const results = [];
         for (const query of queries) {
             logBlock(`[${fname}] query:`, query.query.replace(/\s+/g, ' ').trim(), '| params:', query.params || []);
-            const [rows] = await connection.execute(query.query, query.params || []);
+            const [rows] = await dbPool.execute(query.query, query.params || []);
             results.push(rows);
 
         }
@@ -61,8 +135,6 @@ const executeMultipleQueries = async (queries = [], fname, dbPool = pool) => {
         return results;
     } catch (error) {
         throw formatDbError(error);
-    } finally {
-        connection && connection.release();
     }
 };
 
@@ -77,6 +149,7 @@ const executeTransaction = async (callback, fname, dbPool = pool) => {
     let connection = null;
 
     try {
+        // get a connection from the pool and start a transaction
         connection = await dbPool.getConnection();
         await connection.beginTransaction();
         const result = await callback(connection);
@@ -102,6 +175,11 @@ const executeTransactionQueries = async (queries = [], fname, dbPool = pool) => 
     let connection = null;
 
     try {
+        // validate the queries array
+        for (const queryObj of queries) {
+            validateQueryAndValues(queryObj.query, queryObj.params || []);
+        }
+        // get a connection from the pool and start a transaction
         connection = await dbPool.getConnection();
         await connection.beginTransaction();
         const results = [];
@@ -120,4 +198,4 @@ const executeTransactionQueries = async (queries = [], fname, dbPool = pool) => 
     }
 };
 
-module.exports = { executeQuery, executeTransaction, executeTransactionQueries, executeMultipleQueries, getConnection };
+module.exports = { executeQuery, executeTransaction, executeTransactionQueries, executeMultipleQueries, getConnection, validateQueryAndValues };
