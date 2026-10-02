@@ -13,6 +13,7 @@ function LoginForm() {
     const navigate = useNavigate();
     const message = useToast();
     const authCtx = useContext(AuthContext);
+    const [isLoading,setIsLoading]= useState(false);
 
     const [form, setForm] = useState({
         email: "",
@@ -53,7 +54,9 @@ function LoginForm() {
             return;
 
         // console.log(form);
+        setIsLoading(true);
         const result = await handleLogin(form);
+        setIsLoading(false);
         if (!result?.success) {
             message.error(result?.error || result?.message, 1000)
         } else {
@@ -125,8 +128,9 @@ function LoginForm() {
                         <button
                             type="submit"
                             className="w-full rounded-lg py-3 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
+                            disabled={isLoading}
                         >
-                            Login
+                           {isLoading ? "Logging in..." : "Login"}
                         </button>
 
                         <p className="mt-6 text-center text-[var(--text-secondary)]">

@@ -111,23 +111,16 @@ exports.getBranchSummaryMdl = (user, from_date, to_date, filters = {}) => {
     log('in getBranchSummaryMdl');
     const filter = buildBranchFilter(user, filters.dairy_farm_id, filters.branch_id);
 
-    const qry = `select b.branch_id, b.branch_name, b.branch_code, b.is_main_branch,
-        b.dairy_farm_id, df.dairy_farm_name,
-        (select count(*) from cattle_lst_t c where c.is_active = 1 and c.branch_id = b.branch_id) as cattle_count,
-        ifnull(sum(mp.total_quantity), 0) as total,
-        ifnull(sum(mp.morning_quantity), 0) as morning,
-        ifnull(sum(mp.evening_quantity), 0) as evening,
-        count(distinct mp.cattle_id) as milked_cattle,
-        count(distinct mp.production_date) as recorded_days,
-        (select DATE_FORMAT(max(x.production_date), '%Y-%m-%d') from milk_production_lst_t x
-            where x.is_active = 1 and x.branch_id = b.branch_id) as last_entry
-        from branches_lst_t b
-        left join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id
-        left join milk_production_lst_t mp on mp.branch_id = b.branch_id
-            and mp.is_active = 1 and mp.production_date between ? and ?
-        where b.is_active = 1${filter.clause}
-        group by b.branch_id, b.branch_name, b.branch_code, b.is_main_branch, b.dairy_farm_id, df.dairy_farm_name
-        order by total desc, b.branch_name asc`;
+    const qry = `select b.branch_id, b.branch_name, b.branch_code, b.is_main_branch, b.dairy_farm_id, df.dairy_farm_name, ct.cnt as cattle_count,
+    ifnull(sum(mp.total_quantity), 0) as total, ifnull(sum(mp.morning_quantity), 0) as morning, ifnull(sum(mp.evening_quantity), 0) as evening, 
+    count(distinct mp.cattle_id) as milked_cattle, count(distinct mp.production_date) as recorded_days, DATE_FORMAT(max(mp.production_date), '%Y-%m-%d') as last_entry
+    from branches_lst_t b 
+    join (select branch_id, count(*) as cnt from cattle_lst_t c where c.is_active = 1 group by branch_id) as ct on ct.branch_id = b.branch_id
+    left join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id 
+    left join milk_production_lst_t mp on mp.branch_id = b.branch_id and mp.is_active = 1 and mp.production_date between ? and ? 
+    where b.is_active = 1${filter.clause} 
+    group by b.branch_id, b.branch_name, b.branch_code, b.is_main_branch, b.dairy_farm_id, df.dairy_farm_name 
+    order by total desc, b.branch_name asc;`;
     return dbutils.executeQuery(qry, [from_date, to_date, ...filter.params], 'get dashboard branch summary model');
 }
 

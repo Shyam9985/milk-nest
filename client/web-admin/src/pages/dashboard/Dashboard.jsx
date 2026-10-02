@@ -230,7 +230,7 @@ function Dashboard() {
                         <KpiTile label="Yield per animal" icon={Icons.Gauge} accent="var(--chart-3)"
                             value={formatNumber(kpis.yield.per_animal_day)} unit="L / day"
                             delta={kpis.yield.delta_pct} deltaLabel={`vs previous ${periodLabel}`}
-                            footnote={`Across ${kpis.milk.entries} animal-days recorded`} />
+                            footnote={`Across ${kpis.milk.entries} entries recorded`} />
 
                         <KpiTile label="Herd size" icon={Icons.Beef} accent="var(--chart-2)"
                             value={compactNumber(kpis.herd.total)} unit={kpis.herd.total === 1 ? 'animal' : 'animals'}
