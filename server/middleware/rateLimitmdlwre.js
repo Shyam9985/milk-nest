@@ -1,6 +1,8 @@
 const datefns = require("date-fns");
 const { sendErrorResponse } = require("../utils/response.utils");
 const RESPONSE_STATUS = require("../utils/standard.messages");
+const { logBlock } = require("../utils/log.utils");
+const { checkRedisRateLimit } = require("../redis/redis.ratelimit");
 
 //rate limit map
 const rateLimitMap = new Map();
@@ -11,71 +13,87 @@ const rateLimitMap = new Map();
 function generateReteLimitKey(user, req) {
   const method = req.method;
   const ip = req.ip;
-  const url = req.route?.path
-    ? req?.baseUrl + req?.route?.path
-    : req.originalUrl || req.url;
+  const url = req.route?.path ? req?.baseUrl + req?.route?.path : req.originalUrl || req.url;
   // console.log("generateReteLimitKey", user, ip, method, url);
 
   const primary = user?.user_id > 0 ? user?.user_id : ip;
   return primary + ":" + method + ":" + url;
 }
+// rate limit check middleware
+const checkRateLimit = (refillRate, capacity) => async (req, res, next) => {
 
-//rate limit check middleware
-const checkRateLimit = (refillRate, capacity) => (req, res, next) => {
-  // generate a unique key for the request based on user, method, and route
+  logBlock('[rateLimit] checkRateLimit:', `refillRate: ${refillRate}, capacity: ${capacity}`);
+  // generate the key for the current request based on user, method and route
   const key = generateReteLimitKey(req.user, req);
-
-  // console.log("checkRateLimit:", key);
   const now = datefns.getTime(new Date());
 
+  // REDIS - PRIMARY
+    try {
+      const redisResult = await checkRedisRateLimit({key : 'rate_limmit:'+ key, refillRate: refillRate, capacity: capacity});
+
+      console.log("Redis rate limiter result:", redisResult);
+
+      if(redisResult?.status === "LIMITED") {
+          return sendErrorResponse(req, res, 
+            `Too many requests. Please try again after ${datefns.formatDuration(datefns.intervalToDuration({start: 0, end: redisResult.retryAfter * 1000,}))}`, 
+            RESPONSE_STATUS.TOOMANY_REQUESTS, { function: "checkRateLimit" });
+      }
+
+      return next();
+    } catch (error) {
+      console.error("Redis rate limiter error:", error);
+
+      // Redis failed during this request.
+      // Continue to Node.js in-memory fallback.
+    }
+
+  // NODE.JS MEMORY - FALLBACK
+
   if (!rateLimitMap.has(key)) {
-    // add new rate limit key with current timestamp with bucket size of 60
-    rateLimitMap.set(key, {
+    const body = {
       currentTokens: capacity - 1,
-      capacity: capacity,
-      refillRate: refillRate,
+      capacity,
+      refillRate,
       lastRefillTimestamp: now,
-    });
-  } else {
-    const rateLimitData = rateLimitMap.get(key);
+    };
+
+    console.log("Node.js in-memory rate limiter: creating new bucket for key:", key, body);
+    rateLimitMap.set(key, body);
+
+    return next();
+  }
+
+  const rateLimitData = rateLimitMap.get(key);
 
     // calculate the time elapsed since the last refill.
-    const elapsedMs = datefns.differenceInMilliseconds(now, rateLimitData.lastRefillTimestamp);
-    
+  const elapsedMs = datefns.differenceInMilliseconds(now, rateLimitData.lastRefillTimestamp);
+
     // refill the tokens based on the elapsed time and refill rate.
-    rateLimitData.currentTokens = Math.min(rateLimitData.capacity, rateLimitData.currentTokens + (elapsedMs / 1000) * rateLimitData.refillRate);
-    
+  rateLimitData.currentTokens = Math.min(rateLimitData.capacity, rateLimitData.currentTokens + (elapsedMs / 1000) * rateLimitData.refillRate);
+
     // update the last refill timestamp
-    rateLimitData.lastRefillTimestamp = now;
-    
-    //check if the key has current tokens available to consume.
-    if (rateLimitData.currentTokens >= 1) {
-      rateLimitData.currentTokens--;
+  rateLimitData.lastRefillTimestamp = now;
+
+  console.log("Node.js in-memory rate limiter: existing bucket for key:", key, rateLimitData);
+
+  if (rateLimitData.currentTokens >= 1) {
+    rateLimitData.currentTokens--;
       // update the count of the key in the map
-      rateLimitMap.set(key, rateLimitData);
-    } else {
-      // seconds until the bucket holds one whole token again
-      const waitSeconds = Math.ceil(
-        (1 - rateLimitData.currentTokens) / rateLimitData.refillRate,
-      );
-      // '45 seconds' / '2 minutes 58 seconds' / '15 minutes'
-      const waitText = datefns.formatDuration(
-        datefns.intervalToDuration({ start: 0, end: waitSeconds * 1000 }),
-      );
+    rateLimitMap.set(key, rateLimitData);
 
-      // standard header so the client can retry automatically
-      res.setHeader("Retry-After", waitSeconds);
-
-      return sendErrorResponse(
-        req,
-        res,
-        `Too many requests. Please try again in ${waitText}.`,
-        RESPONSE_STATUS.TOOMANY_REQUESTS,
-        { function: "checkRateLimit" },
-      );
-    }
+    return next();
   }
-  next();
+
+  const waitSeconds = Math.ceil((1 - rateLimitData.currentTokens) /  rateLimitData.refillRate);
+
+  const waitText = datefns.formatDuration(datefns.intervalToDuration({start: 0, end: waitSeconds * 1000,})
+  );
+
+  res.setHeader("Retry-After", waitSeconds);
+
+  console.log("Node.js in-memory rate limiter: sending rate limit error for key:", key, waitText);
+  return sendErrorResponse(req, res, `Too many requests. Please try again in ${waitText}.`, 
+    RESPONSE_STATUS.TOOMANY_REQUESTS, { function: "checkRateLimit" });
 };
 
 // delete the rate limit keys that are older than one hour to prevent memory leak

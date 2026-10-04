@@ -1,6 +1,8 @@
 const { createClient } = require("redis");
 const { logBlock } = require("../utils/log.utils");
 
+let redisReady = false;
+
 const redisClient = createClient({
     url: process.env.REDIS_URL || "redis://localhost:6379"
 });
@@ -15,10 +17,14 @@ redisClient.on("connect", () => {
 
 redisClient.on("ready", () => {
     logBlock('[redis] ready:', "Redis client ready");
+    //set local flag to true when redis is ready
+    redisReady = true;
 });
 
 redisClient.on("end", () => {
     logBlock('[redis] end:', "Redis client disconnected");
+    //set local flag to false when redis is disconnected
+    redisReady = false;
 });
 
 const connectRedis = async () => {
@@ -34,8 +40,11 @@ const destroyRedis = async () => {
     }
 };
 
+const isRedisReady = () => redisReady;
+
 module.exports = {
     redisClient,
     connectRedis,
-    destroyRedis
+    destroyRedis,
+    isRedisReady
 };

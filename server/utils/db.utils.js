@@ -1,9 +1,14 @@
 const dbconfig = require('../config/db.config');
 const dberrors = require('./db-errors')
 const { log, logBlock } = require('./log.utils');
-const { createError } = require('./response.utils');
 const pool = dbconfig.pool;
 dbconfig.logPoolEvents(pool);
+
+const createError = (name, message) => {
+    const err = new Error(message);
+    err.name = name;
+    throw err;
+};
 
 const dangerousKeywords = ['create', 'alter', 'drop', 'truncate', 'rename', 'grant', 'revoke', 'commit', 'rollback', 
     'start transaction', 'begin', 'savepoint', 'release savepoint', 'load data', 'load xml', 'shutdown','flush', 'reset', 'kill'];
@@ -15,15 +20,18 @@ const dangerousKeywords = ['create', 'alter', 'drop', 'truncate', 'rename', 'gra
 //check if query is string and not empty , values is array
 function performBasicValidations(query, values) {
     if (typeof query !== 'string' || query.trim() === '') {
+        logBlock('Invalid query:', query);
         throw createError('InvalidQuery', 'Invalid query: Query must be a non-empty string.');
     }
     if (!Array.isArray(values)) {
+        logBlock('Invalid values:', values);
         throw createError('InvalidValues', 'Invalid values: Values must be an array.');
     }
 
     // check if values array contains only valid types (string, number, boolean, null)
     for (const value of values) {
         if (value !== null && typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean' && typeof value !== 'object') {
+            logBlock('Invalid value type:', value);
             throw createError('InvalidValueType', `Invalid value type: ${typeof value}. Values must be string, number, boolean, object, or null.`);
         }
     }
@@ -31,6 +39,7 @@ function performBasicValidations(query, values) {
     //check if query contains any dangerous keywords
      dangerousKeywords.forEach((key) => {
         if(new RegExp(`\\b${key}\\b`, 'i').test(query.toLocaleLowerCase())) {
+            logBlock('Dangerous keyword detected in query:', query);
             throw createError('DangerousKeyword', `Dangerous keyword detected in query: ${key}`);
         }
     });
@@ -64,6 +73,7 @@ function checkIfDmlHasWhereClause(query) {
 
 // Validate query and values before executing
 function validateQueryAndValues(query, values) {
+    // logBlock('in validateQueryAndValues');
     performBasicValidations(query, values);
     checkIfQueryHasSingleStatement(query);
     checkIfDmlHasWhereClause(query);
