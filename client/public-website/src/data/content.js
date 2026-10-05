@@ -1,9 +1,8 @@
 import {
   Activity,
   Beef,
-  Bell,
   Building2,
-  CalendarCheck,
+  CalendarHeart,
   ChartColumn,
   Droplets,
   Gauge,
@@ -16,11 +15,9 @@ import {
   Phone,
   ShieldCheck,
   Sprout,
-  Syringe,
+  Stethoscope,
   TrendingUp,
   Users,
-  Wallet,
-  Wheat,
 } from "lucide-react";
 
 export const navItems = [
@@ -37,6 +34,8 @@ export const trustBadges = [
   { icon: Gauge, label: "Built for daily use" },
 ];
 
+/* Only what the product does today. Add a service here when it ships - the marquee and
+   the services grid both read this list. */
 export const services = [
   {
     icon: Beef,
@@ -51,48 +50,29 @@ export const services = [
     accent: "from-splash to-navy-400",
   },
   {
-    icon: Wallet,
-    title: "Sales & Expenses",
-    text: "Track milk sales, farm costs, and payment status as money moves.",
-    accent: "from-navy-500 to-splash",
-  },
-  {
-    icon: CalendarCheck,
-    title: "Staff Attendance",
-    text: "Daily attendance for farm teams, visible branch by branch.",
-    accent: "from-navy-800 to-navy-600",
-  },
-  {
-    icon: Syringe,
-    title: "Vaccinations",
-    text: "Health checkups, vaccination dates, and medicine notes with follow-ups.",
+    icon: Stethoscope,
+    title: "Health & Treatments",
+    text: "Illness episodes, checkups, medicines, and treatment costs with follow-up dates.",
     accent: "from-navy-700 to-navy-500",
   },
   {
+    icon: CalendarHeart,
+    title: "Breeding & Pregnancy",
+    text: "Conception, dry-off, and calving dates tracked for every pregnancy, calves included.",
+    accent: "from-navy-500 to-splash",
+  },
+  {
     icon: ChartColumn,
-    title: "Reports & Insights",
-    text: "Turn day-to-day records into reports you can actually decide from.",
+    title: "Dashboard & Insights",
+    text: "Production trends, herd composition, and top producers on one live dashboard.",
     accent: "from-splash to-navy-600",
   },
   {
     icon: Building2,
     title: "Branch Monitoring",
-    text: "Compare production, costs, and staffing across every farm location.",
+    text: "Compare herd size and milk production across every farm location.",
     accent: "from-navy-400 to-splash",
   },
-  {
-    icon: Wheat,
-    title: "Feed & Resources",
-    text: "Feed usage, stock levels, and resource consumption without guesswork.",
-    accent: "from-navy-600 to-splash",
-  },
-];
-
-export const stats = [
-  { value: 8, suffix: "", label: "farm areas covered", hint: "Cattle to cash flow" },
-  { value: 2, suffix: "x", label: "daily milk entries", hint: "Morning and evening" },
-  { value: 100, suffix: "%", label: "records in one place", hint: "No scattered notebooks" },
-  { value: 24, suffix: "/7", label: "operational visibility", hint: "Any device, any branch" },
 ];
 
 export const benefits = [
@@ -104,12 +84,12 @@ export const benefits = [
   {
     icon: Activity,
     title: "Better daily visibility",
-    text: "See what happened on the farm today — production, attendance, sales — without calling three people.",
+    text: "See what happened on the farm today — milk recorded, animals under treatment, calvings due — without calling three people.",
   },
   {
     icon: Beef,
     title: "Organized cattle information",
-    text: "Every animal carries its own history: breed, health, vaccinations, and yield, ready when you need it.",
+    text: "Every animal carries its own history: breed, health, breeding, and yield, ready when you need it.",
   },
   {
     icon: Building2,
@@ -117,9 +97,9 @@ export const benefits = [
     text: "Run one farm or compare six. The same records roll up branch by branch without extra work.",
   },
   {
-    icon: TrendingUp,
-    title: "Clear money flow",
-    text: "Sales, expenses, and pending payments sit next to production, so margin is never a surprise.",
+    icon: HeartPulse,
+    title: "Health care that stays on schedule",
+    text: "Follow-up checkups, dry-offs, and calvings surface as alerts before they are due, not after they are missed.",
   },
   {
     icon: Users,
@@ -133,22 +113,22 @@ export const steps = [
     number: "01",
     icon: Droplets,
     title: "Record",
-    text: "Capture cattle, milk, sales, expenses, feed, and attendance as the day happens.",
-    points: ["Morning & evening yields", "Expense and sale entries", "Attendance in one tap"],
+    text: "Capture cattle, milk yields, treatments, and breeding events as the day happens.",
+    points: ["Morning & evening yields", "Treatment & checkup notes", "Breeding & calving events"],
   },
   {
     number: "02",
     icon: LineChart,
     title: "Monitor",
-    text: "Watch production, cost, and health trends move — and notice problems while they are small.",
-    points: ["Branch-wise comparison", "Health & vaccination alerts", "Daily operations view"],
+    text: "Watch production and health trends move — and notice problems while they are small.",
+    points: ["Branch-wise comparison", "Health & calving alerts", "Daily operations view"],
   },
   {
     number: "03",
     icon: TrendingUp,
     title: "Grow",
-    text: "Use organized farm information to plan production, control cost, and expand with confidence.",
-    points: ["Decision-ready reports", "Cost control signals", "Confident expansion"],
+    text: "Use organized farm information to plan production, care for the herd, and expand with confidence.",
+    points: ["Decision-ready dashboard", "Herd & yield trends", "Confident expansion"],
   },
 ];
 
@@ -156,7 +136,7 @@ export const audiences = [
   {
     icon: ShieldCheck,
     title: "Farm Owners",
-    text: "The overall direction of production, expenses, staff, and branch activity at a glance.",
+    text: "The overall direction of production, herd health, and branch activity at a glance.",
   },
   {
     icon: Gauge,
@@ -166,44 +146,28 @@ export const audiences = [
   {
     icon: Leaf,
     title: "Farm Teams",
-    text: "Simple flows for cattle, milk, attendance, and routine activity records.",
+    text: "Simple flows for cattle, milk, health, and routine activity records.",
   },
 ];
+
+/* Contact details come from .env (VITE_CONTACT_*), so each deployment can show its own
+   without a code change. A value left empty there simply drops its entry here. */
+const contactPhone = (import.meta.env.VITE_CONTACT_PHONE || "").trim();
+const contactEmail = (import.meta.env.VITE_CONTACT_EMAIL || "").trim();
+const contactLocation = (import.meta.env.VITE_CONTACT_LOCATION || "").trim();
 
 export const contactDetails = [
-  { icon: Phone, label: "Phone", value: "+91 99854 53023", href: "tel:+919985453023" },
-  { icon: Mail, label: "Email", value: "hello@milknest.example", href: "mailto:hello@milknest.example" },
-  { icon: MapPin, label: "Location", value: "Andhra Pradesh, India", href: null },
-];
-
-/* Sample telemetry rendered inside the hero's 3D dashboard. */
-export const heroChart = [
-  { day: "Mon", value: 58 },
-  { day: "Tue", value: 71 },
-  { day: "Wed", value: 64 },
-  { day: "Thu", value: 83 },
-  { day: "Fri", value: 76 },
-  { day: "Sat", value: 94 },
-  { day: "Sun", value: 88 },
-];
-
-export const heroNotifications = [
-  {
-    icon: Milk,
-    title: "Evening yield recorded",
-    meta: "482 L · Branch A",
-    tone: "grass",
+  contactPhone && {
+    icon: Phone,
+    label: "Phone",
+    value: contactPhone,
+    href: `tel:${contactPhone.replace(/[^+\d]/g, "")}`,
   },
-  {
-    icon: HeartPulse,
-    title: "Vaccination due",
-    meta: "3 cattle · this week",
-    tone: "navy",
+  contactEmail && {
+    icon: Mail,
+    label: "Email",
+    value: contactEmail,
+    href: `mailto:${contactEmail}`,
   },
-  {
-    icon: Bell,
-    title: "Feed stock low",
-    meta: "Reorder in 2 days",
-    tone: "splash",
-  },
-];
+  contactLocation && { icon: MapPin, label: "Location", value: contactLocation, href: null },
+].filter(Boolean);

@@ -19,7 +19,7 @@ function DesktopPath({ progress }) {
     >
       <path
         d="M60 100 C 260 20, 420 20, 600 70 C 780 120, 940 120, 1140 40"
-        stroke="var(--color-navy-100)"
+        stroke="var(--color-line)"
         strokeWidth="2.5"
         strokeDasharray="8 10"
       />
@@ -54,7 +54,7 @@ export default function HowItHelps() {
     <section id="how-it-helps" className="relative scroll-mt-24 overflow-hidden py-20 sm:py-24 lg:py-28">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-transparent via-navy-50/60 to-transparent"
+        className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-transparent via-surface-soft/60 to-transparent"
       />
       <Blob className="right-[-10rem] top-16 size-[24rem]" tone="bg-splash/15" />
 
@@ -81,7 +81,7 @@ export default function HowItHelps() {
                   <div className="relative z-10 mt-1 lg:mx-auto lg:mt-0">
                     <span className="relative grid size-[3.7rem] place-items-center rounded-2xl bg-linear-to-br from-navy-800 to-navy-600 text-white shadow-glow-navy transition-transform duration-500 group-hover:-translate-y-1.5 group-hover:scale-105 lg:size-16 lg:rounded-3xl">
                       <step.icon className="size-6 lg:size-7" />
-                      <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-splash text-[10px] font-extrabold text-white ring-2 ring-white">
+                      <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-splash text-[10px] font-extrabold text-white ring-2 ring-page">
                         {index + 1}
                       </span>
                     </span>
@@ -95,7 +95,7 @@ export default function HowItHelps() {
                   </div>
 
                   {/* Card */}
-                  <div className="flex-1 rounded-3xl border border-white/70 bg-white/75 p-6 shadow-glass backdrop-blur-xl transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-lift lg:mt-6 lg:text-center">
+                  <div className="flex-1 rounded-3xl border border-edge/70 bg-surface/75 p-6 shadow-glass backdrop-blur-xl transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-lift lg:mt-6 lg:text-center">
                     <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-splash">
                       Step {step.number}
                     </p>
@@ -103,8 +103,8 @@ export default function HowItHelps() {
                     <p className="mt-2 text-sm leading-relaxed text-muted">{step.text}</p>
                     <ul className="mt-4 space-y-2 lg:inline-block lg:text-left">
                       {step.points.map((point) => (
-                        <li key={point} className="flex items-center gap-2 text-sm font-medium text-navy-800">
-                          <span className="grid size-4.5 shrink-0 place-items-center rounded-full bg-navy-100 text-navy-700">
+                        <li key={point} className="flex items-center gap-2 text-sm font-medium text-ink-soft">
+                          <span className="grid size-4.5 shrink-0 place-items-center rounded-full bg-surface-strong text-ink-soft">
                             <Check className="size-3" strokeWidth={3} />
                           </span>
                           {point}

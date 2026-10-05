@@ -25,7 +25,7 @@ const adminPool = mysql.createPool({
 const operatorPool = mysql.createPool({
     ...baseConfig,
     user: process.env.OPERATOR_USER,
-    password: process.env.ADMIN_PASSWORD,
+    password: process.env.OPERATOR_PASSWORD,
 });
 
 const viewerPool = mysql.createPool({

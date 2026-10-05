@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CheckCircle2, Mail, MapPin, Phone, Send } from "lucide-react";
-import { navItems } from "../data/content";
+import { CheckCircle2, Send } from "lucide-react";
+import { contactDetails, navItems } from "../data/content";
 import { CurveDivider, Particles } from "./ui/Backdrop";
 import BrandMark from "./ui/BrandMark";
 import Reveal from "./ui/Reveal";
@@ -47,7 +47,7 @@ export default function Footer() {
                 </span>
               </a>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-navy-300">
-                Smart dairy farm management — cattle, milk, money, and people in one clear
+                Smart dairy farm management — cattle, milk, health, and breeding in one clear
                 operating view, for single farms and multi-branch operations.
               </p>
               <ul className="mt-5 flex gap-2.5">
@@ -94,19 +94,19 @@ export default function Footer() {
                 Stay in Touch
               </h3>
               <ul className="mt-4 space-y-2.5 text-sm text-navy-300">
-                <li>
-                  <a href="tel:+919985453023" className="inline-flex items-center gap-2.5 transition-colors hover:text-white">
-                    <Phone className="size-4 text-splash" /> +91 99854 53023
-                  </a>
-                </li>
-                <li>
-                  <a href="mailto:hello@milknest.example" className="inline-flex items-center gap-2.5 transition-colors hover:text-white">
-                    <Mail className="size-4 text-splash" /> hello@milknest.example
-                  </a>
-                </li>
-                <li className="inline-flex items-center gap-2.5">
-                  <MapPin className="size-4 text-splash" /> Andhra Pradesh, India
-                </li>
+                {contactDetails.map((detail) => (
+                  <li key={detail.label}>
+                    {detail.href ? (
+                      <a href={detail.href} className="inline-flex items-center gap-2.5 transition-colors hover:text-white">
+                        <detail.icon className="size-4 text-splash" /> {detail.value}
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-2.5">
+                        <detail.icon className="size-4 text-splash" /> {detail.value}
+                      </span>
+                    )}
+                  </li>
+                ))}
               </ul>
 
               {subscribed ? (

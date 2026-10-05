@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { Theme } from "../contexts/ThemeContext";
 import { navItems } from "../data/content";
 import useActiveSection from "../hooks/useActiveSection";
 import BrandMark from "./ui/BrandMark";
@@ -58,7 +59,7 @@ export default function Header() {
       <div
         className={`mt-3 flex w-full max-w-site items-center justify-between gap-3 rounded-2xl border px-3 transition-all duration-500 sm:px-5 ${
           scrolled
-            ? "border-white/60 bg-white/70 py-2 shadow-glass backdrop-blur-xl"
+            ? "border-edge/60 bg-surface/70 py-2 shadow-glass backdrop-blur-xl"
             : "border-transparent bg-transparent py-3.5"
         }`}
       >
@@ -81,14 +82,14 @@ export default function Header() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={`group relative rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-300 ${
-                  isActive ? "text-navy-800" : "text-muted hover:text-navy-800"
+                  isActive ? "text-ink" : "text-muted hover:text-ink"
                 }`}
               >
                 {isActive ? (
                   <motion.span
                     layoutId="nav-active"
                     transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    className="absolute inset-0 -z-10 rounded-full bg-navy-50 ring-1 ring-navy-100"
+                    className="absolute inset-0 -z-10 rounded-full bg-surface-soft ring-1 ring-line"
                   />
                 ) : null}
                 {item.label}
@@ -105,6 +106,9 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Theme switch (tablet and up; phones get it inside the drawer) */}
+          <Theme className="hidden sm:inline-flex" />
+
           {/* Gradient CTA (desktop / tablet) */}
           <a
             href="#contact"
@@ -121,21 +125,21 @@ export default function Header() {
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-            className="relative grid size-11 place-items-center rounded-xl border border-navy-900/10 bg-white/80 backdrop-blur transition-colors hover:bg-white lg:hidden"
+            className="relative grid size-11 place-items-center rounded-xl border border-ink/10 bg-surface/80 backdrop-blur transition-colors hover:bg-surface lg:hidden"
           >
             <span className="relative block h-3.5 w-5">
               <span
-                className={`absolute h-0.5 rounded-full bg-navy-800 transition-all duration-300 ${
+                className={`absolute h-0.5 rounded-full bg-ink-soft transition-all duration-300 ${
                   menuOpen ? "left-1 top-1.5 w-3 rotate-45" : "left-0 top-0 w-full"
                 }`}
               />
               <span
-                className={`absolute left-0 top-1.5 h-0.5 w-full rounded-full bg-navy-800 transition-all duration-300 ${
+                className={`absolute left-0 top-1.5 h-0.5 w-full rounded-full bg-ink-soft transition-all duration-300 ${
                   menuOpen ? "opacity-0" : ""
                 }`}
               />
               <span
-                className={`absolute h-0.5 rounded-full bg-navy-800 transition-all duration-300 ${
+                className={`absolute h-0.5 rounded-full bg-ink-soft transition-all duration-300 ${
                   menuOpen ? "left-1 top-1.5 w-3 -rotate-45" : "left-0 top-3 w-full"
                 }`}
               />
@@ -164,7 +168,7 @@ export default function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.98 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-x-3 top-[4.75rem] overflow-hidden rounded-2xl border border-white/60 bg-white/85 p-3 shadow-lift backdrop-blur-2xl sm:inset-x-5 lg:hidden"
+              className="absolute inset-x-3 top-[4.75rem] overflow-hidden rounded-2xl border border-edge/60 bg-surface/85 p-3 shadow-lift backdrop-blur-2xl sm:inset-x-5 lg:hidden"
             >
               <ul className="flex flex-col">
                 {navItems.map((item, index) => (
@@ -180,8 +184,8 @@ export default function Header() {
                       aria-current={active === item.id ? "page" : undefined}
                       className={`flex min-h-11 items-center justify-between rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
                         active === item.id
-                          ? "bg-navy-50 text-navy-900"
-                          : "text-navy-800 hover:bg-navy-50/60"
+                          ? "bg-surface-soft text-ink"
+                          : "text-ink-soft hover:bg-surface-soft/60"
                       }`}
                     >
                       {item.label}
@@ -190,6 +194,11 @@ export default function Header() {
                   </motion.li>
                 ))}
               </ul>
+              {/* Theme switch (phones; wider screens have it in the bar) */}
+              <div className="mt-1 flex min-h-11 items-center justify-between rounded-xl px-4 py-2 sm:hidden">
+                <span className="text-base font-semibold text-ink-soft">Theme</span>
+                <Theme />
+              </div>
               <a
                 href="#contact"
                 onClick={closeMenu}

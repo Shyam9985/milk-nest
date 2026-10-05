@@ -14,6 +14,7 @@ const cattleRtr = require('./cattleRtr');
 const filesRouter = require('./filesRtr');
 const profileRtr = require('./profileRtr');
 const profilesRtr = require('./profilesRtr');
+const publicRtr = require('./publicRtr');
 
 router.use('/auth', authRtr);
 router.use('/admin', adminRtr);
@@ -28,5 +29,6 @@ router.use('/cattle', cattleRtr);
 router.use('/files', filesRouter);
 router.use('/profile', profileRtr);
 router.use('/profiles', profilesRtr);
+router.use('/public', publicRtr);
 
 module.exports = router;

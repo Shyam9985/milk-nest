@@ -98,7 +98,7 @@ export default function TiltCard({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.65, ease: "easeOut" }}
             style={{ left: ripple.x, top: ripple.y }}
-            className="pointer-events-none absolute -ml-32 -mt-32 size-64 rounded-full bg-navy-200/60"
+            className="pointer-events-none absolute -ml-32 -mt-32 size-64 rounded-full bg-haze/60"
           />
         ))}
       </AnimatePresence>

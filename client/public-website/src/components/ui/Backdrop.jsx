@@ -11,9 +11,9 @@ export function MeshBackdrop({ className = "" }) {
       aria-hidden="true"
       className={`pointer-events-none absolute inset-0 -z-10 overflow-hidden ${className}`}
     >
-      <div className="absolute -top-40 -left-32 size-[36rem] animate-drift rounded-full bg-[radial-gradient(circle_at_center,var(--color-navy-200),transparent_65%)] opacity-70 blur-3xl" />
-      <div className="absolute -top-24 right-[-12rem] size-[34rem] animate-drift-slow rounded-full bg-[radial-gradient(circle_at_center,var(--color-navy-300),transparent_65%)] opacity-50 blur-3xl" />
-      <div className="absolute bottom-[-16rem] left-1/3 size-[40rem] animate-drift rounded-full bg-[radial-gradient(circle_at_center,var(--color-navy-50),transparent_70%)] opacity-90 blur-3xl" />
+      <div className="absolute -top-40 -left-32 size-[36rem] animate-drift rounded-full bg-[radial-gradient(circle_at_center,var(--color-haze),transparent_65%)] opacity-70 blur-3xl" />
+      <div className="absolute -top-24 right-[-12rem] size-[34rem] animate-drift-slow rounded-full bg-[radial-gradient(circle_at_center,var(--color-haze-strong),transparent_65%)] opacity-50 blur-3xl" />
+      <div className="absolute bottom-[-16rem] left-1/3 size-[40rem] animate-drift rounded-full bg-[radial-gradient(circle_at_center,var(--color-surface-soft),transparent_70%)] opacity-90 blur-3xl" />
       <div className="absolute inset-0 bg-noise opacity-[0.035] mix-blend-multiply" />
     </div>
   );
@@ -24,7 +24,7 @@ export function GridOverlay({ className = "" }) {
   return (
     <div
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,rgb(15_34_71/0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgb(15_34_71/0.05)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black_35%,transparent_75%)] ${className}`}
+      className={`pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--grid-line)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid-line)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black_35%,transparent_75%)] ${className}`}
     />
   );
 }
@@ -65,7 +65,7 @@ export function Particles({ className = "" }) {
 }
 
 /** Single positioned blur blob, for accenting individual sections. */
-export function Blob({ className = "", tone = "bg-navy-200/40" }) {
+export function Blob({ className = "", tone = "bg-haze/40" }) {
   return (
     <div
       aria-hidden="true"

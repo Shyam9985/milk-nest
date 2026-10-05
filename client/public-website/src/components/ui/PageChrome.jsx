@@ -83,10 +83,11 @@ export function DotNav() {
               className={`rounded-full transition-all duration-400 ${
                 isActive
                   ? "size-2.5 bg-splash ring-4 ring-splash/20"
-                  : "size-2 bg-navy-200 group-hover:bg-navy-400"
+                  : "size-2 bg-line-strong group-hover:bg-splash"
               }`}
             />
-            <span className="pointer-events-none absolute right-7 whitespace-nowrap rounded-lg bg-navy-900 px-2.5 py-1 text-xs font-semibold text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            {/* ink on page inverts with the theme, so the tooltip always contrasts */}
+            <span className="pointer-events-none absolute right-7 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1 text-xs font-semibold text-page opacity-0 transition-opacity duration-300 group-hover:opacity-100">
               {item.label}
             </span>
           </a>
@@ -121,7 +122,7 @@ export function BackToTop() {
           onClick={() =>
             window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" })
           }
-          className="group fixed bottom-5 right-5 z-40 grid size-12 place-items-center rounded-full border border-white/70 bg-white/80 text-navy-800 shadow-glass backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-navy-800 hover:text-white hover:shadow-glow-navy"
+          className="group fixed bottom-5 right-5 z-40 grid size-12 place-items-center rounded-full border border-edge/70 bg-surface/80 text-ink-soft shadow-glass backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-navy-700 hover:text-white hover:shadow-glow-navy"
         >
           <ArrowUp className="size-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
         </motion.button>

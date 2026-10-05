@@ -7,9 +7,18 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import { ArrowRight, ChevronDown, Droplets, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  Beef,
+  Building2,
+  ChevronDown,
+  Droplets,
+  Milk,
+  TrendingUp,
+} from "lucide-react";
 import heroImage from "../assets/dairy-hero.png";
-import { heroChart, heroNotifications, trustBadges } from "../data/content";
+import { formatLitres, usePublicStats } from "../contexts/PublicStatsContext";
+import { trustBadges } from "../data/content";
 import { GridOverlay, MeshBackdrop, Particles } from "./ui/Backdrop";
 import MagneticButton from "./ui/MagneticButton";
 
@@ -26,10 +35,62 @@ const fadeUp = {
 };
 
 const toneStyles = {
-  grass: "bg-navy-50 text-navy-500",
-  navy: "bg-navy-100 text-navy-600",
-  splash: "bg-navy-50 text-splash",
+  soft: "bg-surface-soft text-splash",
+  strong: "bg-surface-strong text-ink-soft",
 };
+
+/* The badge on the photo says what the numbers around it really are. */
+const LIVE_BADGE = {
+  ready: { label: "Live farm data", dot: "bg-grass-400", pulse: true },
+  loading: { label: "Connecting to live data", dot: "bg-white/70", pulse: true },
+  error: { label: "Live data unavailable", dot: "bg-white/50", pulse: false },
+};
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/* "2026-10-05" -> "Mon". Built from its parts on purpose: new Date("2026-10-05") is
+   midnight UTC, which is still the day before in any timezone behind UTC. */
+const weekdayOf = (date) => {
+  const [year, month, day] = date.split("-").map(Number);
+  return WEEKDAYS[new Date(year, month - 1, day).getDay()];
+};
+
+const countOf = (value, singular, plural = `${singular}s`) =>
+  `${Number(value).toLocaleString()} ${Number(value) === 1 ? singular : plural}`;
+
+/* The three floating cards, written from the live totals (meta is null until they arrive). */
+const buildHighlights = (stats) => [
+  {
+    icon: Milk,
+    title: "Milk today",
+    meta: stats ? `${formatLitres(stats.milk_today)} L so far` : null,
+    tone: "soft",
+  },
+  {
+    icon: Beef,
+    title: "Herd on record",
+    meta: stats ? countOf(stats.active_cattle, "active animal") : null,
+    tone: "strong",
+  },
+  {
+    icon: Building2,
+    title: "Farms connected",
+    meta: stats
+      ? `${countOf(stats.dairy_farms, "farm")} · ${countOf(stats.branches, "branch", "branches")}`
+      : null,
+    tone: "soft",
+  },
+];
+
+/** Grey bar that stands in for a figure while it loads. */
+function Skeleton({ className = "" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block animate-pulse rounded bg-haze-soft align-middle ${className}`}
+    />
+  );
+}
 
 const HEADLINE = [
   { text: "Run your dairy farm", gradient: false },
@@ -50,7 +111,7 @@ function AnimatedHeadline({ reduceMotion }) {
             key={segment.text}
             className={
               segment.gradient
-                ? "text-gradient bg-linear-to-r from-navy-800 via-splash to-navy-400"
+                ? "text-gradient bg-linear-to-r from-ink-soft via-splash to-navy-400"
                 : undefined
             }
           >
@@ -78,7 +139,7 @@ function AnimatedHeadline({ reduceMotion }) {
               transition={{ duration: 0.7, delay, ease: EASE }}
               className={`mr-[0.24em] inline-block will-change-transform ${
                 segment.gradient
-                  ? "text-gradient animate-aurora bg-linear-to-r from-navy-800 via-splash to-navy-400 bg-[length:200%_auto]"
+                  ? "text-gradient animate-aurora bg-linear-to-r from-ink-soft via-splash to-navy-400 bg-[length:200%_auto]"
                   : ""
               }`}
             >
@@ -91,34 +152,71 @@ function AnimatedHeadline({ reduceMotion }) {
   );
 }
 
-/** Mini bar chart inside the floating dashboard card. */
-function DashboardChart() {
-  const max = Math.max(...heroChart.map((d) => d.value));
+/* Bar heights shown while the real trend is loading (or could not be loaded). */
+const PLACEHOLDER_BARS = [46, 62, 54, 74, 66, 84, 70];
+
+/**
+ * Mini bar chart inside the floating dashboard card: litres recorded per day, one bar
+ * per day of `trend` ([{ date: "YYYY-MM-DD", total }]). The best day is highlighted.
+ */
+function DashboardChart({ trend }) {
+  if (!trend?.length) {
+    return (
+      <div aria-hidden="true">
+        <div className="flex h-14 items-end gap-1.5 sm:h-24 sm:gap-2">
+          {PLACEHOLDER_BARS.map((height, index) => (
+            <span
+              key={index}
+              style={{ height: `${height}%` }}
+              className="flex-1 animate-pulse rounded-t-md bg-haze-soft"
+            />
+          ))}
+        </div>
+        {/* keeps the card the same height as when the day labels are there */}
+        <div className="mt-1.5 h-[13.5px] sm:h-[15px]" />
+      </div>
+    );
+  }
+
+  /* `|| 1` keeps a week with nothing recorded from dividing by zero. */
+  const max = Math.max(...trend.map((point) => point.total)) || 1;
+  const peakIndex = trend.reduce(
+    (best, point, index) => (point.total > trend[best].total ? index : best),
+    0
+  );
+  const summary = trend
+    .map((point) => `${weekdayOf(point.date)} ${formatLitres(point.total)} litres`)
+    .join(", ");
+
   return (
-    <div role="img" aria-label="Weekly milk production trend, rising through the week">
+    <div
+      role="img"
+      aria-label={`Milk recorded per day over the last ${trend.length} days: ${summary}`}
+    >
       <div className="flex h-14 items-end gap-1.5 sm:h-24 sm:gap-2">
-        {heroChart.map((point, index) => (
+        {trend.map((point, index) => (
           <motion.span
-            key={point.day}
+            key={point.date}
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ delay: 0.9 + index * 0.08, duration: 0.7, ease: EASE }}
-            style={{ height: `${(point.value / max) * 100}%` }}
-            className={`flex-1 origin-bottom rounded-t-md ${
-              index === heroChart.length - 2
+            /* a day with no entries still gets a sliver, so the week reads as seven days */
+            style={{ height: `${Math.max((point.total / max) * 100, 4)}%` }}
+            className={`flex-1 origin-bottom rounded-t-md transition-[height] duration-700 ${
+              index === peakIndex && point.total > 0
                 ? "bg-linear-to-t from-navy-600 to-splash"
-                : "bg-linear-to-t from-navy-200 to-navy-100"
+                : "bg-linear-to-t from-haze to-haze-soft"
             }`}
           />
         ))}
       </div>
       <div className="mt-1.5 flex gap-1.5 sm:gap-2">
-        {heroChart.map((point) => (
+        {trend.map((point) => (
           <span
-            key={point.day}
+            key={point.date}
             className="flex-1 text-center text-[9px] font-semibold text-muted sm:text-[10px]"
           >
-            {point.day}
+            {weekdayOf(point.date)}
           </span>
         ))}
       </div>
@@ -130,6 +228,9 @@ function DashboardChart() {
 function HeroScene() {
   const reduceMotion = useReducedMotion();
   const sceneRef = useRef(null);
+  const { stats, status } = usePublicStats();
+  const badge = LIVE_BADGE[status];
+  const highlights = buildHighlights(stats);
 
   const pointerX = useSpring(useMotionValue(0), { stiffness: 60, damping: 18 });
   const pointerY = useSpring(useMotionValue(0), { stiffness: 60, damping: 18 });
@@ -167,7 +268,7 @@ function HeroScene() {
           initial={reduceMotion ? false : { opacity: 0, y: 40, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1, delay: 0.35, ease: EASE }}
-          className="relative overflow-hidden rounded-3xl shadow-lift ring-1 ring-navy-900/10"
+          className="relative overflow-hidden rounded-3xl shadow-lift ring-1 ring-ink/10"
         >
           <img
             src={heroImage}
@@ -181,12 +282,17 @@ function HeroScene() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 animate-sheen bg-linear-to-r from-transparent via-white/10 to-transparent" />
 
           {/* Live badge on the photo */}
-          <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:bottom-4 sm:left-4">
+          <div
+            role="status"
+            className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:bottom-4 sm:left-4"
+          >
             <span className="relative flex size-2">
-              <span className="absolute inset-0 animate-pulse-ring rounded-full bg-grass-400" />
-              <span className="relative size-2 rounded-full bg-grass-400" />
+              {badge.pulse ? (
+                <span className={`absolute inset-0 animate-pulse-ring rounded-full ${badge.dot}`} />
+              ) : null}
+              <span className={`relative size-2 rounded-full ${badge.dot}`} />
             </span>
-            Live farm operations
+            {badge.label}
           </div>
         </motion.div>
 
@@ -230,35 +336,40 @@ function HeroScene() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.7, ease: EASE }}
           style={reduceMotion ? undefined : { x: shiftNear, translateZ: 70 }}
-          className="absolute -bottom-12 -left-1 w-52 animate-float rounded-2xl border border-white/70 bg-white/85 p-3.5 shadow-glass backdrop-blur-xl sm:-bottom-10 sm:-left-8 sm:w-72 sm:p-4"
+          className="absolute -bottom-12 -left-1 w-52 animate-float rounded-2xl border border-edge/70 bg-surface/85 p-3.5 shadow-glass backdrop-blur-xl sm:-bottom-10 sm:-left-8 sm:w-72 sm:p-4"
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                Milk production
+                Milk · last 7 days
               </p>
-              <p className="text-lg font-extrabold text-navy-900">
-                2,940 L
-                <span className="ml-1.5 text-xs font-bold text-splash">this week</span>
+              <p className="text-lg font-extrabold text-ink">
+                {stats ? (
+                  `${formatLitres(stats.milk_week)} L`
+                ) : status === "loading" ? (
+                  <Skeleton className="h-5 w-20" />
+                ) : (
+                  "—"
+                )}
               </p>
             </div>
-            <span className="grid size-9 place-items-center rounded-xl bg-navy-50 text-splash">
+            <span className="grid size-9 place-items-center rounded-xl bg-surface-soft text-splash">
               <TrendingUp className="size-4.5" />
             </span>
           </div>
-          <DashboardChart />
+          <DashboardChart trend={stats?.trend} />
         </motion.div>
 
-        {/* Floating notification cards */}
+        {/* Floating highlight cards */}
         <div className="absolute -right-1 -top-5 flex w-44 flex-col gap-2 sm:-right-6 sm:-top-8 sm:w-56 sm:gap-2.5">
-          {heroNotifications.map((note, index) => (
+          {highlights.map((note, index) => (
             <motion.div
               key={note.title}
               initial={reduceMotion ? false : { opacity: 0, x: 36 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.9 + index * 0.18, ease: EASE }}
               style={reduceMotion ? undefined : { x: shiftFar, translateZ: 50 - index * 15 }}
-              className={`flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/85 p-2.5 shadow-glass backdrop-blur-xl ${
+              className={`flex items-center gap-2.5 rounded-xl border border-edge/70 bg-surface/85 p-2.5 shadow-glass backdrop-blur-xl ${
                 index === 1 ? "animate-float-delayed" : "animate-float-slow"
               } ${index === 2 ? "hidden sm:flex" : ""}`}
             >
@@ -266,8 +377,11 @@ function HeroScene() {
                 <note.icon className="size-4" />
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-xs font-bold text-navy-900">{note.title}</span>
-                <span className="block text-[11px] font-medium text-muted">{note.meta}</span>
+                <span className="block truncate text-xs font-bold text-ink">{note.title}</span>
+                <span className="block truncate text-[11px] font-medium text-muted">
+                  {note.meta ??
+                    (status === "loading" ? <Skeleton className="h-3 w-20" /> : "Unavailable right now")}
+                </span>
               </span>
             </motion.div>
           ))}
@@ -279,7 +393,7 @@ function HeroScene() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 1.5, ease: EASE }}
           style={reduceMotion ? undefined : { translateZ: 90 }}
-          className="absolute -left-4 top-8 hidden animate-float-delayed rounded-2xl border border-white/70 bg-white/85 p-3 shadow-glass backdrop-blur-xl sm:block"
+          className="absolute -left-4 top-8 hidden animate-float-delayed rounded-2xl border border-edge/70 bg-surface/85 p-3 shadow-glass backdrop-blur-xl sm:block"
         >
           <Droplets className="size-6 text-splash" />
         </motion.div>
@@ -326,7 +440,7 @@ export default function Hero() {
         >
           <motion.p
             variants={fadeUp}
-            className="mx-auto inline-flex items-center gap-2 rounded-full border border-navy-100 bg-white/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-navy-700 backdrop-blur lg:mx-0"
+            className="mx-auto inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-ink-soft backdrop-blur lg:mx-0"
           >
             <span className="relative flex size-2">
               <span className="absolute inset-0 animate-pulse-ring rounded-full bg-splash" />
@@ -341,8 +455,8 @@ export default function Hero() {
             variants={fadeUp}
             className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg lg:mx-0"
           >
-            Milk Nest brings cattle records, milk production, sales, expenses, and staff
-            attendance into one clear view — for single farms and multi-branch operations.
+            Milk Nest brings cattle records, milk production, health treatments, and breeding
+            into one clear view — for single farms and multi-branch operations.
           </motion.p>
 
           <motion.div
@@ -358,7 +472,7 @@ export default function Hero() {
             </MagneticButton>
             <MagneticButton
               href="#services"
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-navy-200 bg-white/70 px-8 py-3.5 text-base font-bold text-navy-800 backdrop-blur transition-colors duration-300 hover:border-splash hover:bg-navy-50 sm:w-auto"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line-strong bg-surface/70 px-8 py-3.5 text-base font-bold text-ink-soft backdrop-blur transition-colors duration-300 hover:border-splash hover:bg-surface-soft sm:w-auto"
             >
               View Services
             </MagneticButton>
@@ -397,7 +511,7 @@ export default function Hero() {
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2, duration: 1 }}
-        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-muted transition-colors hover:text-navy-800 lg:flex"
+        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-muted transition-colors hover:text-ink lg:flex"
       >
         <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">Scroll</span>
         <ChevronDown className="size-4 animate-bounce" />
