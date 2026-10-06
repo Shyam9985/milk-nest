@@ -36,6 +36,18 @@ const buildStats = (stats) => [
   },
 ];
 
+/* Tells every card in the grid where the pointer is, measured from that card's own
+   corner. Each card paints its edge light at that point (TiltCard, spotBorder), so one
+   glow appears to pass under the gaps between cards. */
+const trackSpotlight = (event) => {
+  if (event.pointerType === "touch") return;
+  for (const card of event.currentTarget.querySelectorAll("[data-spot]")) {
+    const bounds = card.getBoundingClientRect();
+    card.style.setProperty("--spot-x", `${event.clientX - bounds.left}px`);
+    card.style.setProperty("--spot-y", `${event.clientY - bounds.top}px`);
+  }
+};
+
 const LIVE_NOTE = {
   ready: "Live figures from farms running on Milk Nest · refreshed every minute",
   loading: "Loading live figures…",
@@ -68,6 +80,14 @@ export default function WhyUs() {
               aria-hidden="true"
               className="pointer-events-none absolute -bottom-24 left-10 size-72 rounded-full bg-splash/20 blur-3xl"
             />
+            {/* A beam of light circling the band's edge: a rotating cone of light, shown
+                only through a ring-shaped mask */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-3xl p-[2px] mask-ring"
+            >
+              <div className="absolute left-1/2 top-1/2 aspect-square w-[160%] -translate-x-1/2 -translate-y-1/2 animate-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_292deg,var(--color-splash)_338deg,white_354deg,transparent_360deg)]" />
+            </div>
             <dl className="relative grid grid-cols-2 gap-px overflow-hidden rounded-[calc(1.5rem-2px)] lg:grid-cols-4">
               {buildStats(stats).map((stat, index) => (
                 <Reveal
@@ -107,8 +127,11 @@ export default function WhyUs() {
           </p>
         </Reveal>
 
-        {/* Benefit cards */}
-        <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+        {/* Benefit cards: a spotlight grid - the cards' edges light up around the cursor */}
+        <div
+          onPointerMove={trackSpotlight}
+          className="group/spot mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
+        >
           {benefits.map((benefit, index) => (
             <Reveal
               key={benefit.title}
@@ -118,6 +141,7 @@ export default function WhyUs() {
             >
               <TiltCard
                 intensity={6}
+                spotBorder
                 className="h-full rounded-3xl border border-line bg-surface/80 p-6 shadow-glass backdrop-blur-xl transition-shadow duration-500 hover:shadow-lift"
               >
                 <div className="flex items-start gap-4">

@@ -1,10 +1,64 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { CheckCircle2, Send } from "lucide-react";
 import { contactDetails, navItems } from "../data/content";
-import { CurveDivider, Particles } from "./ui/Backdrop";
+import { Particles, WaveDivider } from "./ui/Backdrop";
 import BrandMark from "./ui/BrandMark";
 import Reveal from "./ui/Reveal";
 import { socialLinks } from "./ui/SocialIcons";
+
+/* The brand name, letter by letter, in the two tones of the logo. */
+const WORDMARK = [
+  ...[..."Milk"].map((letter) => ({ letter, tone: "from-white/30 to-white/[0.04]" })),
+  ...[..."nest"].map((letter) => ({ letter, tone: "from-grass-400/45 to-grass-400/[0.05]" })),
+];
+
+/** One letter of the wordmark. Each starts a little later than the one before it. */
+function WordmarkLetter({ letter, tone, index, progress, reduceMotion }) {
+  const start = 0.15 + index * 0.05;
+  const y = useTransform(progress, [start, start + 0.42], ["108%", "0%"]);
+
+  return (
+    <motion.span
+      style={reduceMotion ? undefined : { y }}
+      className={`inline-block bg-linear-to-b text-gradient ${tone}`}
+    >
+      {letter}
+    </motion.span>
+  );
+}
+
+/**
+ * Oversized "Milknest" that closes the page. Its letters rise out of the bottom edge as
+ * the last stretch of the page is scrolled: the movement is tied to the scroll position,
+ * so it follows the visitor back down when they scroll up again. Decorative only - the
+ * brand is already named, with a link, at the top of the footer.
+ */
+function FooterWordmark() {
+  const reduceMotion = useReducedMotion();
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
+  const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 24 });
+
+  return (
+    <div ref={ref} aria-hidden="true" className="pointer-events-none select-none overflow-hidden px-4">
+      {/* 0.9 is the tightest line height that still keeps the round letter bottoms (e, s)
+          inside the box across the system fonts this site falls back through */}
+      <p className="flex justify-center text-[clamp(4.5rem,19.5vw,18rem)] font-extrabold leading-[0.9] tracking-tighter">
+        {WORDMARK.map((item, index) => (
+          <WordmarkLetter
+            key={index}
+            letter={item.letter}
+            tone={item.tone}
+            index={index}
+            progress={progress}
+            reduceMotion={reduceMotion}
+          />
+        ))}
+      </p>
+    </div>
+  );
+}
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -19,7 +73,7 @@ export default function Footer() {
 
   return (
     <footer className="relative">
-      <CurveDivider />
+      <WaveDivider />
 
       <div className="relative overflow-hidden bg-linear-to-b from-navy-950 via-navy-900 to-navy-950 text-navy-100">
         <Particles />
@@ -151,6 +205,8 @@ export default function Footer() {
             </p>
           </div>
         </div>
+
+        <FooterWordmark />
       </div>
     </footer>
   );

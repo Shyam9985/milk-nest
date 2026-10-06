@@ -19,6 +19,7 @@ export default function TiltCard({
   className = "",
   intensity = 9,
   glow = true,
+  spotBorder = false,
   children,
   ...rest
 }) {
@@ -78,8 +79,19 @@ export default function TiltCard({
       whileHover={reduceMotion ? undefined : { y: -8, z: 40 }}
       transition={{ type: "spring", ...SPRING }}
       className={`group relative transform-3d overflow-hidden ${className}`}
+      data-spot={spotBorder ? "" : undefined}
       {...rest}
     >
+      {/* Edge light for a "spotlight grid": the grid that holds the cards writes the
+          pointer's position into --spot-x / --spot-y on every card (see WhyUs), so the
+          rims nearest the cursor light up together, across card boundaries. */}
+      {spotBorder && !reduceMotion ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(300px_circle_at_var(--spot-x,50%)_var(--spot-y,50%),var(--color-splash),transparent_70%)] p-[1.5px] opacity-0 transition-opacity duration-500 mask-ring group-hover/spot:opacity-100"
+        />
+      ) : null}
+
       {glow && !reduceMotion ? (
         <motion.span
           aria-hidden="true"

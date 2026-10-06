@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Theme } from "../contexts/ThemeContext";
 import { navItems } from "../data/content";
 import useActiveSection from "../hooks/useActiveSection";
+import { lockScroll, unlockScroll } from "../lib/smoothScroll";
 import BrandMark from "./ui/BrandMark";
 
 export default function Header() {
@@ -29,11 +30,14 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  /* Lock body scroll while the mobile drawer is open. */
+  /* Lock page scroll while the mobile drawer is open (the smooth scroller has to be told too). */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
+    if (menuOpen) lockScroll();
+    else unlockScroll();
     return () => {
       document.body.style.overflow = "";
+      unlockScroll();
     };
   }, [menuOpen]);
 
@@ -47,7 +51,12 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  const closeMenu = () => setMenuOpen(false);
+  /* Scrolling is released here, not only in the effect above: a menu link has to be able
+     to scroll to its section in the same click that closes the menu. */
+  const closeMenu = () => {
+    unlockScroll();
+    setMenuOpen(false);
+  };
 
   return (
     <motion.header

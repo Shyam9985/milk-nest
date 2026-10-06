@@ -98,7 +98,9 @@
   --animate-rise: rise 14s linear infinite;
   --animate-spin-slow: spin 26s linear infinite;
   --animate-sheen: sheen 5s ease-in-out infinite;
-  --animate-marquee: marquee 38s linear infinite;
+  --animate-wave: wave 24s linear infinite;
+  --animate-beam: spin 9s linear infinite;
+  --animate-kenburns: kenburns 22s ease-in-out infinite alternate;
 
   @keyframes float {
     0%,
@@ -186,10 +188,28 @@
     }
   }
 
-  @keyframes marquee {
+  /* Slides an element by half its own width: seamless for anything drawn twice. */
+  @keyframes wave {
     to {
       transform: translate3d(-50%, 0, 0);
     }
+  }
+
+  /* Very slow push-in on a photo. */
+  @keyframes kenburns {
+    from {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+    }
+  }
+}
+
+/* A line icon drawing its own strokes (see the icon-draw utility). */
+@keyframes icon-draw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -243,6 +263,13 @@
     /* Decorative blobs bleed past the viewport by design; never let them
        create horizontal scroll. */
     overflow-x: clip;
+  }
+
+  /* Smooth wheel scrolling (useSmoothScroll) moves the page a little every frame. The
+     browser's own smooth scrolling would animate each of those steps again, so it is
+     switched off while that is running. */
+  html.lenis {
+    scroll-behavior: auto;
   }
 
   body {
@@ -317,6 +344,43 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Shows an element only along its own edge: the visible ring is as wide as the
+   element's padding. Used for light that travels around a card or band. */
+@utility mask-ring {
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Makes the line icon inside draw its own strokes, once. Put it on the icon's wrapper
+   at the moment it should play. 100 is longer than any stroke in a 24px icon. */
+@utility icon-draw {
+  & :is(path, circle, rect, line, polyline, polygon, ellipse) {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: icon-draw 1.3s var(--ease-out-brand) 0.3s forwards;
+  }
+}
+
+/* ============================================================================
+   Theme switch — ThemeContext grows a circle over the new theme through the View
+   Transitions API, so the browser's default cross-fade between the two is turned
+   off, and nothing underneath runs its own colour fade while the circle spreads.
+   ============================================================================ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 /* ============================================================================

@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  AnimatePresence,
   motion,
   useMotionValue,
   useReducedMotion,
@@ -19,6 +20,7 @@ import {
 import heroImage from "../assets/dairy-hero.png";
 import { formatLitres, usePublicStats } from "../contexts/PublicStatsContext";
 import { trustBadges } from "../data/content";
+import useMediaQuery from "../hooks/useMediaQuery";
 import { GridOverlay, MeshBackdrop, Particles } from "./ui/Backdrop";
 import MagneticButton from "./ui/MagneticButton";
 
@@ -92,6 +94,34 @@ function Skeleton({ className = "" }) {
   );
 }
 
+/**
+ * A live figure. When a refresh brings a different value, the new one slides up into
+ * place, so a change on screen is noticed instead of silently swapped. The first value
+ * it is given just appears - there is nothing it changed from.
+ */
+function LiveValue({ value, children }) {
+  const reduceMotion = useReducedMotion();
+  const hasShownFirst = useRef(false);
+
+  useEffect(() => {
+    hasShownFirst.current = true;
+  }, []);
+
+  if (reduceMotion) return children;
+
+  return (
+    <motion.span
+      key={value}
+      initial={hasShownFirst.current ? { opacity: 0, y: 8, filter: "blur(4px)" } : false}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.6, ease: EASE }}
+      className="inline-block"
+    >
+      {children}
+    </motion.span>
+  );
+}
+
 const HEADLINE = [
   { text: "Run your dairy farm", gradient: false },
   { text: "with clarity,", gradient: true },
@@ -158,8 +188,12 @@ const PLACEHOLDER_BARS = [46, 62, 54, 74, 66, 84, 70];
 /**
  * Mini bar chart inside the floating dashboard card: litres recorded per day, one bar
  * per day of `trend` ([{ date: "YYYY-MM-DD", total }]). The best day is highlighted.
+ * Pointing at (or tapping) a bar shows that day's figure and dims the others. That is
+ * a pointer-only extra: every value is already in the chart's text description.
  */
 function DashboardChart({ trend }) {
+  const [activeIndex, setActiveIndex] = useState(null);
+
   if (!trend?.length) {
     return (
       <div aria-hidden="true">
@@ -193,34 +227,120 @@ function DashboardChart({ trend }) {
       role="img"
       aria-label={`Milk recorded per day over the last ${trend.length} days: ${summary}`}
     >
-      <div className="flex h-14 items-end gap-1.5 sm:h-24 sm:gap-2">
-        {trend.map((point, index) => (
-          <motion.span
-            key={point.date}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ delay: 0.9 + index * 0.08, duration: 0.7, ease: EASE }}
-            /* a day with no entries still gets a sliver, so the week reads as seven days */
-            style={{ height: `${Math.max((point.total / max) * 100, 4)}%` }}
-            className={`flex-1 origin-bottom rounded-t-md transition-[height] duration-700 ${
-              index === peakIndex && point.total > 0
-                ? "bg-linear-to-t from-navy-600 to-splash"
-                : "bg-linear-to-t from-haze to-haze-soft"
-            }`}
-          />
-        ))}
+      <div
+        className="flex h-14 items-end gap-1.5 sm:h-24 sm:gap-2"
+        onPointerLeave={() => setActiveIndex(null)}
+      >
+        {trend.map((point, index) => {
+          /* a day with no entries still gets a sliver, so the week reads as seven days */
+          const height = Math.max((point.total / max) * 100, 4);
+          const dimmed = activeIndex !== null && activeIndex !== index;
+
+          return (
+            <div
+              key={point.date}
+              className="relative flex h-full flex-1 items-end"
+              onPointerEnter={() => setActiveIndex(index)}
+              onPointerDown={() => setActiveIndex(index)}
+            >
+              <AnimatePresence>
+                {activeIndex === index ? (
+                  <motion.span
+                    initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                    transition={{ duration: 0.18 }}
+                    /* just above the bar, but never outside the chart area */
+                    style={{ bottom: `min(calc(${height}% + 4px), calc(100% - 18px))` }}
+                    className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 text-[10px] font-bold leading-tight text-page shadow-lg"
+                  >
+                    {formatLitres(point.total)} L
+                  </motion.span>
+                ) : null}
+              </AnimatePresence>
+              <motion.span
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 1.4 + index * 0.08, duration: 0.7, ease: EASE }}
+                style={{ height: `${height}%` }}
+                className={`w-full origin-bottom rounded-t-md transition-[height,opacity] duration-500 ${
+                  index === peakIndex && point.total > 0
+                    ? "bg-linear-to-t from-navy-600 to-splash"
+                    : "bg-linear-to-t from-haze to-haze-soft"
+                } ${dimmed ? "opacity-40" : ""}`}
+              />
+            </div>
+          );
+        })}
       </div>
       <div className="mt-1.5 flex gap-1.5 sm:gap-2">
-        {trend.map((point) => (
+        {trend.map((point, index) => (
           <span
             key={point.date}
-            className="flex-1 text-center text-[9px] font-semibold text-muted sm:text-[10px]"
+            className={`flex-1 text-center text-[9px] font-semibold transition-colors duration-300 sm:text-[10px] ${
+              activeIndex === index ? "text-ink" : "text-muted"
+            }`}
           >
             {weekdayOf(point.date)}
           </span>
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * One glass card floating in front of the hero photo, `depth` pixels towards the viewer.
+ * Because the scene is real 3D, tilting it makes nearer cards travel further - the
+ * parallax comes from the geometry, not from extra code.
+ *
+ * It is three nested elements, since three things move the card and each needs a
+ * transform of its own: the depth (outer), the entrance (middle) and the endless CSS
+ * float (the card - a running CSS animation would override an inline transform there).
+ *
+ * Two details keep the card's backdrop blur alive, and both matter:
+ *   - every wrapper is `transform-3d`. A wrapper that flattens its children puts the
+ *     card on a private surface with nothing behind it, so there is nothing to blur.
+ *   - the fade-in sits on the card, not on a wrapper. Opacity below 1 forces an element
+ *     to flatten its children, which would switch the blur off for the whole fade.
+ */
+function Floating({
+  depth,
+  delay,
+  from = { y: 30, scale: 0.92 },
+  reduceMotion,
+  className = "",
+  cardClassName,
+  children,
+}) {
+  if (reduceMotion) {
+    return (
+      <div className={className}>
+        <div className={cardClassName}>{children}</div>
+      </div>
+    );
+  }
+
+  const timing = { duration: 0.85, delay, ease: EASE };
+
+  return (
+    <motion.div style={{ translateZ: depth }} className={`transform-3d ${className}`}>
+      <motion.div
+        initial={from}
+        animate={{ y: 0, scale: 1 }}
+        transition={timing}
+        className="transform-3d"
+      >
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={timing}
+          className={cardClassName}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -237,8 +357,6 @@ function HeroScene() {
 
   const rotateY = useTransform(pointerX, [-0.5, 0.5], [-7, 7]);
   const rotateX = useTransform(pointerY, [-0.5, 0.5], [5, -5]);
-  const shiftNear = useTransform(pointerX, [-0.5, 0.5], [14, -14]);
-  const shiftFar = useTransform(pointerX, [-0.5, 0.5], [-10, 10]);
 
   const handlePointerMove = (event) => {
     if (reduceMotion || event.pointerType === "touch" || !sceneRef.current) return;
@@ -267,17 +385,25 @@ function HeroScene() {
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 40, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 1, delay: 0.35, ease: EASE }}
+          transition={{ duration: 1, delay: 0.3, ease: EASE }}
           className="relative overflow-hidden rounded-3xl shadow-lift ring-1 ring-ink/10"
         >
-          <img
-            src={heroImage}
-            alt="Farmer carrying milk cans through a modern dairy cattle shed at sunrise"
-            width="1823"
-            height="863"
-            fetchPriority="high"
-            className="aspect-[16/10] w-full object-cover"
-          />
+          {/* The photo settles back from a close crop as the curtain lifts, then keeps
+              pushing in very slowly. Two elements because each one owns a transform. */}
+          <motion.div
+            initial={reduceMotion ? false : { scale: 1.3 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 2, delay: 0.5, ease: EASE }}
+          >
+            <img
+              src={heroImage}
+              alt="Farmer carrying milk cans through a modern dairy cattle shed at sunrise"
+              width="1823"
+              height="863"
+              fetchPriority="high"
+              className="aspect-[16/10] w-full animate-kenburns object-cover"
+            />
+          </motion.div>
           <div aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-navy-950/45 via-transparent to-transparent" />
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 animate-sheen bg-linear-to-r from-transparent via-white/10 to-transparent" />
 
@@ -294,6 +420,17 @@ function HeroScene() {
             </span>
             {badge.label}
           </div>
+
+          {/* Curtain in the brand gradient that lifts off the photo on load */}
+          {reduceMotion ? null : (
+            <motion.div
+              aria-hidden="true"
+              initial={{ scaleY: 1 }}
+              animate={{ scaleY: 0 }}
+              transition={{ duration: 1.15, delay: 0.5, ease: [0.76, 0, 0.24, 1] }}
+              className="absolute inset-0 origin-top bg-linear-to-br from-navy-800 via-navy-600 to-splash"
+            />
+          )}
         </motion.div>
 
         {/* Animated connection lines between the photo and floating cards */}
@@ -331,12 +468,12 @@ function HeroScene() {
         </svg>
 
         {/* Floating analytics dashboard */}
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 34 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.7, ease: EASE }}
-          style={reduceMotion ? undefined : { x: shiftNear, translateZ: 70 }}
-          className="absolute -bottom-12 -left-1 w-52 animate-float rounded-2xl border border-edge/70 bg-surface/85 p-3.5 shadow-glass backdrop-blur-xl sm:-bottom-10 sm:-left-8 sm:w-72 sm:p-4"
+        <Floating
+          depth={70}
+          delay={1.1}
+          reduceMotion={reduceMotion}
+          className="absolute -bottom-12 -left-1 w-52 sm:-bottom-10 sm:-left-8 sm:w-72"
+          cardClassName="animate-float rounded-2xl border border-edge/70 bg-surface/85 p-3.5 shadow-glass backdrop-blur-xl sm:p-4"
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
@@ -345,7 +482,7 @@ function HeroScene() {
               </p>
               <p className="text-lg font-extrabold text-ink">
                 {stats ? (
-                  `${formatLitres(stats.milk_week)} L`
+                  <LiveValue value={stats.milk_week}>{formatLitres(stats.milk_week)} L</LiveValue>
                 ) : status === "loading" ? (
                   <Skeleton className="h-5 w-20" />
                 ) : (
@@ -358,20 +495,21 @@ function HeroScene() {
             </span>
           </div>
           <DashboardChart trend={stats?.trend} />
-        </motion.div>
+        </Floating>
 
-        {/* Floating highlight cards */}
-        <div className="absolute -right-1 -top-5 flex w-44 flex-col gap-2 sm:-right-6 sm:-top-8 sm:w-56 sm:gap-2.5">
+        {/* Floating highlight cards, each a little further back than the one above it.
+            The column is transform-3d too, or it would flatten the cards inside it. */}
+        <div className="absolute -right-1 -top-5 flex w-44 flex-col gap-2 transform-3d sm:-right-6 sm:-top-8 sm:w-56 sm:gap-2.5">
           {highlights.map((note, index) => (
-            <motion.div
+            <Floating
               key={note.title}
-              initial={reduceMotion ? false : { opacity: 0, x: 36 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.9 + index * 0.18, ease: EASE }}
-              style={reduceMotion ? undefined : { x: shiftFar, translateZ: 50 - index * 15 }}
-              className={`flex items-center gap-2.5 rounded-xl border border-edge/70 bg-surface/85 p-2.5 shadow-glass backdrop-blur-xl ${
+              depth={50 - index * 15}
+              delay={1.3 + index * 0.18}
+              reduceMotion={reduceMotion}
+              className={index === 2 ? "hidden sm:block" : ""}
+              cardClassName={`flex items-center gap-2.5 rounded-xl border border-edge/70 bg-surface/85 p-2.5 shadow-glass backdrop-blur-xl ${
                 index === 1 ? "animate-float-delayed" : "animate-float-slow"
-              } ${index === 2 ? "hidden sm:flex" : ""}`}
+              }`}
             >
               <span className={`grid size-8 shrink-0 place-items-center rounded-lg ${toneStyles[note.tone]}`}>
                 <note.icon className="size-4" />
@@ -379,24 +517,30 @@ function HeroScene() {
               <span className="min-w-0">
                 <span className="block truncate text-xs font-bold text-ink">{note.title}</span>
                 <span className="block truncate text-[11px] font-medium text-muted">
-                  {note.meta ??
-                    (status === "loading" ? <Skeleton className="h-3 w-20" /> : "Unavailable right now")}
+                  {note.meta ? (
+                    <LiveValue value={note.meta}>{note.meta}</LiveValue>
+                  ) : status === "loading" ? (
+                    <Skeleton className="h-3 w-20" />
+                  ) : (
+                    "Unavailable right now"
+                  )}
                 </span>
               </span>
-            </motion.div>
+            </Floating>
           ))}
         </div>
 
-        {/* Droplet accent */}
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 1.5, ease: EASE }}
-          style={reduceMotion ? undefined : { translateZ: 90 }}
-          className="absolute -left-4 top-8 hidden animate-float-delayed rounded-2xl border border-edge/70 bg-surface/85 p-3 shadow-glass backdrop-blur-xl sm:block"
+        {/* Droplet accent - the nearest layer */}
+        <Floating
+          depth={90}
+          delay={1.7}
+          from={{ scale: 0 }}
+          reduceMotion={reduceMotion}
+          className="absolute -left-4 top-8 hidden sm:block"
+          cardClassName="animate-float-delayed rounded-2xl border border-edge/70 bg-surface/85 p-3 shadow-glass backdrop-blur-xl"
         >
           <Droplets className="size-6 text-splash" />
-        </motion.div>
+        </Floating>
       </motion.div>
     </div>
   );
@@ -412,6 +556,15 @@ export default function Hero() {
   });
   const sceneY = useTransform(scrollYProgress, [0, 1], [0, 90]);
   const copyY = useTransform(scrollYProgress, [0, 1], [0, 45]);
+
+  /* Depth on the way out. On wide screens the hero is the whole first view, so as the
+     page scrolls on the scene shrinks back and both columns fade. Stacked on smaller
+     screens the copy is still being read at that point, so there only the gentle
+     parallax above applies. */
+  const wide = useMediaQuery("(min-width: 1024px)");
+  const sceneScale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
+  const sceneOpacity = useTransform(scrollYProgress, [0.15, 0.9], [1, 0.3]);
+  const copyOpacity = useTransform(scrollYProgress, [0.15, 0.8], [1, 0.15]);
 
   return (
     <section
@@ -435,7 +588,7 @@ export default function Hero() {
           variants={stagger}
           initial={reduceMotion ? false : "hidden"}
           animate="show"
-          style={reduceMotion ? undefined : { y: copyY }}
+          style={reduceMotion ? undefined : { y: copyY, opacity: wide ? copyOpacity : 1 }}
           className="order-2 text-center lg:order-1 lg:text-left"
         >
           <motion.p
@@ -497,7 +650,11 @@ export default function Hero() {
 
         {/* 3D scene — first on mobile per the wireframe plan */}
         <motion.div
-          style={reduceMotion ? undefined : { y: sceneY }}
+          style={
+            reduceMotion
+              ? undefined
+              : { y: sceneY, scale: wide ? sceneScale : 1, opacity: wide ? sceneOpacity : 1 }
+          }
           className="order-1 px-2 pb-8 pt-6 sm:px-6 sm:pb-6 lg:order-2 lg:px-0 lg:py-0"
         >
           <HeroScene />
