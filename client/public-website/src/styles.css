@@ -1,11 +1,23 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the `dark` class that ThemeContext puts on <html>, not the
+   operating system setting directly - the visitor's own choice has to win. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================================
    Milk Nest — design tokens
 
    The palette is taken from the Milk Nest logo: deep navy, fresh grass green,
    milk white, and the light "milk splash" blue. Everything else in the site is
    composed from Tailwind utilities — there are no component classes here.
+
+   Two kinds of colour live below:
+     - the BRAND scales (navy-*, grass-*) are fixed. Use them for things that look
+       the same in both themes: gradient buttons, icon tiles, the footer.
+     - the THEME tokens (page, surface, ink, muted, line, edge, haze) describe a
+       role, not a colour. Their light values are set here and their dark values
+       in the `.dark` block further down, so a component written with them never
+       has to know which theme is on.
    ============================================================================ */
 
 @theme {
@@ -40,17 +52,32 @@
   --color-grass-800: #274d1e;
   --color-grass-900: #1c3a17;
 
-  /* --- Surfaces & accents ------------------------------------------------ */
+  /* --- Accents ----------------------------------------------------------- */
   --color-milk: #fbfcfe;
   --color-cream: #fff8ea;
   --color-splash: #4f8fd1;
-  --color-ink: #0f2247;
-  --color-muted: #5a6b86;
+
+  /* --- Theme tokens (light values; dark values are in `.dark` below) ------ */
+  --color-page: #fbfcfe; /* the page itself */
+  --color-surface: #ffffff; /* glass cards, inputs, pills - usually with an alpha */
+  --color-surface-soft: #eff4fc; /* chips and hover fills */
+  --color-surface-strong: #dbe6f7; /* a chip that needs to stand out more */
+  --color-ink: #0f2247; /* headings and strong text */
+  --color-ink-soft: #16305e; /* secondary strong text, icons */
+  --color-muted: #5a6b86; /* body copy and captions */
+  --color-line: #dbe6f7; /* borders */
+  --color-line-strong: #bcd0ee; /* borders that need more presence */
+  --color-edge: #ffffff; /* the bright rim of a glass card */
+  --color-haze-soft: #dbe6f7; /* decorative blurs and fills, lightest... */
+  --color-haze: #bcd0ee;
+  --color-haze-strong: #8fafe0; /* ...to strongest */
 
   /* --- Elevation --------------------------------------------------------- */
-  --shadow-glass: 0 1px 0 rgb(255 255 255 / 0.7) inset,
-    0 20px 45px -20px rgb(15 34 71 / 0.28);
-  --shadow-lift: 0 32px 70px -28px rgb(15 34 71 / 0.42);
+  /* The colours come from plain variables (see :root / .dark) so the same
+     shadow utilities work in both themes. */
+  --shadow-glass: 0 1px 0 var(--glass-highlight) inset,
+    0 20px 45px -20px var(--shadow-tint);
+  --shadow-lift: 0 32px 70px -28px var(--shadow-tint-strong);
   --shadow-glow-grass: 0 18px 45px -18px rgb(78 154 52 / 0.55);
   --shadow-glow-navy: 0 18px 45px -18px rgb(29 60 123 / 0.55);
 
@@ -71,7 +98,9 @@
   --animate-rise: rise 14s linear infinite;
   --animate-spin-slow: spin 26s linear infinite;
   --animate-sheen: sheen 5s ease-in-out infinite;
-  --animate-marquee: marquee 38s linear infinite;
+  --animate-wave: wave 24s linear infinite;
+  --animate-beam: spin 9s linear infinite;
+  --animate-kenburns: kenburns 22s ease-in-out infinite alternate;
 
   @keyframes float {
     0%,
@@ -159,10 +188,28 @@
     }
   }
 
-  @keyframes marquee {
+  /* Slides an element by half its own width: seamless for anything drawn twice. */
+  @keyframes wave {
     to {
       transform: translate3d(-50%, 0, 0);
     }
+  }
+
+  /* Very slow push-in on a photo. */
+  @keyframes kenburns {
+    from {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+    }
+  }
+}
+
+/* A line icon drawing its own strokes (see the icon-draw utility). */
+@keyframes icon-draw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -171,6 +218,43 @@
    ============================================================================ */
 
 @layer base {
+  /* Values that are not Tailwind colours (they carry their own alpha) but still
+     change with the theme. */
+  :root {
+    color-scheme: light;
+    --glass-highlight: rgb(255 255 255 / 0.7);
+    --shadow-tint: rgb(15 34 71 / 0.28);
+    --shadow-tint-strong: rgb(15 34 71 / 0.42);
+    --grid-line: rgb(15 34 71 / 0.05);
+  }
+
+  /* Dark theme: the same tokens, re-pointed. Nothing else in the site needs to
+     change for a component that is built from them. */
+  .dark {
+    color-scheme: dark;
+
+    --color-splash: #6ea8e6;
+
+    --color-page: #060d1f;
+    --color-surface: #101d3a;
+    --color-surface-soft: #172a52;
+    --color-surface-strong: #20386b;
+    --color-ink: #eef3fc;
+    --color-ink-soft: #cddaf3;
+    --color-muted: #9bafd0;
+    --color-line: #213560;
+    --color-line-strong: #2f4a82;
+    --color-edge: #33508a;
+    --color-haze-soft: #14284f;
+    --color-haze: #1d3c7b;
+    --color-haze-strong: #274c98;
+
+    --glass-highlight: rgb(255 255 255 / 0.06);
+    --shadow-tint: rgb(0 0 0 / 0.5);
+    --shadow-tint-strong: rgb(0 0 0 / 0.65);
+    --grid-line: rgb(143 175 224 / 0.07);
+  }
+
   html {
     scroll-behavior: smooth;
     /* Keep anchored sections clear of the floating header. */
@@ -181,19 +265,27 @@
     overflow-x: clip;
   }
 
+  /* Smooth wheel scrolling (useSmoothScroll) moves the page a little every frame. The
+     browser's own smooth scrolling would animate each of those steps again, so it is
+     switched off while that is running. */
+  html.lenis {
+    scroll-behavior: auto;
+  }
+
   body {
     min-width: 20rem;
-    background-color: var(--color-milk);
+    background-color: var(--color-page);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   ::selection {
-    background-color: var(--color-navy-200);
-    color: var(--color-navy-900);
+    background-color: var(--color-haze);
+    color: var(--color-ink);
   }
 
   :focus-visible {
@@ -206,7 +298,7 @@
   h1,
   h2,
   h3 {
-    color: var(--color-navy-900);
+    color: var(--color-ink);
     text-wrap: balance;
     letter-spacing: -0.025em;
     font-weight: 800;
@@ -252,6 +344,43 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Shows an element only along its own edge: the visible ring is as wide as the
+   element's padding. Used for light that travels around a card or band. */
+@utility mask-ring {
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Makes the line icon inside draw its own strokes, once. Put it on the icon's wrapper
+   at the moment it should play. 100 is longer than any stroke in a 24px icon. */
+@utility icon-draw {
+  & :is(path, circle, rect, line, polyline, polygon, ellipse) {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: icon-draw 1.3s var(--ease-out-brand) 0.3s forwards;
+  }
+}
+
+/* ============================================================================
+   Theme switch — ThemeContext grows a circle over the new theme through the View
+   Transitions API, so the browser's default cross-fade between the two is turned
+   off, and nothing underneath runs its own colour fade while the circle spreads.
+   ============================================================================ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 /* ============================================================================

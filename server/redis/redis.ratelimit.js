@@ -1,6 +1,6 @@
 const { redisClient } = require("./redis.client");
 
-const RATE_LIMIT_TTL = 2 * 60; // 30 minutes
+const RATE_LIMIT_TTL = 30 * 60; // 30 minutes
 
 const tokenBucketScript = `
 local key = KEYS[1]

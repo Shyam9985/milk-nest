@@ -70,7 +70,10 @@ app.use(
 );
 
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000',];
+// the admin portal's origins are fixed; the public website's come from .env (comma separated)
+// so each environment can name its own without a code change
+const publicSiteOrigins = (process.env.PUBLIC_SITE_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000', ...publicSiteOrigins];
 // cors setup
 const corsOptions = {
     origin: (origin, callback) => {

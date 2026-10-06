@@ -23,7 +23,8 @@ export default function BrandMark({
 
   return (
     <span className={`flex items-center gap-2.5 ${className}`}>
-      <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white ring-1 ring-navy-900/10 shadow-sm transition-transform duration-500 group-hover:scale-105">
+      {/* The emblem is drawn for a white ground, so its tile stays white in both themes. */}
+      <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white ring-1 ring-ink/10 shadow-sm transition-transform duration-500 group-hover:scale-105">
         <img
           src={logoImage}
           alt=""
@@ -35,8 +36,10 @@ export default function BrandMark({
 
       {showWordmark ? (
         <span className="text-[1.35rem] leading-none font-extrabold tracking-tight">
-          <span className={tone === "dark" ? "text-white" : "text-navy-800"}>Milk</span>
-          <span className={tone === "dark" ? "text-grass-400" : "text-grass-500"}>nest</span>
+          <span className={tone === "dark" ? "text-white" : "text-ink-soft"}>Milk</span>
+          <span className={tone === "dark" ? "text-grass-400" : "text-grass-500 dark:text-grass-400"}>
+            nest
+          </span>
         </span>
       ) : null}
     </span>
