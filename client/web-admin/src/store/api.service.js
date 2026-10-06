@@ -1,32 +1,134 @@
 import axios from "./interceptor";
+import crypto from "crypto-js";
+
+// pendingRequests map 
+const pendingRequests = new Map();
+
+// request id generator function for repventing duplicates 
+function generateRequestId({ method, path, params, payload }) {
+    let id = null;
+    const text = method + path + JSON.stringify(params) + JSON.stringify(payload);
+    id = crypto.SHA256(text).toString(crypto.enc.Hex);
+    console.log(path, ':', params, ':', payload, ':', id);
+    return id;
+}
+
+// insert pending request to the map
+function upsertPendingRequest(requestId, promise) {
+    pendingRequests.set(requestId, promise);
+}
+
+// remove pending request from the map
+function removePendingRequest(requestId) {
+    pendingRequests.delete(requestId);
+}
+
+// check if already request processing
+function checkIfRequestExists(requestId) {
+    return pendingRequests.has(requestId);
+}
+
+// get the request promise
+function getExistingRequestPromise(requestId) {
+    return pendingRequests.get(requestId);
+}
 
 export async function get(relativeUrl, queryParams = {}) {
-    const response = await axios.get(relativeUrl, {
+    const requestId = generateRequestId({ method: 'GET', path: relativeUrl, params: queryParams, payload: '' });
+
+    // validate request
+    if (checkIfRequestExists(requestId)) {
+        console.log('using existing promise:', requestId);
+        return getExistingRequestPromise(requestId);
+    }
+
+    // ceate new axios promise 
+    const requestPromise = axios.get(relativeUrl, {
         params: {
             ...queryParams
         }
     });
 
-    return response;
+    // add pending request into map 
+    upsertPendingRequest(requestId, requestPromise);
+
+    // wait for the response 
+    try {
+        return await requestPromise;
+    } finally {
+        removePendingRequest(requestId);
+    }
 }
 
 export async function post(relativeUrl, payload) {
-    const response = await axios.post(relativeUrl, payload);
-    return response;
+   const requestId = generateRequestId({ method: 'POST', path: relativeUrl, params: '', payload: payload });
+
+    // validate request
+    if (checkIfRequestExists(requestId)) {
+        console.log('using existing promise:', requestId);
+        return getExistingRequestPromise(requestId);
+    }
+    // ceate new axios promise 
+    const requestPromise = axios.post(relativeUrl, payload);
+
+    // add pending request into map 
+    upsertPendingRequest(requestId, requestPromise);
+
+    // wait for the response 
+    try {
+        return await requestPromise;
+    } finally {
+        removePendingRequest(requestId);
+    }
 }
 
 export async function put(relativeUrl, payload) {
-    const response = await axios.put(relativeUrl, payload);
-    return response;
+    const requestId = generateRequestId({ method: 'PUT', path: relativeUrl, params: '', payload: payload });
+
+    // validate request
+    if (checkIfRequestExists(requestId)) {
+        console.log('using existing promise:', requestId);
+        return getExistingRequestPromise(requestId);
+    }
+    // ceate new axios promise 
+    const requestPromise = axios.put(relativeUrl, payload);
+
+    // add pending request into map 
+    upsertPendingRequest(requestId, requestPromise);
+
+    // wait for the response 
+    try {
+        return await requestPromise;
+    } finally {
+        removePendingRequest(requestId);
+    }
 }
 
 export async function remove(relativeUrl, queryParams = {}) {
-    const response = await axios.delete(relativeUrl, {
+   const requestId = generateRequestId({ method: 'DELETE', path: relativeUrl, params: queryParams, payload: '' });
+
+    // validate request
+    if (checkIfRequestExists(requestId)) {
+        console.log('using existing promise:', requestId);
+        return getExistingRequestPromise(requestId);
+    }
+
+    // ceate new axios promise 
+    const requestPromise = axios.delete(relativeUrl, {
         params: {
             ...queryParams
         }
     });
-    return response;
+
+    // add pending request into map 
+    upsertPendingRequest(requestId, requestPromise);
+
+    // wait for the response 
+    try {
+        return await requestPromise;
+    } finally {
+        removePendingRequest(requestId);
+    }
 }
 
 // raw-body upload: the payload rides as-is (e.g. a File/Blob), with per-request headers.
