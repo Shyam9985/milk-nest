@@ -6,11 +6,8 @@ const pendingRequests = new Map();
 
 // request id generator function for repventing duplicates 
 function generateRequestId({ method, path, params, payload }) {
-    let id = null;
     const text = method + path + JSON.stringify(params) + JSON.stringify(payload);
-    id = crypto.SHA256(text).toString(crypto.enc.Hex);
-    console.log(path, ':', params, ':', payload, ':', id);
-    return id;
+    return crypto.SHA256(text).toString(crypto.enc.Hex);
 }
 
 // insert pending request to the map
