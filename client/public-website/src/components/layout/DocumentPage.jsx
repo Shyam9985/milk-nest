@@ -18,18 +18,36 @@ import Reveal from "../ui/Reveal";
  * Text between backticks is set as code.
  */
 
-/* Text between backticks becomes <code>: enough inline markup for storage keys and
-   paths without pulling in a markdown parser. */
+/* Two bits of inline markup, enough for these documents without a markdown parser:
+   text between backticks becomes <code>, and [label](/path) becomes a link - an in-app
+   Link for the site's own paths, a plain anchor for anything else. */
+const LINK_CLASS =
+  "font-semibold text-ink underline decoration-splash/50 underline-offset-4 transition-colors hover:decoration-splash";
+
 const renderInline = (text) =>
-  text.split(/(`[^`]+`)/).map((part, index) =>
-    part.length > 2 && part.startsWith("`") && part.endsWith("`") ? (
-      <code key={index} className="rounded-md bg-surface-soft px-1.5 py-0.5 font-mono text-[0.88em] text-ink-soft">
-        {part.slice(1, -1)}
-      </code>
-    ) : (
-      <Fragment key={index}>{part}</Fragment>
-    )
-  );
+  text.split(/(`[^`]+`|\[[^\]]+\]\([^)\s]+\))/).map((part, index) => {
+    if (part.length > 2 && part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code key={index} className="rounded-md bg-surface-soft px-1.5 py-0.5 font-mono text-[0.88em] text-ink-soft">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    const link = part.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
+    if (link) {
+      const [, label, href] = link;
+      return href.startsWith("/") ? (
+        <Link key={index} to={href} className={LINK_CLASS}>
+          {label}
+        </Link>
+      ) : (
+        <a key={index} href={href} className={LINK_CLASS}>
+          {label}
+        </a>
+      );
+    }
+    return <Fragment key={index}>{part}</Fragment>;
+  });
 
 /** The live contact details, so a document never hard-codes an address that may change per deployment. */
 function ContactBlock() {

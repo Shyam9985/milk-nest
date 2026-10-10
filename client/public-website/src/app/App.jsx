@@ -30,6 +30,7 @@ const PAGES = {
   "/": HomePage,
   "/privacy": lazyPage("../pages/legal/PrivacyPolicyPage.jsx"),
   "/terms": lazyPage("../pages/legal/TermsPage.jsx"),
+  "/application-privacy": lazyPage("../pages/legal/ApplicationPrivacyPage.jsx"),
 };
 const NotFoundPage = lazyPage("../pages/NotFoundPage.jsx") ?? MissingPage;
 

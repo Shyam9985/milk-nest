@@ -18,6 +18,11 @@ export const routes = {
     description:
       "The terms and conditions for using the Milk Nest public website: enquiries, live figures, intellectual property, liability and governing law.",
   },
+  "/application-privacy": {
+    title: "Application Privacy Notice | Milk Nest",
+    description:
+      "How the Milk Nest application handles the accounts of the people who use it and the farm records their business enters.",
+  },
 };
 
 export const notFoundRoute = {
