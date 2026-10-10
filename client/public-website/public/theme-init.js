@@ -1,7 +1,7 @@
 /*
  * Applies the visitor's saved preferences to <html> before the app bundle loads, so
  * the page never flashes the defaults on its way to their choice:
- *   - theme: the one they picked last time, otherwise the operating system's setting
+ *   - theme: dark by default; light only when the visitor picked it last time
  *   - font size: the scale they picked last time (1 = default)
  *
  * ThemeProvider and PreferencesProvider read the result back and take over from
@@ -19,15 +19,10 @@
     }
   };
 
-  /* --- theme --- */
-  var theme = read("milk-nest-theme");
-  if (theme !== "light" && theme !== "dark") {
-    theme =
-      window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+  /* --- theme (dark unless light was chosen) --- */
+  if (read("milk-nest-theme") !== "light") {
+    document.documentElement.classList.add("dark");
   }
-  if (theme === "dark") document.documentElement.classList.add("dark");
 
   /* --- font size --- */
   var scale = parseFloat(read("milk-nest-font-scale"));

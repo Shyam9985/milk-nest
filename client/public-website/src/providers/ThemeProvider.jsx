@@ -8,10 +8,10 @@ import { storage } from "../lib/storage";
  * colour tokens under that class (styles/themes.css).
  *
  * Three additions over the portal's version:
- *   - the choice is remembered in localStorage, so it survives a reload
- *   - a visitor who has never chosen gets their operating system's setting
+ *   - dark is the default; the choice is remembered in localStorage, so it survives
+ *     a reload
  *   - the switch is animated: the new theme spreads out from the button (chooseTheme)
- * public/theme-init.js applies the same rules before React loads, so the first paint is
+ * public/theme-init.js applies the same rule before React loads, so the first paint is
  * already in the right theme. Keep STORAGE_KEY in sync with that file.
  *
  * The switch control itself is components/ui/ThemeSwitch.jsx.
@@ -23,15 +23,10 @@ const STORAGE_KEY = "milk-nest-theme";
 const THEME_COLOR = { light: "#0f2247", dark: "#060d1f" };
 
 const ThemeContext = createContext({
-  theme: "light",
+  theme: "dark",
   setLightTheme: () => {},
   setDarkTheme: () => {},
 });
-
-const readSavedTheme = () => {
-  const saved = storage.get(STORAGE_KEY);
-  return saved === "light" || saved === "dark" ? saved : null;
-};
 
 const applyTheme = (theme) => {
   document.documentElement.classList.toggle("dark", theme === "dark");
@@ -49,16 +44,6 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
-
-  /* Until the visitor picks a theme themselves, keep following the operating system. */
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = (event) => {
-      if (!readSavedTheme()) setTheme(event.matches ? "dark" : "light");
-    };
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
 
   /*
    * The visitor picks a theme. Where the browser has the View Transitions API, the new

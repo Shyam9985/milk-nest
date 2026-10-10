@@ -72,8 +72,8 @@ under `.dark [data-tone]`.
 
 ## Visitor preferences
 
-- **Theme** — `ThemeProvider`. A `dark` class on `<html>`, remembered in localStorage
-  (`milk-nest-theme`); first-time visitors follow their operating system. The switch
+- **Theme** — `ThemeProvider`. Dark by default; a `dark` class on `<html>`, and the
+  visitor's choice is remembered in localStorage (`milk-nest-theme`). The switch
   animates with the View Transitions API where available.
 - **Text size** — `PreferencesProvider`. Puts `--font-scale` on `<html>`; `base.css`
   multiplies the root font size by it, so every rem-based size on the site scales
