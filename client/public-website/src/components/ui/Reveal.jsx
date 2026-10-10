@@ -2,13 +2,11 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const offsets = {
   up: { y: 32 },
-  down: { y: -28 },
   left: { x: 44 },
   right: { x: -44 },
   scale: { scale: 0.92 },
   /* tipped back and rising, like a card being stood up on its bottom edge */
   flip: { y: 56, rotateX: -34, scale: 0.95 },
-  none: {},
 };
 
 /* rotateX only reads as depth with a perspective; the hinge is the bottom edge. */

@@ -18,7 +18,6 @@ const SPRING = { stiffness: 220, damping: 22, mass: 0.6 };
 export default function TiltCard({
   className = "",
   intensity = 9,
-  glow = true,
   spotBorder = false,
   children,
   ...rest
@@ -92,7 +91,7 @@ export default function TiltCard({
         />
       ) : null}
 
-      {glow && !reduceMotion ? (
+      {!reduceMotion ? (
         <motion.span
           aria-hidden="true"
           style={{ background: glowBackground }}

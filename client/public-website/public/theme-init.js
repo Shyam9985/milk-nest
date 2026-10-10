@@ -1,29 +1,38 @@
 /*
- * Puts the visitor's theme on <html> before the app bundle loads, so the page never
- * flashes the light theme on its way to the dark one.
+ * Applies the visitor's saved preferences to <html> before the app bundle loads, so
+ * the page never flashes the defaults on its way to their choice:
+ *   - theme: the one they picked last time, otherwise the operating system's setting
+ *   - font size: the scale they picked last time (1 = default)
  *
- * Order of preference: the theme they picked last time, otherwise their operating
- * system's setting. ThemeContext.jsx reads the result back and takes over from there -
- * keep the storage key below in sync with it.
+ * ThemeProvider and PreferencesProvider read the result back and take over from
+ * there - keep the storage keys and the allowed scales in sync with them.
  *
  * This is a file rather than an inline <script> on purpose: the site is served with a
  * content security policy of script-src 'self', which blocks inline scripts.
  */
 (function () {
-  var theme = null;
+  var read = function (key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (error) {
+      return null; /* storage blocked (private mode) - use the defaults */
+    }
+  };
 
-  try {
-    theme = window.localStorage.getItem("milk-nest-theme");
-  } catch (error) {
-    /* storage blocked (private mode) - fall through to the system setting */
-  }
-
+  /* --- theme --- */
+  var theme = read("milk-nest-theme");
   if (theme !== "light" && theme !== "dark") {
     theme =
       window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
   }
-
   if (theme === "dark") document.documentElement.classList.add("dark");
+
+  /* --- font size --- */
+  var scale = parseFloat(read("milk-nest-font-scale"));
+  var allowed = [0.875, 1, 1.125, 1.25];
+  if (allowed.indexOf(scale) !== -1 && scale !== 1) {
+    document.documentElement.style.setProperty("--font-scale", String(scale));
+  }
 })();

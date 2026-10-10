@@ -1,0 +1,100 @@
+/* ============================================================================
+   Animations — keyframes and the --animate-* utilities built on them
+
+   These are the endless, ambient loops (float, drift, pulse, wave). Anything that
+   reacts to the visitor - scroll, pointer, entrance - is done with framer-motion in
+   the components instead. Keyframes live inside @theme so Tailwind ships them with
+   the utility that uses them.
+   ============================================================================ */
+
+@theme {
+  --animate-float: float 7s var(--ease-out-brand) infinite;
+  --animate-float-slow: float 11s var(--ease-out-brand) infinite;
+  --animate-float-delayed: float 9s var(--ease-out-brand) 1.4s infinite;
+  --animate-drift: drift 22s ease-in-out infinite;
+  --animate-drift-slow: drift 34s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.8s var(--ease-out-brand) infinite;
+  --animate-rise: rise 14s linear infinite;
+  --animate-wave: wave 24s linear infinite;
+  --animate-beam: spin 9s linear infinite;
+  --animate-kenburns: kenburns 22s ease-in-out infinite alternate;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -14px, 0);
+    }
+  }
+
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    33% {
+      transform: translate3d(4%, -6%, 0) scale(1.08);
+    }
+    66% {
+      transform: translate3d(-5%, 4%, 0) scale(0.94);
+    }
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.85);
+      opacity: 0.7;
+    }
+    70% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+
+  @keyframes rise {
+    0% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translate3d(0, -220px, 0);
+      opacity: 0;
+    }
+  }
+
+  /* Slides an element by half its own width: seamless for anything drawn twice. */
+  @keyframes wave {
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  /* Very slow push-in on a photo. */
+  @keyframes kenburns {
+    from {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+    }
+  }
+}
+
+/* A line icon drawing its own strokes (see the icon-draw utility). */
+@keyframes icon-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

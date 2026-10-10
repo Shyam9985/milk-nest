@@ -1,0 +1,105 @@
+/* ============================================================================
+   Base — element defaults and visitor preferences
+   ============================================================================ */
+
+@layer base {
+  html {
+    /* The font-size preference (PreferencesProvider, theme-init.js) scales the
+       root size, and with it every rem-based token, utility and clamp() bound. */
+    font-size: calc(100% * var(--font-scale, 1));
+    scroll-behavior: smooth;
+    /* Keep anchored chapters clear of the floating header. */
+    scroll-padding-top: 0;
+    -webkit-tap-highlight-color: transparent;
+    /* Decorative blobs bleed past the viewport by design; never let them
+       create horizontal scroll. */
+    overflow-x: clip;
+  }
+
+  /* Smooth wheel scrolling (useSmoothScroll) moves the page a little every frame. The
+     browser's own smooth scrolling would animate each of those steps again, so it is
+     switched off while that is running. */
+  html.lenis {
+    scroll-behavior: auto;
+  }
+
+  body {
+    min-width: 20rem;
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  ::selection {
+    background-color: var(--color-haze);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-splash);
+    outline-offset: 3px;
+    border-radius: 0.35rem;
+  }
+
+  /* Headings: the display serif, in the current tone's ink. Sizes are set per use
+     with the text-display / text-headline / text-title utilities. */
+  h1,
+  h2,
+  h3 {
+    color: var(--color-ink);
+    text-wrap: balance;
+    font-weight: 400;
+    font-family: var(--font-display);
+  }
+
+  /* Small headings inside cards stay in the body face. */
+  h4,
+  h5,
+  h6 {
+    color: var(--color-ink);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ============================================================================
+   Theme switch — ThemeProvider grows a circle over the new theme through the View
+   Transitions API, so the browser's default cross-fade between the two is turned
+   off, and nothing underneath runs its own colour fade while the circle spreads.
+   ============================================================================ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+/* ============================================================================
+   Reduced motion — kill CSS-driven movement. Framer Motion animations are
+   disabled separately through its useReducedMotion() hook.
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

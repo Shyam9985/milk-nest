@@ -1,0 +1,33 @@
+/* ============================================================================
+   Utilities that Tailwind cannot express directly
+   ============================================================================ */
+
+/* Animated conic border used for the "glow border" card treatment. */
+@utility border-glow {
+  background-image: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0deg,
+    var(--color-splash) 70deg,
+    var(--color-navy-400) 150deg,
+    transparent 220deg,
+    transparent 360deg
+  );
+}
+
+/* Shows an element only along its own edge: the visible ring is as wide as the
+   element's padding. Used for light that travels around a card or band. */
+@utility mask-ring {
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Makes the line icon inside draw its own strokes, once. Put it on the icon's wrapper
+   at the moment it should play. 100 is longer than any stroke in a 24px icon. */
+@utility icon-draw {
+  & :is(path, circle, rect, line, polyline, polygon, ellipse) {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: icon-draw 1.3s var(--ease-out-brand) 0.3s forwards;
+  }
+}
