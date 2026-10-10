@@ -4,7 +4,9 @@ const { logBlock } = require("../utils/log.utils");
 let redisReady = false;
 
 const redisClient = createClient({
-    url: process.env.REDIS_URL || "redis://localhost:6379"
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+    username: process.env.REDIS_USERNAME || undefined,
+    password: process.env.REDIS_PASSWORD || undefined,
 });
 
 redisClient.on("error", (error) => {
