@@ -70,7 +70,10 @@ app.use(
 );
 
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000',];
+// the admin portal's origins are fixed; the public website's come from .env (comma separated)
+// so each environment can name its own without a code change
+const publicSiteOrigins = (process.env.PUBLIC_SITE_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000', ...publicSiteOrigins];
 // cors setup
 const corsOptions = {
     origin: (origin, callback) => {
@@ -101,7 +104,7 @@ app.use(logger);
 async function makeSureDbConnected() {
     try {
         const connection = await dbConfig.pool.getConnection();
-        console.log('Database connected successfully and ready to use!');
+        logBlock('[db] connection:', 'Database connected successfully and ready to use!');
         connection.release();
     } catch (error) {
         console.error('Database connection failed:', error);

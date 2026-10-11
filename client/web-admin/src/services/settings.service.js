@@ -398,63 +398,8 @@ export async function deleteMilkProduction(milkProductionId) {
 
 // ===================== CATTLE REGISTER =====================
 
-export async function getCattleList() {
-    try {
-        return await get('settings/master/cattle');
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function getCattleFormOptions() {
-    try {
-        return await get('settings/master/cattle/form-options');
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function getCattleBranchOptions(queryParams = {}) {
-    try {
-        return await get('settings/master/cattle/branch', queryParams);
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function getCattleBreedOptions(queryParams = {}) {
-    try {
-        return await get('settings/master/cattle/breed', queryParams);
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function createCattle(payload) {
-    try {
-        return await post('settings/master/cattle', payload);
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function updateCattle(cattleId, payload) {
-    try {
-        return await put(`settings/master/cattle/${cattleId}`, payload);
-    } catch (error) {
-        return error;
-    }
-}
-
-export async function deleteCattle(cattleId) {
-    try {
-        return await remove(`settings/master/cattle/${cattleId}`);
-    } catch (error) {
-        return error;
-    }
-}
-
-// ===================== CATTLE TYPES =====================
+// the cattle register moved to services/cattle.service.js - the animals are operational
+// data. cattle TYPE and BREED below remain settings masters.
 
 export async function getCattleTypeList() {
     try {
@@ -735,6 +680,74 @@ export async function updateUser(userId, payload) {
 export async function deleteUser(userId) {
     try {
         return await remove(`settings/security/user/${userId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== ILLNESS MASTER =====================
+
+export async function getIllnessList() {
+    try {
+        return await get('settings/master/illness');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createIllness(payload) {
+    try {
+        return await post('settings/master/illness', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updateIllness(illnessId, payload) {
+    try {
+        return await put(`settings/master/illness/${illnessId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deleteIllness(illnessId) {
+    try {
+        return await remove(`settings/master/illness/${illnessId}`);
+    } catch (error) {
+        return error;
+    }
+}
+
+// ===================== PURCHASE MODE MASTER =====================
+
+export async function getPurchaseModeList() {
+    try {
+        return await get('settings/master/purchase-mode');
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function createPurchaseMode(payload) {
+    try {
+        return await post('settings/master/purchase-mode', payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function updatePurchaseMode(purchaseModeId, payload) {
+    try {
+        return await put(`settings/master/purchase-mode/${purchaseModeId}`, payload);
+    } catch (error) {
+        return error;
+    }
+}
+
+export async function deletePurchaseMode(purchaseModeId) {
+    try {
+        return await remove(`settings/master/purchase-mode/${purchaseModeId}`);
     } catch (error) {
         return error;
     }

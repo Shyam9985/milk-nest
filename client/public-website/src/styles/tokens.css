@@ -1,0 +1,108 @@
+/* ============================================================================
+   Design tokens
+
+   Everything in this @theme block becomes a Tailwind utility (--color-ink ->
+   text-ink / bg-ink, --text-display -> text-display, --radius-card ->
+   rounded-card, and so on) AND a CSS variable, so the same value is available
+   to hand-written CSS.
+
+   Two kinds of colour live here:
+     - the BRAND scales (navy-*, grass-*) are fixed. Use them for things that
+       look the same everywhere: gradient buttons, icon tiles, the footer.
+     - the SEMANTIC tokens (page, surface, ink, muted, line, edge, haze...) name
+       a role, not a colour. Their light values are set here and re-pointed per
+       theme and per chapter tone in themes.css, so a component built from them
+       never has to know which theme or chapter it is in.
+
+   Sizes are in rem on purpose: the visitor's font-size preference scales the
+   root font size (base.css), and rem-based tokens follow it.
+   ============================================================================ */
+
+@theme {
+  /* --- Typography -------------------------------------------------------- */
+  /* Body: system fonts only (CSP font-src 'self'). Display: self-hosted serif. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+
+  /* Type scale. The clamp() middles are viewport-based so a headline fills a
+     phone and a monitor alike; the rem ends follow the font-size preference. */
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.18em;
+  --text-display: clamp(3.25rem, 10vw, 9.5rem);
+  --text-display--line-height: 0.92;
+  --text-display--letter-spacing: -0.02em;
+  --text-headline: clamp(2.5rem, 6.2vw, 5.75rem);
+  --text-headline--line-height: 0.98;
+  --text-headline--letter-spacing: -0.015em;
+  --text-title: clamp(1.5rem, 2.6vw, 2.25rem);
+  --text-title--line-height: 1.1;
+  --text-lead: clamp(1.0625rem, 1.3vw, 1.25rem);
+  --text-lead--line-height: 1.55;
+
+  /* --- Brand: navy ------------------------------------------------------- */
+  --color-navy-50: #eff4fc;
+  --color-navy-100: #dbe6f7;
+  --color-navy-200: #bcd0ee;
+  --color-navy-300: #8fafe0;
+  --color-navy-400: #5b85cd;
+  --color-navy-500: #3763b4;
+  --color-navy-600: #274c98;
+  --color-navy-700: #1d3c7b;
+  --color-navy-800: #16305e;
+  --color-navy-900: #0f2247;
+  --color-navy-950: #08152e;
+
+  /* --- Brand: grass ------------------------------------------------------ */
+  --color-grass-50: #f3fbec;
+  --color-grass-100: #e2f6d4;
+  --color-grass-200: #c6ecab;
+  --color-grass-300: #9bd97a;
+  --color-grass-400: #6dbe45;
+  --color-grass-500: #4e9a34;
+  --color-grass-600: #3c7c28;
+  --color-grass-700: #2f6122;
+  --color-grass-800: #274d1e;
+  --color-grass-900: #1c3a17;
+
+  /* --- Accents ----------------------------------------------------------- */
+  --color-dawn: #f6c177; /* warm paper: the sticky note in "The problem" */
+  --color-splash: #4f8fd1;
+
+  /* --- Semantic tokens (light values; themes.css re-points them) --------- */
+  --color-page: #fbfcfe; /* the page / chapter background */
+  --color-surface: #ffffff; /* glass cards, inputs, pills - usually with an alpha */
+  --color-surface-soft: #eff4fc; /* chips and hover fills */
+  --color-surface-strong: #dbe6f7; /* a chip that needs to stand out more */
+  --color-ink: #0f2247; /* headings and strong text */
+  --color-ink-soft: #16305e; /* secondary strong text, icons */
+  --color-muted: #5a6b86; /* body copy and captions */
+  --color-line: #dbe6f7; /* borders */
+  --color-line-strong: #bcd0ee; /* borders that need more presence */
+  --color-edge: #ffffff; /* the bright rim of a glass card */
+  --color-haze-soft: #dbe6f7; /* decorative blurs and fills, lightest... */
+  --color-haze: #bcd0ee;
+  --color-haze-strong: #8fafe0; /* ...to strongest */
+
+  /* --- Radii ------------------------------------------------------------- */
+  --radius-card: 1.5rem;
+  --radius-tile: 1rem;
+  --radius-chip: 0.75rem;
+
+  /* --- Elevation --------------------------------------------------------- */
+  /* The tints come from plain variables (themes.css) so one shadow utility
+     works in every theme and tone. */
+  --shadow-glass: 0 1px 0 var(--glass-highlight) inset,
+    0 20px 45px -20px var(--shadow-tint);
+  --shadow-lift: 0 32px 70px -28px var(--shadow-tint-strong);
+  --shadow-glow-navy: 0 18px 45px -18px rgb(29 60 123 / 0.55);
+
+  /* --- Layout ------------------------------------------------------------ */
+  --container-site: 80rem;
+  --spacing-header: 5.5rem; /* height the fixed header reserves at the top of a chapter */
+
+  /* --- Motion ------------------------------------------------------------ */
+  --ease-out-brand: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-brand: cubic-bezier(0.76, 0, 0.24, 1);
+}

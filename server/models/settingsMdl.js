@@ -1586,78 +1586,158 @@ exports.softDeleteCattleBreedMdl = (breed_id) => {
 // cattle belong to a branch, so the list is restricted to the user's scope through it.
 // dates come back as YYYY-MM-DD so the edit form's date inputs can load them
 
-exports.getCattleListMdl = (user) => {
-    log('in getCattleListMdl');
-    const scope = scopeutils.getScopeFilter(user, 'b');
+// cattle register model functions moved to models/cattleMdl.js
 
-    const qry = `select c.cattle_id, c.cattle_unique_code, c.branch_id, c.cattle_type_id, c.breed_id, c.gender_id,
-        c.weight, c.color, c.purchase_cost, c.health_status, c.remarks, c.is_active,
-        b.branch_name, b.dairy_farm_id, df.dairy_farm_name,
-        t.cattle_type_name, br.breed_name, g.gender_nm,
-        DATE_FORMAT(c.date_of_birth, '%Y-%m-%d') as date_of_birth,
-        DATE_FORMAT(c.purchase_date, '%Y-%m-%d') as purchase_date,
-        DATE_FORMAT(c.created_time, '%d-%m-%Y %H:%i:%s') as created_at,
-        DATE_FORMAT(c.updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
-        from cattle_lst_t c
-        join branches_lst_t b on b.branch_id = c.branch_id
-        left join dairy_farm_lst_t df on df.dairy_farm_id = b.dairy_farm_id
-        join cattle_types_mstr_lst_t t on t.cattle_type_id = c.cattle_type_id
-        join cattle_breeds_mstr_lst_t br on br.breed_id = c.breed_id
-        left join gender_mstr_lst_t g on g.gender_id = c.gender_id
-        where c.is_active = 1${scope.clause}
-        order by c.cattle_unique_code asc`;
-    return dbutils.executeQuery(qry, scope.params, 'get cattle list model');
+// ===================== ILLNESS MASTER =====================
+// illness types recorded against a cattle treatment episode. keeping them as a master is what
+// makes "how many mastitis cases this quarter" answerable instead of buried in free text
+
+// fetches all active illnesses
+exports.getIllnessListMdl = () => {
+    log('in getIllnessListMdl');
+    const qry = `select illness_id, illness_name, description, is_active,
+        DATE_FORMAT(created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
+        from illness_mstr_lst_t where is_active = 1 order by illness_name asc`;
+    return dbutils.executeQuery(qry, [], 'get illness list model');
 }
 
-// checks whether a generated cattle code is already taken (the column is unique)
-exports.getCattleByCodeMdl = (cattle_unique_code) => {
-    log('in getCattleByCodeMdl');
-    const qry = 'select cattle_id from cattle_lst_t where cattle_unique_code = ?';
-    return dbutils.executeQuery(qry, [cattle_unique_code], 'get cattle by code model');
+// finds illnesses matching the name (active and inactive), optionally excluding one record.
+// the name carries a unique key, so a soft deleted match MUST be reactivated, never re-inserted
+exports.getDuplicateIllnessesMdl = (illness_name, excludeId = null) => {
+    log('in getDuplicateIllnessesMdl');
+    let qry = `select illness_id, illness_name, is_active from illness_mstr_lst_t
+        where lower(illness_name) = lower(?)`;
+    const params = [illness_name];
+
+    if (excludeId) {
+        qry += ' and illness_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate illnesses model');
 }
 
-// counts cattle ever recorded at a branch, used to seed the generated code sequence
-exports.countCattleByBranchMdl = (branch_id) => {
-    log('in countCattleByBranchMdl');
-    const qry = 'select count(*) as cnt from cattle_lst_t where branch_id = ?';
-    return dbutils.executeQuery(qry, [branch_id], 'count cattle by branch model');
+exports.insertIllnessMdl = (data) => {
+    log('in insertIllnessMdl');
+    const qry = 'insert into illness_mstr_lst_t (illness_name, description) values (?, ?)';
+    return dbutils.executeQuery(qry, [data.illness_name, data.description], 'insert illness model');
 }
 
-// inserts a new cattle record
-exports.insertCattleMdl = (data, user_id) => {
-    log('in insertCattleMdl');
-    const qry = `insert into cattle_lst_t (branch_id, cattle_unique_code, cattle_type_id, breed_id, gender_id,
-        date_of_birth, weight, color, purchase_date, purchase_cost, health_status, remarks, created_by)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    return dbutils.executeQuery(qry, [data.branch_id, data.cattle_unique_code, data.cattle_type_id, data.breed_id, data.gender_id,
-        data.date_of_birth, data.weight, data.color, data.purchase_date, data.purchase_cost,
-        data.health_status, data.remarks, user_id], 'insert cattle model');
+exports.updateIllnessMdl = (illness_id, data) => {
+    log('in updateIllnessMdl');
+    const qry = `update illness_mstr_lst_t set illness_name = ?, description = ?
+        where is_active = 1 and illness_id = ?`;
+    return dbutils.executeQuery(qry, [data.illness_name, data.description, illness_id], 'update illness model');
 }
 
-// updates an active cattle record; the generated code never changes once assigned
-exports.updateCattleMdl = (cattle_id, data, user_id) => {
-    log('in updateCattleMdl');
-    const qry = `update cattle_lst_t set branch_id = ?, cattle_type_id = ?, breed_id = ?, gender_id = ?,
-        date_of_birth = ?, weight = ?, color = ?, purchase_date = ?, purchase_cost = ?,
-        health_status = ?, remarks = ?, updated_by = ?
-        where is_active = 1 and cattle_id = ?`;
-    return dbutils.executeQuery(qry, [data.branch_id, data.cattle_type_id, data.breed_id, data.gender_id,
-        data.date_of_birth, data.weight, data.color, data.purchase_date, data.purchase_cost,
-        data.health_status, data.remarks, user_id, cattle_id], 'update cattle model');
+exports.reactivateIllnessMdl = (illness_id, data) => {
+    log('in reactivateIllnessMdl');
+    const qry = `update illness_mstr_lst_t set illness_name = ?, description = ?, deleted_time = null, is_active = 1
+        where illness_id = ?`;
+    return dbutils.executeQuery(qry, [data.illness_name, data.description, illness_id], 'reactivate illness model');
 }
 
-// fetches an active cattle record by id
-exports.getActiveCattleByIdMdl = (cattle_id) => {
-    log('in getActiveCattleByIdMdl');
-    const qry = `select cattle_id, cattle_unique_code, branch_id from cattle_lst_t
-        where is_active = 1 and cattle_id = ?`;
-    return dbutils.executeQuery(qry, [cattle_id], 'get active cattle by id model');
+exports.getActiveIllnessByIdMdl = (illness_id) => {
+    log('in getActiveIllnessByIdMdl');
+    const qry = 'select illness_id, illness_name from illness_mstr_lst_t where is_active = 1 and illness_id = ?';
+    return dbutils.executeQuery(qry, [illness_id], 'get active illness by id model');
 }
 
-// soft deletes a cattle record, stamping who removed it and when
-exports.softDeleteCattleMdl = (cattle_id, user_id) => {
-    log('in softDeleteCattleMdl');
-    const qry = `update cattle_lst_t set is_active = 0, deleted_by = ?, deleted_time = current_timestamp
-        where is_active = 1 and cattle_id = ?`;
-    return dbutils.executeQuery(qry, [user_id, cattle_id], 'soft delete cattle model');
+// counts treatment episodes using an illness, so a referenced illness cannot be deleted.
+// soft deletes mean the foreign key alone would not protect this
+exports.countActiveTreatmentsByIllnessMdl = (illness_id) => {
+    log('in countActiveTreatmentsByIllnessMdl');
+    const qry = 'select count(*) as cnt from cattle_treatment_lst_t where is_active = 1 and illness_id = ?';
+    return dbutils.executeQuery(qry, [illness_id], 'count active treatments by illness model');
+}
+
+exports.softDeleteIllnessMdl = (illness_id) => {
+    log('in softDeleteIllnessMdl');
+    const qry = `update illness_mstr_lst_t set is_active = 0, deleted_time = current_timestamp
+        where is_active = 1 and illness_id = ?`;
+    return dbutils.executeQuery(qry, [illness_id], 'soft delete illness model');
+}
+
+// ===================== PURCHASE MODE MASTER =====================
+// how a cattle came to the farm. purchase_mode_key is the stable code the service branches on,
+// so display names stay renameable without touching logic
+
+exports.getPurchaseModeListMdl = () => {
+    log('in getPurchaseModeListMdl');
+    const qry = `select purchase_mode_id, purchase_mode_key, purchase_mode_name, description, is_active,
+        needs_counterparty, needs_share_pct, amount_source, counterparty_label,
+        DATE_FORMAT(created_time, '%d-%m-%Y %H:%i:%s') as created_at,
+        DATE_FORMAT(updated_time, '%d-%m-%Y %H:%i:%s') as updated_at
+        from purchase_mode_mstr_lst_t where is_active = 1 order by purchase_mode_name asc`;
+    return dbutils.executeQuery(qry, [], 'get purchase mode list model');
+}
+
+// both the key and the name carry unique keys, so a clash on either must be caught
+exports.getDuplicatePurchaseModesMdl = (purchase_mode_key, purchase_mode_name, excludeId = null) => {
+    log('in getDuplicatePurchaseModesMdl');
+    let qry = `select purchase_mode_id, purchase_mode_key, purchase_mode_name, is_active
+        from purchase_mode_mstr_lst_t
+        where lower(purchase_mode_key) = lower(?) or lower(purchase_mode_name) = lower(?)`;
+    const params = [purchase_mode_key, purchase_mode_name];
+
+    if (excludeId) {
+        qry += ' and purchase_mode_id <> ?';
+        params.push(excludeId);
+    }
+    return dbutils.executeQuery(qry, params, 'get duplicate purchase modes model');
+}
+
+exports.insertPurchaseModeMdl = (data) => {
+    log('in insertPurchaseModeMdl');
+    const qry = `insert into purchase_mode_mstr_lst_t
+        (purchase_mode_key, purchase_mode_name, description, needs_counterparty, needs_share_pct, amount_source, counterparty_label)
+        values (?, ?, ?, ?, ?, ?, ?)`;
+    return dbutils.executeQuery(qry, [data.purchase_mode_key, data.purchase_mode_name, data.description,
+        data.needs_counterparty, data.needs_share_pct, data.amount_source, data.counterparty_label],
+        'insert purchase mode model');
+}
+
+// the key stays NOT updatable - seeded rows and reports refer to it - but no service branches on
+// it any more: behaviour comes from the flag columns below
+exports.updatePurchaseModeMdl = (purchase_mode_id, data) => {
+    log('in updatePurchaseModeMdl');
+    const qry = `update purchase_mode_mstr_lst_t set purchase_mode_name = ?, description = ?,
+        needs_counterparty = ?, needs_share_pct = ?, amount_source = ?, counterparty_label = ?
+        where is_active = 1 and purchase_mode_id = ?`;
+    return dbutils.executeQuery(qry, [data.purchase_mode_name, data.description,
+        data.needs_counterparty, data.needs_share_pct, data.amount_source, data.counterparty_label,
+        purchase_mode_id], 'update purchase mode model');
+}
+
+exports.reactivatePurchaseModeMdl = (purchase_mode_id, data) => {
+    log('in reactivatePurchaseModeMdl');
+    const qry = `update purchase_mode_mstr_lst_t set purchase_mode_key = ?, purchase_mode_name = ?, description = ?,
+        needs_counterparty = ?, needs_share_pct = ?, amount_source = ?, counterparty_label = ?,
+        deleted_time = null, is_active = 1 where purchase_mode_id = ?`;
+    return dbutils.executeQuery(qry, [data.purchase_mode_key, data.purchase_mode_name, data.description,
+        data.needs_counterparty, data.needs_share_pct, data.amount_source, data.counterparty_label,
+        purchase_mode_id], 'reactivate purchase mode model');
+}
+
+exports.getActivePurchaseModeByIdMdl = (purchase_mode_id) => {
+    log('in getActivePurchaseModeByIdMdl');
+    // the behaviour flags come with it: the cattle service reads them instead of branching on
+    // the key, so a new mode added through Settings behaves correctly without a code change
+    const qry = `select purchase_mode_id, purchase_mode_key, purchase_mode_name, needs_counterparty, needs_share_pct, amount_source, counterparty_label
+        from purchase_mode_mstr_lst_t where is_active = 1 and purchase_mode_id = ?`;
+    return dbutils.executeQuery(qry, [purchase_mode_id], 'get active purchase mode by id model');
+}
+
+// counts ownership rows using a mode, so a referenced mode cannot be deleted
+exports.countActiveOwnershipsByPurchaseModeMdl = (purchase_mode_id) => {
+    log('in countActiveOwnershipsByPurchaseModeMdl');
+    const qry = 'select count(*) as cnt from cattle_ownership_lst_t where is_active = 1 and purchase_mode_id = ?';
+    return dbutils.executeQuery(qry, [purchase_mode_id], 'count active ownerships by purchase mode model');
+}
+
+exports.softDeletePurchaseModeMdl = (purchase_mode_id) => {
+    log('in softDeletePurchaseModeMdl');
+    const qry = `update purchase_mode_mstr_lst_t set is_active = 0, deleted_time = current_timestamp
+        where is_active = 1 and purchase_mode_id = ?`;
+    return dbutils.executeQuery(qry, [purchase_mode_id], 'soft delete purchase mode model');
 }

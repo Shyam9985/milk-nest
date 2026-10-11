@@ -1,0 +1,28 @@
+/* ============================================================================
+   Milk Nest public website — stylesheet entry point
+
+   One file per concern, in the order they build on each other:
+     fonts.css        self-hosted @font-face rules
+     tokens.css       the design tokens Tailwind utilities are generated from
+                      (colours, type scale, radii, shadows, layout, motion)
+     themes.css       the values of the semantic colour tokens per theme
+                      (light / dark) and per chapter tone (milk, cream, ink...)
+     base.css         element defaults, font-size preference, reduced motion
+     animations.css   keyframes and the --animate-* utilities built on them
+     utilities.css    the few utilities Tailwind cannot express on its own
+
+   To change the look of the site, start in tokens.css and themes.css: the
+   components only ever refer to tokens, never to raw colours or sizes.
+   ============================================================================ */
+
+@import "tailwindcss";
+@import "./fonts.css";
+@import "./tokens.css";
+@import "./themes.css";
+@import "./base.css";
+@import "./animations.css";
+@import "./utilities.css";
+
+/* `dark:` utilities follow the `dark` class that ThemeProvider puts on <html>, not the
+   operating system setting directly - the visitor's own choice has to win. */
+@custom-variant dark (&:where(.dark, .dark *));

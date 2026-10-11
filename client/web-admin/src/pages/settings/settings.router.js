@@ -9,7 +9,8 @@ import Hierarchy from "./hierarchy/Hierarchy";
 import DairyFarm from "./dairy-farm/DairyFarm";
 import CattleType from "./cattle-type/CattleType";
 import CattleBreed from "./cattle-breed/CattleBreed";
-import CattleManagement from "./cattle-management/CattleManagement";
+import Illness from "./illness/Illness";
+import PurchaseMode from "./purchase-mode/PurchaseMode";
 import Users from "./users/Users";
 import Roles from "./roles/Roles";
 import RolePermissions from "./role-permissions/RolePermissions";
@@ -31,7 +32,11 @@ export default [
     { path: '/settings/master/dairy-farm', component: DairyFarm, lazy: true },
     { path: '/settings/master/cattle-type', component: CattleType, lazy: true },
     { path: '/settings/master/cattle-breed', component: CattleBreed, lazy: true },
-    { path: '/settings/master/cattle-management', component: CattleManagement, lazy: true },
+    { path: '/settings/master/illness', component: Illness, lazy: true },
+    { path: '/settings/master/purchase-mode', component: PurchaseMode, lazy: true },
+    // cattle records live on the /cattle main screen, not under settings: they are operational
+    // data, not configuration, and keeping two grids for one table hid the feature from roles
+    // that had the permission but not the settings tile
 
     // ===================== SECURITY =====================
     { path: '/settings/security/users', component: Users, lazy: true },

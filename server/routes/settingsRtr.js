@@ -69,15 +69,9 @@ router.get('/master/branch', authmdlwre.isAuthenticated, checkRateLimit(1, 60), 
 router.post('/master/branch', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('dairy-farm', 'create'), audit('BRANCH', 'CREATE', 'branches_lst_t', 'branch_id'), settingsCtrl.createBranchCtrl);
 router.put('/master/branch/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('dairy-farm', 'update'), audit('BRANCH', 'UPDATE', 'branches_lst_t', 'branch_id'), settingsCtrl.updateBranchCtrl);
 router.delete('/master/branch/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('dairy-farm', 'delete'), audit('BRANCH', 'DELETE', 'branches_lst_t', 'branch_id'), settingsCtrl.deleteBranchCtrl);
+// cattle records moved to routes/cattleRtr.js (mounted at /apiv1/cattle): the animals are
+// operational data. cattle TYPE and BREED below remain settings masters.
 
-// cattle register routes (the animals themselves; dropdown feeds sit under the same key)
-router.get('/master/cattle', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleListCtrl);
-router.get('/master/cattle/form-options', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleFormOptionsCtrl);
-router.get('/master/cattle/branch', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleBranchOptionsCtrl);
-router.get('/master/cattle/breed', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle', 'read'), settingsCtrl.getCattleBreedOptionsCtrl);
-router.post('/master/cattle', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle', 'create'), audit('CATTLE', 'CREATE', 'cattle_lst_t', 'cattle_id'), settingsCtrl.createCattleCtrl);
-router.put('/master/cattle/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle', 'update'), audit('CATTLE', 'UPDATE', 'cattle_lst_t', 'cattle_id'), settingsCtrl.updateCattleCtrl);
-router.delete('/master/cattle/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle', 'delete'), audit('CATTLE', 'DELETE', 'cattle_lst_t', 'cattle_id'), settingsCtrl.deleteCattleCtrl);
 
 // cattle type master routes - its own key, like every other master ('cattle' stays for cattle records)
 router.get('/master/cattle-type', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('cattle-type', 'read'), settingsCtrl.getCattleTypeListCtrl);
@@ -91,6 +85,18 @@ router.get('/master/cattle-breed/cattle-type', authmdlwre.isAuthenticated, check
 router.post('/master/cattle-breed', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle-breed', 'create'), audit('CATTLE_BREED', 'CREATE', 'cattle_breeds_mstr_lst_t', 'breed_id'), settingsCtrl.createCattleBreedCtrl);
 router.put('/master/cattle-breed/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle-breed', 'update'), audit('CATTLE_BREED', 'UPDATE', 'cattle_breeds_mstr_lst_t', 'breed_id'), settingsCtrl.updateCattleBreedCtrl);
 router.delete('/master/cattle-breed/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('cattle-breed', 'delete'), audit('CATTLE_BREED', 'DELETE', 'cattle_breeds_mstr_lst_t', 'breed_id'), settingsCtrl.deleteCattleBreedCtrl);
+
+// illness master routes (feeds the treatment form's illness dropdown)
+router.get('/master/illness', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('illness-type', 'read'), settingsCtrl.getIllnessListCtrl);
+router.post('/master/illness', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('illness-type', 'create'), audit('ILLNESS', 'CREATE', 'illness_mstr_lst_t', 'illness_id'), settingsCtrl.createIllnessCtrl);
+router.put('/master/illness/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('illness-type', 'update'), audit('ILLNESS', 'UPDATE', 'illness_mstr_lst_t', 'illness_id'), settingsCtrl.updateIllnessCtrl);
+router.delete('/master/illness/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('illness-type', 'delete'), audit('ILLNESS', 'DELETE', 'illness_mstr_lst_t', 'illness_id'), settingsCtrl.deleteIllnessCtrl);
+
+// purchase mode master routes (feeds the cattle ownership form)
+router.get('/master/purchase-mode', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('purchase-mode', 'read'), settingsCtrl.getPurchaseModeListCtrl);
+router.post('/master/purchase-mode', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('purchase-mode', 'create'), audit('PURCHASE_MODE', 'CREATE', 'purchase_mode_mstr_lst_t', 'purchase_mode_id'), settingsCtrl.createPurchaseModeCtrl);
+router.put('/master/purchase-mode/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('purchase-mode', 'update'), audit('PURCHASE_MODE', 'UPDATE', 'purchase_mode_mstr_lst_t', 'purchase_mode_id'), settingsCtrl.updatePurchaseModeCtrl);
+router.delete('/master/purchase-mode/:id', authmdlwre.isAuthenticated, checkRateLimit(0.5, 30), authmdlwre.isAuthorized('purchase-mode', 'delete'), audit('PURCHASE_MODE', 'DELETE', 'purchase_mode_mstr_lst_t', 'purchase_mode_id'), settingsCtrl.deletePurchaseModeCtrl);
 
 // role permission routes (role list feeds the form dropdown)
 router.get('/security/role-permission', authmdlwre.isAuthenticated, checkRateLimit(1, 60), authmdlwre.isAuthorized('role-permissions', 'read'), settingsCtrl.getRolePermissionListCtrl);

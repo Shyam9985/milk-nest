@@ -1,0 +1,108 @@
+/* ============================================================================
+   Themes and chapter tones
+
+   The semantic tokens declared in tokens.css get their real values here, in
+   three layers that stack:
+
+     1. :root          the light theme (the defaults from tokens.css, plus the
+                       alpha-carrying variables Tailwind colours cannot hold)
+     2. .dark          the dark theme - the same tokens, re-pointed. Put on
+                       <html> by ThemeProvider / theme-init.js.
+     3. [data-tone]    a chapter's own palette. The Chapter component puts the
+                       attribute on its <section>, and because custom properties
+                       inherit, every token-based utility inside it follows.
+
+   The tones in use are "milk" (follows the theme: light in light, dark in dark)
+   and two dark tones, "ink" and "navy", which are the same in both themes - a
+   dark band stays dark whichever theme is on. To add a tone that should follow
+   the theme instead, declare its light values under [data-tone] and its dark
+   values under .dark [data-tone], which wins by specificity.
+   ============================================================================ */
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --glass-highlight: rgb(255 255 255 / 0.7);
+    --shadow-tint: rgb(15 34 71 / 0.28);
+    --shadow-tint-strong: rgb(15 34 71 / 0.42);
+    --grid-line: rgb(15 34 71 / 0.05);
+  }
+
+  /* ------------------------------------------------------------------------
+     Dark theme
+     ------------------------------------------------------------------------ */
+  .dark {
+    color-scheme: dark;
+
+    --color-splash: #6ea8e6;
+
+    --color-page: #060d1f;
+    --color-surface: #101d3a;
+    --color-surface-soft: #172a52;
+    --color-surface-strong: #20386b;
+    --color-ink: #eef3fc;
+    --color-ink-soft: #cddaf3;
+    --color-muted: #9bafd0;
+    --color-line: #213560;
+    --color-line-strong: #2f4a82;
+    --color-edge: #33508a;
+    --color-haze-soft: #14284f;
+    --color-haze: #1d3c7b;
+    --color-haze-strong: #274c98;
+
+    --glass-highlight: rgb(255 255 255 / 0.06);
+    --shadow-tint: rgb(0 0 0 / 0.5);
+    --shadow-tint-strong: rgb(0 0 0 / 0.65);
+    --grid-line: rgb(143 175 224 / 0.07);
+  }
+
+  /* ------------------------------------------------------------------------
+     Chapter tones (milk declares nothing: it is the theme itself)
+     ------------------------------------------------------------------------ */
+
+  /* ink - near black. "The problem" and the footer. */
+  [data-tone="ink"] {
+    color-scheme: dark;
+    --color-splash: #6ea8e6;
+    --color-page: #07090f;
+    --color-surface: #11151f;
+    --color-surface-soft: #1a2030;
+    --color-surface-strong: #242c40;
+    --color-ink: #f2f4f8;
+    --color-ink-soft: #cfd6e4;
+    --color-muted: #97a1b6;
+    --color-line: #222a3a;
+    --color-line-strong: #33405a;
+    --color-edge: #33405a;
+    --color-haze-soft: #121a2c;
+    --color-haze: #1a2742;
+    --color-haze-strong: #26395f;
+    --glass-highlight: rgb(255 255 255 / 0.06);
+    --shadow-tint: rgb(0 0 0 / 0.55);
+    --shadow-tint-strong: rgb(0 0 0 / 0.7);
+    --grid-line: rgb(207 214 228 / 0.06);
+  }
+
+  /* navy - the brand's deep blue. "Live from the farms" and "Get in touch". */
+  [data-tone="navy"] {
+    color-scheme: dark;
+    --color-splash: #6ea8e6;
+    --color-page: #0b1a3a;
+    --color-surface: #13244a;
+    --color-surface-soft: #1a2f5c;
+    --color-surface-strong: #243d72;
+    --color-ink: #eef3fc;
+    --color-ink-soft: #cddaf3;
+    --color-muted: #9bafd0;
+    --color-line: #22386a;
+    --color-line-strong: #2f4a82;
+    --color-edge: #35528f;
+    --color-haze-soft: #142a58;
+    --color-haze: #1d3c7b;
+    --color-haze-strong: #274c98;
+    --glass-highlight: rgb(255 255 255 / 0.06);
+    --shadow-tint: rgb(0 0 0 / 0.5);
+    --shadow-tint-strong: rgb(0 0 0 / 0.65);
+    --grid-line: rgb(143 175 224 / 0.07);
+  }
+}

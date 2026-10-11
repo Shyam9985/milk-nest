@@ -1,0 +1,161 @@
+import * as Icons from 'lucide-react';
+import { ProfileHeader, ProfileSection, ProfileGrid, ProfileField, ProfileStat, ProfileBadge } from './components/ProfileField';
+import EntityLink from './components/EntityLink';
+import SimpleTable from '../../components/table/SimpleTable';
+
+const formatAge = (months) => {
+    if (months === null || months === undefined) return null;
+    const years = Math.floor(months / 12), rest = months % 12;
+    if (!years) return `${rest} month${rest === 1 ? '' : 's'}`;
+    return `${years} yr${years === 1 ? '' : 's'}${rest ? ` ${rest} mo` : ''}`;
+};
+
+const formatMoney = (value) => value === null || value === undefined || value === ''
+    ? null
+    : `₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
+const num = (value) => value === null || value === undefined ? '-' : Number(value).toFixed(2);
+
+// one animal in full: identity, where it lives, its body details, purchase, and what it
+// has produced - lifetime totals plus the most recent days
+function CattleProfile({ profile, onNavigate }) {
+
+    const isMale = /^male$/i.test(profile.gender_nm || '');
+
+    // health comes from her OPEN treatment episodes, not from a stored column - see CattleForm
+    const openTreatments = Number(profile.open_treatments) || 0;
+    const healthLabel = openTreatments
+        ? (profile.open_illness || 'Under treatment')
+        : 'No open illness';
+
+    // why she is or is not on the milking sheet, in the same words the cattle grid uses
+    const MILK_BLOCK_LABEL = {
+        sold: 'Not in herd', dead: 'Dead', male: 'Male', calf: 'Too young',
+        under_treatment: 'Milk on hold', pregnant_dry: 'Dried off', manual: 'Marked dry'
+    };
+    const milkable = Number(profile.can_produce_milk) === 1;
+    const milkLabel = milkable ? 'In milk' : (MILK_BLOCK_LABEL[profile.milk_block_reason] || 'Not milked');
+
+    return (
+        <div className="space-y-5">
+
+            <ProfileHeader icon={Icons.Beef} code={profile.cattle_unique_code} name={`${profile.breed_name} ${profile.cattle_type_name}`}
+                subtitle={<>
+                    <EntityLink type="branch" id={profile.branch_id} onNavigate={onNavigate}>{profile.branch_name}</EntityLink>
+                    {' · '}
+                    <EntityLink type="dairy-farm" id={profile.dairy_farm_id} onNavigate={onNavigate}>{profile.dairy_farm_name}</EntityLink>
+                </>}
+                badges={<>
+                    <ProfileBadge tone={openTreatments ? 'warning' : 'success'}>{healthLabel}</ProfileBadge>
+                    {profile.milk_withdrawal_until && (
+                        <ProfileBadge tone="warning">Milk held to {profile.milk_withdrawal_until}</ProfileBadge>
+                    )}
+                    {!isMale && <ProfileBadge tone={milkable ? 'success' : 'neutral'}>{milkLabel}</ProfileBadge>}
+                    {profile.pregnancy_id && (
+                        <ProfileBadge tone={Number(profile.dry_off_due) ? 'warning' : 'neutral'}>
+                            {Number(profile.dry_off_due) ? 'Dry-off due' : `Pregnant ${profile.days_pregnant}d`}
+                        </ProfileBadge>
+                    )}
+                    {profile.gender_nm && <ProfileBadge tone="neutral">{profile.gender_nm}</ProfileBadge>}
+                </>} />
+
+            {!isMale && (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <ProfileStat label="Total milk" value={profile.total_litres ? num(profile.total_litres) : null} unit="L" hint={`${profile.recorded_days} day${profile.recorded_days === 1 ? '' : 's'} recorded`} />
+                    <ProfileStat label="Avg per day" value={profile.avg_litres_per_day ? num(profile.avg_litres_per_day) : null} unit="L" />
+                    <ProfileStat label="Avg fat" value={profile.avg_fat ? num(profile.avg_fat) : null} unit="%" hint={profile.avg_snf ? `SNF ${num(profile.avg_snf)}%` : undefined} />
+                    <ProfileStat label="Last entry" value={profile.last_entry || 'Never'} />
+                </div>
+            )}
+
+            <ProfileSection title="Details" icon={Icons.ClipboardList}>
+                <ProfileGrid columns={3}>
+                    <ProfileField label="Type" value={profile.cattle_type_name} />
+                    <ProfileField label="Breed" value={profile.breed_name} />
+                    <ProfileField label="Gender" value={profile.gender_nm} />
+                    <ProfileField label="Date of birth" value={profile.date_of_birth} />
+                    <ProfileField label="Age" value={formatAge(profile.age_months)} />
+                    <ProfileField label="Colour" value={profile.color} />
+                    <ProfileField label="Weight" value={profile.weight ? `${num(profile.weight)} kg` : null} />
+                    <ProfileField label="Purchase date" value={profile.purchase_date} />
+                    <ProfileField label="Purchase cost" value={formatMoney(profile.purchase_cost)} />
+                    <ProfileField label="Remarks" value={profile.remarks} className="sm:col-span-3" />
+                </ProfileGrid>
+            </ProfileSection>
+
+            {!isMale && (
+                <ProfileSection title="Recent production" icon={Icons.Milk}>
+                    <SimpleTable rows={profile.recent_production || []} rowKey="production_date" searchPlaceholder="Search by date or remark..."
+                        emptyMessage="No milk recorded for this animal yet." dense
+                        columns={[
+                            { label: 'Date', field: 'production_date', className: 'whitespace-nowrap' },
+                            { label: 'Morning', field: 'morning_quantity', align: 'right', searchable: false, className: 'tabular-nums text-[var(--text-secondary)]', render: num },
+                            { label: 'Evening', field: 'evening_quantity', align: 'right', searchable: false, className: 'tabular-nums text-[var(--text-secondary)]', render: num },
+                            { label: 'Total', field: 'total_quantity', align: 'right', searchable: false, className: 'tabular-nums font-medium', render: num },
+                            { label: 'Fat %', field: 'fat_percentage', align: 'right', searchable: false, className: 'tabular-nums text-[var(--text-secondary)]', render: num },
+                            { label: 'SNF %', field: 'snf_percentage', align: 'right', searchable: false, className: 'tabular-nums text-[var(--text-secondary)]', render: num },
+                            { label: 'Remarks', field: 'remarks', sortable: false, className: 'text-[var(--text-secondary)]' },
+                        ]} />
+                </ProfileSection>
+            )}
+
+            {/* every pregnancy she has had. acting on one happens in the Breeding register */}
+            {!isMale && (
+                <ProfileSection title="Breeding" icon={Icons.Baby}>
+                    <SimpleTable rows={profile.breeding || []} rowKey="pregnancy_id" dense
+                        searchPlaceholder="Search by date or status..."
+                        emptyMessage="No pregnancy recorded for this animal yet."
+                        columns={[
+                            { label: 'Conceived', field: 'conception_date', className: 'whitespace-nowrap' },
+                            { label: 'Stage', field: 'pregnancy_status', className: 'capitalize' },
+                            { label: 'Dried off', field: 'actual_dry_off_date', sortable: false, className: 'whitespace-nowrap text-[var(--text-secondary)]', render: (v) => v || '-' },
+                            { label: 'Calved', field: 'actual_calving_date', sortable: false, className: 'whitespace-nowrap text-[var(--text-secondary)]', render: (v, row) => v || `exp. ${row.expected_calving_date || '-'}` },
+                            { label: 'Calves', field: 'calves_registered', align: 'right', searchable: false, className: 'tabular-nums' },
+                            { label: 'Remarks', field: 'remarks', sortable: false, className: 'text-[var(--text-secondary)]' },
+                        ]} />
+                </ProfileSection>
+            )}
+
+            {/* illness episodes, open ones first. the milk column is what matters for food safety */}
+            <ProfileSection title="Health" icon={Icons.Stethoscope}>
+                <SimpleTable rows={profile.treatments || []} rowKey="treatment_id" dense
+                    searchPlaceholder="Search by illness or date..."
+                    emptyMessage="No illness recorded for this animal."
+                    columns={[
+                        { label: 'Illness', field: 'illness_name', className: 'font-medium' },
+                        { label: 'Severity', field: 'severity', className: 'capitalize text-[var(--text-secondary)]' },
+                        { label: 'Started', field: 'start_date', className: 'whitespace-nowrap' },
+                        { label: 'Cured', field: 'cure_date', sortable: false, className: 'whitespace-nowrap', render: (v, row) => v || `open ${row.days_open}d` },
+                        { label: 'Milk held to', field: 'milk_withdrawal_until', sortable: false, className: 'whitespace-nowrap', render: (v, row) => (v ? (Number(row.withdrawal_active) ? v : `${v} (passed)`) : '-') },
+                        { label: 'Visits', field: 'checkups', align: 'right', searchable: false, className: 'tabular-nums' },
+                        { label: 'Spent', field: 'total_expense', align: 'right', searchable: false, className: 'tabular-nums', render: formatMoney },
+                    ]} />
+            </ProfileSection>
+
+            {/* how the farm has held her over time - the row with no end date is the current one */}
+            <ProfileSection title="Ownership" icon={Icons.Handshake}>
+                <SimpleTable rows={profile.ownership || []} rowKey="ownership_id" dense
+                    searchPlaceholder="Search by mode or party..."
+                    emptyMessage="No ownership record. Every animal should have one - this needs a correction."
+                    columns={[
+                        { label: 'Mode', field: 'purchase_mode_name', className: 'font-medium' },
+                        { label: 'From', field: 'effective_from', className: 'whitespace-nowrap' },
+                        { label: 'To', field: 'effective_to', sortable: false, className: 'whitespace-nowrap', render: (v) => v || 'current' },
+                        { label: 'Amount', field: 'amount', align: 'right', searchable: false, className: 'tabular-nums', render: formatMoney },
+                        { label: 'Other party', field: 'partner_name', sortable: false, className: 'text-[var(--text-secondary)]', render: (v, row) => (v ? `${v}${row.partner_share_pct ? ` (${row.partner_share_pct}%)` : ''}` : '-') },
+                        { label: 'Contact', field: 'partner_contact', sortable: false, className: 'text-[var(--text-secondary)]', render: (v) => v || '-' },
+                    ]} />
+            </ProfileSection>
+
+            <ProfileSection title="Record" icon={Icons.History}>
+                <ProfileGrid>
+                    <ProfileField label="Registered" value={profile.created_at} />
+                    <ProfileField label="Last updated" value={profile.updated_at} />
+                </ProfileGrid>
+            </ProfileSection>
+
+        </div>
+    );
+}
+
+export default CattleProfile;

@@ -1916,164 +1916,182 @@ exports.deleteCattleBreedSrvc = async (breed_id) => {
     return { breed_id: Number(breed_id), breed_name: record.breed_name };
 }
 
-// ===================== CATTLE REGISTER =====================
+// cattle register service functions moved to services/cattleService.js
 
-// fetches cattle visible to the logged in user's scope
-exports.getCattleListSrvc = async (user) => {
-    log('in getCattleListSrvc');
-    return settingsMdl.getCattleListMdl(user);
+// ===================== ILLNESS MASTER =====================
+
+exports.getIllnessListSrvc = async () => {
+    log('in getIllnessListSrvc');
+    return settingsMdl.getIllnessListMdl();
 }
 
-// the static dropdown lists the cattle form needs, in one round trip.
-// dairy farms are scope filtered, so a branch user only ever picks their own farm
-exports.getCattleFormOptionsSrvc = async (user) => {
-    log('in getCattleFormOptionsSrvc');
-    const [dairy_farms, cattle_types, genders] = await Promise.all([
-        settingsMdl.getDairyFarmsMdl(user),
-        settingsMdl.getCattleTypeListMdl(),
-        settingsMdl.getGendersMdl()
-    ]);
-    return { dairy_farms, cattle_types, genders };
+const normalizeIllnessPayload = (payload) => ({
+    illness_name: normalizeName(payload.illness_name),
+    description: emptyToNull(payload.description)
+});
+
+// creates an illness, reusing a soft deleted record when the same name comes back
+// (the name carries a unique key, so re-inserting would violate it)
+exports.createIllnessSrvc = async (payload) => {
+    log('in createIllnessSrvc');
+    const data = normalizeIllnessPayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicateIllnessesMdl(data.illness_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        resutils.createError('duplicateRecord', `Illness already exists with the same name (${activeDuplicate.illness_name}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivateIllnessMdl(inactiveDuplicate.illness_id, data);
+        return { illness_id: inactiveDuplicate.illness_id, reactivated: true, illness_name: data.illness_name };
+    }
+
+    const result = await settingsMdl.insertIllnessMdl(data);
+    return { illness_id: result.insertId, reactivated: false, illness_name: data.illness_name };
 }
 
-// optional numeric input: '' -> null, otherwise a validated positive number
-const parsePositiveNumber = (value, label) => {
-    const raw = emptyToNull(value);
-    if (raw === null) return null;
+exports.updateIllnessSrvc = async (illness_id, payload) => {
+    log('in updateIllnessSrvc');
+    const data = normalizeIllnessPayload(payload);
 
-    const parsed = Number(raw);
-    if (isNaN(parsed) || parsed < 0) {
-        resutils.createError('validationFailed', `${label} must be a positive number.`);
+    const duplicates = await settingsMdl.getDuplicateIllnessesMdl(data.illness_name, illness_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another illness already exists with the same name (${duplicates[0].illness_name}).`);
     }
-    return parsed;
+
+    const result = await settingsMdl.updateIllnessMdl(illness_id, data);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Illness not found or already deleted.');
+    }
+    return { illness_id: Number(illness_id), illness_name: data.illness_name };
 }
 
-// optional YYYY-MM-DD input that may not be in the future
-const parsePastDate = (value, label) => {
-    const raw = emptyToNull(value);
-    if (raw === null) return null;
+// soft deletes an illness after making sure no treatment episode refers to it
+exports.deleteIllnessSrvc = async (illness_id) => {
+    log('in deleteIllnessSrvc');
+    const [record] = await settingsMdl.getActiveIllnessByIdMdl(illness_id);
+    if (!record) {
+        resutils.createError('recordNotFound', 'Illness not found or already deleted.');
+    }
 
-    if (!DATE_FORMAT_RE.test(raw) || isNaN(new Date(raw).getTime())) {
-        resutils.createError('validationFailed', `${label} must be a valid date (YYYY-MM-DD).`);
+    const [{ cnt: treatmentCount }] = await settingsMdl.countActiveTreatmentsByIllnessMdl(illness_id);
+    if (treatmentCount) {
+        resutils.createError('recordInUse', `Illness cannot be deleted. ${treatmentCount} treatment record(s) refer to it.`);
     }
-    if (raw > todayLocal()) {
-        resutils.createError('validationFailed', `${label} cannot be in the future.`);
+
+    const result = await settingsMdl.softDeleteIllnessMdl(illness_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Illness not found or already deleted.');
     }
-    return raw;
+    return { illness_id: Number(illness_id), illness_name: record.illness_name };
 }
 
-// pulls the normalized cattle fields out of a request payload; the unique code is
-// generated server-side on create and never changes afterwards
-const normalizeCattlePayload = (payload) => {
-    const date_of_birth = parsePastDate(payload.date_of_birth, 'Date of Birth');
-    const purchase_date = parsePastDate(payload.purchase_date, 'Purchase Date');
+// ===================== PURCHASE MODE MASTER =====================
 
-    // ISO date strings compare correctly as plain strings
-    if (date_of_birth && purchase_date && purchase_date < date_of_birth) {
-        resutils.createError('validationFailed', 'Purchase Date cannot be earlier than the Date of Birth.');
+exports.getPurchaseModeListSrvc = async () => {
+    log('in getPurchaseModeListSrvc');
+    return settingsMdl.getPurchaseModeListMdl();
+}
+
+// keys are lowercase snake_case so they stay usable as identifiers in code and in seeds
+const normalizePurchaseModeKey = (value) => String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+/*
+ * What a purchase mode MEANS is stored, not coded. The cattle register reads these flags to decide
+ * which ownership fields to ask for and what the amount represents, so a new mode added here works
+ * without anyone editing a service.
+ */
+const AMOUNT_SOURCES = ['purchase_cost', 'recurring', 'none'];
+
+const normalizePurchaseModePayload = (payload) => {
+    const amount_source = emptyToNull(payload.amount_source) || 'purchase_cost';
+    if (!AMOUNT_SOURCES.includes(amount_source)) {
+        resutils.createError('validationFailed', `Amount source must be one of: ${AMOUNT_SOURCES.join(', ')}.`);
     }
+
+    const needs_counterparty = payload.needs_counterparty ? 1 : 0;
+
+    // a share percentage only means something when there IS another party to hold it
+    const needs_share_pct = (needs_counterparty && payload.needs_share_pct) ? 1 : 0;
 
     return {
-        branch_id: Number(payload.branch_id),
-        cattle_type_id: Number(payload.cattle_type_id),
-        breed_id: Number(payload.breed_id),
-        gender_id: payload.gender_id ? Number(payload.gender_id) : null,
-        date_of_birth,
-        purchase_date,
-        weight: parsePositiveNumber(payload.weight, 'Weight'),
-        purchase_cost: parsePositiveNumber(payload.purchase_cost, 'Purchase Cost'),
-        color: emptyToNull(payload.color),
-        health_status: emptyToNull(payload.health_status),
-        remarks: emptyToNull(payload.remarks)
+        purchase_mode_key: normalizePurchaseModeKey(payload.purchase_mode_key),
+        purchase_mode_name: normalizeName(payload.purchase_mode_name),
+        description: emptyToNull(payload.description),
+        needs_counterparty,
+        needs_share_pct,
+        amount_source,
+        // what to call the other party on screen - 'Partner', 'Owner', 'Lessor'
+        counterparty_label: needs_counterparty
+            ? (emptyToNull(payload.counterparty_label) || 'Partner')
+            : null
     };
+};
+
+exports.createPurchaseModeSrvc = async (payload) => {
+    log('in createPurchaseModeSrvc');
+    const data = normalizePurchaseModePayload(payload);
+
+    const duplicates = await settingsMdl.getDuplicatePurchaseModesMdl(data.purchase_mode_key, data.purchase_mode_name);
+
+    const activeDuplicate = duplicates.find((record) => record.is_active == 1);
+    if (activeDuplicate) {
+        const clash = activeDuplicate.purchase_mode_key === data.purchase_mode_key ? 'key' : 'name';
+        resutils.createError('duplicateRecord', `Purchase mode already exists with the same ${clash} (${activeDuplicate.purchase_mode_name}).`);
+    }
+
+    const inactiveDuplicate = duplicates[0];
+    if (inactiveDuplicate) {
+        await settingsMdl.reactivatePurchaseModeMdl(inactiveDuplicate.purchase_mode_id, data);
+        return { purchase_mode_id: inactiveDuplicate.purchase_mode_id, reactivated: true, purchase_mode_name: data.purchase_mode_name };
+    }
+
+    const result = await settingsMdl.insertPurchaseModeMdl(data);
+    return { purchase_mode_id: result.insertId, reactivated: false, purchase_mode_name: data.purchase_mode_name };
 }
 
-// every parent must exist and be active, and the breed must belong to the chosen type
-const assertCattleParents = async (data) => {
-    const [branch] = await settingsMdl.getActiveBranchByIdMdl(data.branch_id);
-    if (!branch) {
-        resutils.createError('invalidParent', 'Selected branch does not exist or is inactive.');
-    }
-
-    const [cattleType] = await settingsMdl.getActiveCattleTypeByIdMdl(data.cattle_type_id);
-    if (!cattleType) {
-        resutils.createError('invalidParent', 'Selected cattle type does not exist or is inactive.');
-    }
-
-    const [breed] = await settingsMdl.getActiveCattleBreedByIdMdl(data.breed_id);
-    if (!breed) {
-        resutils.createError('invalidParent', 'Selected breed does not exist or is inactive.');
-    }
-    if (breed.cattle_type_id != data.cattle_type_id) {
-        resutils.createError('invalidParent', 'Selected breed does not belong to the selected cattle type.');
-    }
-
-    if (data.gender_id) {
-        const gender = await settingsMdl.getActiveGenderByIdMdl(data.gender_id);
-        if (!gender.length) {
-            resutils.createError('invalidParent', 'Selected gender does not exist or is inactive.');
-        }
-    }
-
-    return branch;
-}
-
-// builds a unique tag under the branch code, e.g. 'SDF-3210-HOB' -> 'SDF-3210-HOB-C001'
-const generateCattleCode = async (branch_id, branch_code) => {
-    const [{ cnt }] = await settingsMdl.countCattleByBranchMdl(branch_id);
-
-    for (let sequence = Number(cnt) + 1; sequence < Number(cnt) + 500; sequence++) {
-        const candidate = `${branch_code}-C${String(sequence).padStart(3, '0')}`;
-        const existing = await settingsMdl.getCattleByCodeMdl(candidate);
-        if (!existing.length) return candidate;
-    }
-    resutils.createError('duplicateRecord', 'Unable to generate a unique cattle code. Please try again.');
-}
-
-// records a new animal at a branch
-exports.createCattleSrvc = async (payload, user_id) => {
-    log('in createCattleSrvc');
-    const data = normalizeCattlePayload(payload);
-
-    const branch = await assertCattleParents(data);
-
-    data.cattle_unique_code = await generateCattleCode(data.branch_id, branch.branch_code);
-
-    const result = await settingsMdl.insertCattleMdl(data, user_id);
-    return { cattle_id: result.insertId, cattle_unique_code: data.cattle_unique_code };
-}
-
-// updates an animal's details; its tag stays with it for life
-exports.updateCattleSrvc = async (cattle_id, payload, user_id) => {
-    log('in updateCattleSrvc');
-    const data = normalizeCattlePayload(payload);
-
-    const [record] = await settingsMdl.getActiveCattleByIdMdl(cattle_id);
+// only the name and description are updatable - the key is referenced by seeded rows and by
+// service code, so changing it would silently break whatever branches on it
+exports.updatePurchaseModeSrvc = async (purchase_mode_id, payload) => {
+    log('in updatePurchaseModeSrvc');
+    const [record] = await settingsMdl.getActivePurchaseModeByIdMdl(purchase_mode_id);
     if (!record) {
-        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
     }
 
-    await assertCattleParents(data);
+    const data = normalizePurchaseModePayload({ ...payload, purchase_mode_key: record.purchase_mode_key });
 
-    const result = await settingsMdl.updateCattleMdl(cattle_id, data, user_id);
+    const duplicates = await settingsMdl.getDuplicatePurchaseModesMdl(record.purchase_mode_key, data.purchase_mode_name, purchase_mode_id);
+    if (duplicates.length) {
+        resutils.createError('duplicateRecord', `Another purchase mode already exists with the same name (${duplicates[0].purchase_mode_name}).`);
+    }
+
+    const result = await settingsMdl.updatePurchaseModeMdl(purchase_mode_id, data);
     if (!result.affectedRows) {
-        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
     }
-    return { cattle_id: Number(cattle_id), cattle_unique_code: record.cattle_unique_code };
+    return { purchase_mode_id: Number(purchase_mode_id), purchase_mode_name: data.purchase_mode_name };
 }
 
-// soft deletes a cattle record
-exports.deleteCattleSrvc = async (cattle_id, user_id) => {
-    log('in deleteCattleSrvc');
-    // record is fetched first so the success message can carry its tag
-    const [record] = await settingsMdl.getActiveCattleByIdMdl(cattle_id);
+// soft deletes a purchase mode after making sure no ownership record refers to it
+exports.deletePurchaseModeSrvc = async (purchase_mode_id) => {
+    log('in deletePurchaseModeSrvc');
+    const [record] = await settingsMdl.getActivePurchaseModeByIdMdl(purchase_mode_id);
     if (!record) {
-        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
     }
 
-    const result = await settingsMdl.softDeleteCattleMdl(cattle_id, user_id);
-    if (!result.affectedRows) {
-        resutils.createError('recordNotFound', 'Cattle record not found or already deleted.');
+    const [{ cnt: ownershipCount }] = await settingsMdl.countActiveOwnershipsByPurchaseModeMdl(purchase_mode_id);
+    if (ownershipCount) {
+        resutils.createError('recordInUse', `Purchase mode cannot be deleted. ${ownershipCount} cattle ownership record(s) use it.`);
     }
-    return { cattle_id: Number(cattle_id), cattle_unique_code: record.cattle_unique_code };
+
+    const result = await settingsMdl.softDeletePurchaseModeMdl(purchase_mode_id);
+    if (!result.affectedRows) {
+        resutils.createError('recordNotFound', 'Purchase mode not found or already deleted.');
+    }
+    return { purchase_mode_id: Number(purchase_mode_id), purchase_mode_name: record.purchase_mode_name };
 }
