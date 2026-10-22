@@ -6,6 +6,7 @@ import LandingRedirect from './LandingRedirect';
 import MilkProduction from '../pages/milk-production/MilkProduction';
 import Breeding from '../pages/breeding/Breeding';
 import Health from '../pages/health/Health';
+import Backfill from '../pages/backfill/Backfill';
 import PageNotFound from '../pages/PageNotFound';
 import settingsRouter from '../pages/settings/settings.router';
 
@@ -23,6 +24,7 @@ export const protectedRoutes = [
     { path: "/milk-production", component: MilkProduction, lazy: true },
     { path: "/breeding", component: Breeding, lazy: true },
     { path: "/health", component: Health, lazy: true },
+    { path: "/backfill", component: Backfill, lazy: true },
     { path: "/cattle", component: Cattle, lazy: true },
     { path: "/dashboard", component: Dashboard, lazy: false },
     { path: "/about", component: About, lazy: true },
