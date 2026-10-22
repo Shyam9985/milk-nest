@@ -18,7 +18,7 @@ connectRedis();
 
 const port = process.env.PORT || 4901;
 
-const serverVar = server.app.listen(port, "localhost", () => {
+const serverVar = server.app.listen(port, "0.0.0.0", () => {
   logBlock("[server] listening:", `Server is up and listening on ${port} to the requests...`);
 });
 
